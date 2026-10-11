@@ -1,5 +1,6 @@
 import { ArrowRight, Heart, Users } from 'lucide-react';
 import { Reveal } from '@/components/Reveal';
+import { publicAssetUrl } from '@/data/site';
 
 export function Gallery() {
   return (
@@ -14,11 +15,11 @@ export function Gallery() {
         <Reveal delay={1}>
           <div className="mx-auto max-w-[920px] overflow-hidden rounded-r-lg bg-marfil shadow-sm">
             <div className="grid gap-8 px-6 py-10 sm:px-10 sm:py-12 lg:grid-cols-[minmax(280px,0.85fr)_1fr] lg:items-stretch lg:gap-14 lg:px-12 lg:py-14">
-              <div className="relative min-h-[360px] overflow-hidden rounded-r-md bg-piedra shadow-inner lg:min-h-0">
+              <div className="relative aspect-[4/3] overflow-hidden rounded-r-md bg-piedra shadow-inner">
                 <img
-                  src={`${import.meta.env.BASE_URL}images/IMG_1661.jpg`}
+                  src={publicAssetUrl('images/IMG_1661.jpg')}
                   alt="Joan Steven Zuñiga Pacheco"
-                  className="h-full w-full object-cover object-top"
+                  className="absolute inset-0 h-full w-full object-cover object-[center_30%]"
                   loading="lazy"
                 />
                 <div className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full bg-vino text-marfil">

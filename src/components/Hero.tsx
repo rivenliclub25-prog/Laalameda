@@ -71,14 +71,19 @@ export function Hero() {
           >
             <MessageCircle size={16} /> Reservar por WhatsApp
           </a>
+        </div>
+        <div
+          className="animate-fade-up mt-3"
+          style={{ animationDelay: '0.75s', opacity: 0 }}
+        >
           <a
             href={siteConfig.instagram}
             target="_blank"
-            rel="noopener"
-            aria-label="Instagram"
-            className="btn-outline px-3.5 py-2.5"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-full border border-marfil/45 px-4 py-2 text-sm font-medium text-marfil/90 transition-colors hover:bg-marfil/10 hover:text-white"
           >
-            <Instagram size={17} />
+            <Instagram size={17} aria-hidden="true" />
+            Instagram
           </a>
         </div>
       </div>

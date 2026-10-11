@@ -1,7 +1,8 @@
 import { CalendarDays } from 'lucide-react';
 import { Reveal } from '@/components/Reveal';
+import { publicAssetUrl } from '@/data/site';
 
-const liveMusicImage = `${import.meta.env.BASE_URL}images/WhatsApp_Image_2026-10-04_at_3.02.08_AM.jpeg`;
+const liveMusicImage = publicAssetUrl('images/WhatsApp_Image_2026-10-04_at_3.02.08_AM.jpeg');
 
 export function Terraza() {
   return (

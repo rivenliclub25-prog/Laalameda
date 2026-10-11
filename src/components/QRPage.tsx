@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Printer, ArrowLeft, Download, QrCode, FileDown } from 'lucide-react';
-import { siteConfig } from '@/data/site';
+import { publicBaseUrl, siteConfig } from '@/data/site';
 
 type QRType = 'home' | 'menu' | 'reserve' | 'reviews' | 'instagram' | 'maps';
 
@@ -12,7 +12,7 @@ interface QRConfig {
   url: string;
 }
 
-const siteBaseUrl = new URL(import.meta.env.BASE_URL, window.location.origin).toString();
+const siteBaseUrl = new URL(publicBaseUrl, window.location.origin).toString();
 
 const qrConfigs: QRConfig[] = [
   {

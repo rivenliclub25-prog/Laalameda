@@ -11,7 +11,15 @@ export const siteConfig = {
   instagram: 'https://www.instagram.com/laalameda_bar',
 } as const;
 
-const publicImages = `${import.meta.env.BASE_URL}images/`;
+export const publicBaseUrl = import.meta.env.BASE_URL.endsWith('/')
+  ? import.meta.env.BASE_URL
+  : `${import.meta.env.BASE_URL}/`;
+
+export function publicAssetUrl(path: string): string {
+  return `${publicBaseUrl}${path.replace(/^\/+/, '')}`;
+}
+
+const publicImages = publicAssetUrl('images/');
 
 export const navLinks = [
   { label: 'Promos', href: '#promos' },

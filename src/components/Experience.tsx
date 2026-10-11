@@ -21,7 +21,7 @@ export function Experience() {
                   <img
                     src={pillar.image}
                     alt={pillar.placeholder}
-                    className="h-32 w-full object-cover transition-transform duration-500 group-hover:scale-105 sm:h-36 lg:h-40"
+                    className="aspect-[4/3] w-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
                   />
                 ) : (
                   <Placeholder label={pillar.placeholder} className="h-32 sm:h-36 lg:h-40" rounded="md" />
