@@ -1,0 +1,93 @@
+import { useEffect, useState } from 'react';
+import { Menu, X } from 'lucide-react';
+import { navLinks, siteConfig } from '@/data/site';
+
+export function Navbar() {
+  const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const handleNav = () => setOpen(false);
+
+  return (
+    <nav
+      className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
+        scrolled
+          ? 'bg-carbon/95 backdrop-blur-md shadow-lg shadow-black/20'
+          : 'bg-carbon/80 backdrop-blur-sm'
+      }`}
+      style={{ top: 'env(safe-area-inset-top, 0px)' }}
+    >
+      <div className="mx-auto flex max-w-container items-center justify-between px-4 py-3 sm:px-6 lg:px-12">
+        <a href="#top" className="font-display text-lg font-semibold tracking-wide text-marfil sm:text-xl">
+          {siteConfig.name.toUpperCase()}
+        </a>
+
+        <ul className="hidden items-center gap-6 lg:flex">
+          {navLinks.map((link) => (
+            <li key={link.href}>
+              <a
+                href={link.href}
+                className="text-sm font-medium text-marfil/85 transition-colors hover:text-piedra"
+              >
+                {link.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+
+        <div className="hidden items-center gap-3 lg:flex">
+          <a
+            href={`https://wa.me/${siteConfig.whatsapp}`}
+            target="_blank"
+            rel="noopener"
+            className="btn-vino"
+          >
+            Reservar
+          </a>
+        </div>
+
+        <button
+          className="flex items-center justify-center rounded-r-sm p-2 text-marfil lg:hidden"
+          aria-label={open ? 'Cerrar menú' : 'Abrir menú'}
+          onClick={() => setOpen((v) => !v)}
+        >
+          {open ? <X size={22} /> : <Menu size={22} />}
+        </button>
+      </div>
+
+      {open && (
+        <div className="animate-slide-down border-t border-marfil/10 bg-carbon/98 px-4 pb-6 pt-2 backdrop-blur-md lg:hidden">
+          <ul className="flex flex-col gap-1">
+            {navLinks.map((link) => (
+              <li key={link.href}>
+                <a
+                  href={link.href}
+                  onClick={handleNav}
+                  className="block rounded-r-sm px-3 py-3 text-sm font-medium text-marfil/90 transition-colors hover:bg-marfil/10 hover:text-piedra"
+                >
+                  {link.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+          <a
+            href={`https://wa.me/${siteConfig.whatsapp}`}
+            target="_blank"
+            rel="noopener"
+            onClick={handleNav}
+            className="btn-vino mt-4 w-full"
+          >
+            Reservar por WhatsApp
+          </a>
+        </div>
+      )}
+    </nav>
+  );
+}

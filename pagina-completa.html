@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="La Alameda, café, tapas, terraza y copas en Salamanca.">
+  <title>La Alameda — Salamanca</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap');
+
+    :root {
+      --marfil: #f6f1e7;
+      --marfil-oscuro: #eadfce;
+      --carbon: #1b1815;
+      --carbon-suave: #5b554f;
+      --vino: #6e1423;
+      --vino-claro: #8b2839;
+      --piedra: #c6a66d;
+      --piedra-suave: #e9dcc2;
+      --blanco: #ffffff;
+      --max-width: 1180px;
+      --display: 'Playfair Display', Georgia, serif;
+      --body: 'DM Sans', Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+    body { margin: 0; background: var(--marfil); color: var(--carbon); font-family: var(--body); line-height: 1.5; overflow-x: hidden; }
+    a { color: inherit; text-decoration: none; }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    img { display: block; max-width: 100%; }
+    .container { width: min(var(--max-width), calc(100% - 48px)); margin: 0 auto; }
+    .display { font-family: var(--display); }
+    .eyebrow { font-size: .72rem; font-weight: 700; letter-spacing: .28em; text-transform: uppercase; }
+    .divider { width: 48px; height: 1px; margin: 16px auto 0; background: var(--piedra); }
+    .section { padding: 112px 0; }
+    .section-title { margin: 0; color: var(--vino); font-family: var(--display); font-size: clamp(2rem, 4vw, 2.7rem); line-height: 1.2; text-align: center; }
+    .text-center { text-align: center; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid transparent; border-radius: 3px; padding: 12px 20px; font-size: .9rem; font-weight: 700; transition: transform .2s, background .2s, color .2s, border-color .2s; }
+    .btn:hover { transform: translateY(-2px); }
+    .btn-vino { background: var(--vino); color: var(--blanco); }
+    .btn-vino:hover { background: var(--vino-claro); }
+    .btn-outline { border-color: rgba(255,255,255,.65); color: var(--blanco); }
+    .btn-outline:hover { background: rgba(255,255,255,.12); }
+    .btn-outline-vino { border-color: var(--vino); color: var(--vino); }
+    .btn-outline-vino:hover { background: rgba(110,20,35,.06); }
+    .btn-gold { border-color: var(--piedra); color: var(--piedra); }
+    .btn-gold:hover { background: rgba(198,166,109,.12); }
+    .reveal { opacity: 0; transform: translateY(24px); transition: opacity .7s ease, transform .7s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    .navbar { position: fixed; inset: 0 0 auto; z-index: 20; background: rgba(27,24,21,.86); color: var(--marfil); backdrop-filter: blur(10px); }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; min-height: 72px; gap: 20px; }
+    .brand { font-family: var(--display); font-size: 1.25rem; font-weight: 700; letter-spacing: .05em; }
+    .nav-links { display: flex; align-items: center; gap: 24px; margin: 0; padding: 0; list-style: none; }
+    .nav-links a { color: rgba(246,241,231,.86); font-size: .88rem; transition: color .2s; }
+    .nav-links a:hover { color: var(--piedra); }
+    .mobile-toggle { display: none; border: 0; background: transparent; color: var(--marfil); font-size: 1.6rem; }
+    .mobile-menu { display: none; padding: 0 24px 22px; border-top: 1px solid rgba(255,255,255,.12); }
+    .mobile-menu a { display: block; padding: 11px 0; color: var(--marfil); }
+
+    .hero { position: relative; min-height: 96vh; display: grid; place-items: center; overflow: hidden; padding: 120px 24px 80px; color: var(--marfil); text-align: center; background: linear-gradient(180deg, #2e2013 0%, #5c4325 45%, #8a6b3f 75%, #c2a06c 100%); }
+    .hero::after { content: ''; position: absolute; inset: auto 0 0; height: 32%; opacity: .3; background: repeating-linear-gradient(165deg, transparent 0 35px, rgba(255,255,255,.14) 36px 38px); }
+    .hero-content { position: relative; z-index: 1; max-width: 760px; }
+    .hero h1 { margin: 10px 0 12px; font-family: var(--display); font-size: clamp(3rem, 9vw, 5.8rem); line-height: 1; }
+    .hero p { max-width: 570px; margin: 0 auto; font-size: clamp(1rem, 2vw, 1.2rem); opacity: .9; }
+    .badges, .hero-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+    .badges { margin-top: 24px; }
+    .badge { border: 1px solid rgba(246,241,231,.55); border-radius: 999px; padding: 7px 14px; font-size: .7rem; letter-spacing: .11em; text-transform: uppercase; }
+    .hero-actions { margin-top: 28px; gap: 14px; }
+
+    .history { background: var(--carbon); color: var(--marfil); text-align: center; }
+    .history h2 { max-width: 760px; margin: 16px auto 0; font-family: var(--display); font-size: clamp(1.8rem, 4vw, 2.7rem); line-height: 1.2; }
+    .history-flow { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 24px; margin-top: 30px; font-family: var(--display); font-size: clamp(1.25rem, 3vw, 1.7rem); }
+    .history-old { opacity: .5; text-decoration: line-through; }
+    .history-new { color: var(--piedra); }
+    .history p { max-width: 620px; margin: 24px auto 0; opacity: .76; }
+
+    .experience-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-top: 48px; }
+    .experience-card { overflow: hidden; background: var(--blanco); border-radius: 3px; box-shadow: 0 8px 24px rgba(27,24,21,.08); transition: transform .3s, box-shadow .3s; }
+    .experience-card:hover { transform: translateY(-6px); box-shadow: 0 14px 30px rgba(27,24,21,.14); }
+    .experience-card img { width: 100%; height: 170px; object-fit: cover; }
+    .experience-copy { padding: 20px; }
+    .experience-copy h3 { margin: 0 0 6px; font-family: var(--display); font-size: 1.25rem; }
+    .experience-copy p { margin: 0; color: var(--carbon-suave); font-size: .9rem; }
+
+    .menu-section { background: var(--piedra-suave); }
+    .menu-intro { max-width: 580px; margin: 10px auto 0; text-align: center; color: var(--carbon-suave); }
+    .menu-tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 38px auto; }
+    .menu-tab { border: 1px solid rgba(27,24,21,.3); border-radius: 999px; padding: 10px 18px; background: transparent; color: var(--carbon); font-weight: 700; transition: .2s; }
+    .menu-tab:hover, .menu-tab.active { border-color: var(--vino); background: var(--vino); color: var(--blanco); }
+    .menu-list { max-width: 660px; margin: 0 auto; }
+    .menu-category { display: none; }
+    .menu-category.active { display: block; }
+    .menu-item { display: flex; align-items: baseline; justify-content: space-between; gap: 20px; padding: 13px 0; border-bottom: 1px dashed rgba(27,24,21,.25); }
+    .menu-item h4 { margin: 0; font-family: var(--display); font-size: 1.1rem; }
+    .menu-item small { display: block; margin-top: 3px; color: var(--carbon-suave); }
+    .price { color: var(--vino); font-family: var(--display); font-size: 1.15rem; font-weight: 700; white-space: nowrap; }
+    .recommend { display: inline-block; margin-left: 6px; border: 1px solid var(--piedra); border-radius: 999px; padding: 2px 7px; color: var(--vino); font-family: var(--body); font-size: .62rem; vertical-align: middle; }
+    .menu-heading { margin: 24px 0 4px; color: var(--vino); font-family: var(--display); font-size: 1.2rem; }
+    .menu-heading small { color: var(--carbon-suave); font-family: var(--body); font-size: .75rem; font-weight: 400; }
+
+    .terrace { background: var(--vino); color: var(--marfil); text-align: center; }
+    .terrace h2 { margin: 14px 0 0; font-family: var(--display); font-size: clamp(2rem, 4vw, 2.8rem); }
+    .terrace p { max-width: 590px; margin: 26px auto 0; opacity: .9; }
+    .terrace-photo { position: relative; max-width: 580px; height: 290px; margin: 34px auto 0; overflow: hidden; border-radius: 4px; }
+    .terrace-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .terrace-photo::after { content: ''; position: absolute; inset: 30% 0 0; background: linear-gradient(transparent, rgba(27,24,21,.7)); }
+    .terrace-photo span { position: absolute; z-index: 1; bottom: 18px; left: 20px; font-family: var(--display); font-size: 1.4rem; }
+    .terrace .btn { margin-top: 32px; }
+
+    .about-card { max-width: 720px; display: grid; grid-template-columns: 180px 1fr; align-items: center; gap: 34px; margin: 48px auto 0; padding: 48px; background: var(--marfil-oscuro); border-radius: 4px; box-shadow: 0 8px 24px rgba(27,24,21,.07); }
+    .founder-photo { position: relative; width: 180px; height: 180px; overflow: hidden; border-radius: 50%; background: var(--piedra); }
+    .founder-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .founder-heart { position: absolute; top: 14px; right: -2px; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--vino); color: var(--marfil); font-size: 1.15rem; }
+    .about-copy .eyebrow { color: var(--vino); }
+    .about-copy h3 { margin: 8px 0 0; color: var(--vino); font-family: var(--display); font-size: 2.2rem; line-height: 1.15; }
+    .about-copy p { max-width: 450px; margin: 14px 0 0; color: var(--carbon-suave); }
+    .about-tags { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 20px; color: var(--vino); font-size: .86rem; font-weight: 700; }
+
+    .reviews-section { background: var(--piedra-suave); }
+    .reviews-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 48px; }
+    .review-card { display: flex; flex-direction: column; min-height: 220px; padding: 24px; background: var(--blanco); border-radius: 3px; box-shadow: 0 5px 18px rgba(27,24,21,.06); }
+    .review-top { display: flex; justify-content: space-between; gap: 10px; }
+    .stars { color: var(--vino); letter-spacing: 2px; }
+    .review-time { color: var(--carbon-suave); font-size: .75rem; }
+    .review-card blockquote { flex: 1; margin: 18px 0; color: var(--carbon-suave); font-style: italic; }
+    .review-card strong { color: var(--vino); font-size: .9rem; }
+    .review-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; margin-top: 38px; }
+
+    .location-grid-wrap { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 60px; }
+    .location-card { position: relative; min-height: 340px; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; padding: 32px; border: 1px solid rgba(27,24,21,.1); border-radius: 4px; background: linear-gradient(145deg, #ead9b4, #f6f1e7 52%, #d8c196); box-shadow: 0 10px 28px rgba(27,24,21,.12); }
+    .location-card::after { content: ''; position: absolute; inset: 0; opacity: .3; background: repeating-linear-gradient(145deg, transparent 0 44px, rgba(110,20,35,.18) 45px 47px, transparent 48px 100px); }
+    .location-top, .location-bottom { position: relative; z-index: 1; }
+    .pin { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; background: var(--vino); color: var(--marfil); font-size: 1.7rem; }
+    .city { float: right; padding: 6px 12px; border-radius: 999px; background: rgba(255,255,255,.9); color: var(--vino); font-size: .7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+    .location-bottom h3 { margin: 8px 0 0; font-family: var(--display); font-size: 2rem; }
+    .location-bottom p { margin: 3px 0 0; color: rgba(27,24,21,.7); }
+    .contact h2 { margin: 0 0 18px; color: var(--vino); font-family: var(--display); font-size: clamp(2rem, 4vw, 2.5rem); }
+    .contact-list { display: grid; gap: 12px; color: var(--carbon-suave); }
+    .contact-list div { display: flex; align-items: center; gap: 10px; }
+    .contact-list b { color: var(--vino); }
+    .contact-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+    .social-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+    .pending { border: 1px solid var(--vino); border-radius: 999px; padding: 2px 7px; color: var(--vino); font-size: .65rem; }
+
+    footer { padding: 48px 24px; background: var(--carbon); color: var(--marfil); text-align: center; }
+    footer h2 { margin: 0; font-family: var(--display); font-size: 1.4rem; }
+    footer p { margin: 14px 0 0; opacity: .68; font-size: .86rem; }
+    footer a { display: inline-block; margin-top: 18px; color: rgba(246,241,231,.55); font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; }
+
+    .modal-backdrop { position: fixed; inset: 0; z-index: 50; display: none; place-items: center; padding: 20px; background: rgba(27,24,21,.72); }
+    .modal-backdrop.open { display: grid; }
+    .modal { position: relative; width: min(420px, 100%); padding: 34px; border-radius: 4px; background: var(--marfil); }
+    .modal-close { position: absolute; top: 12px; right: 14px; border: 0; background: transparent; color: var(--carbon-suave); font-size: 1.6rem; }
+    .modal h2 { margin: 0; color: var(--vino); font-family: var(--display); font-size: 1.9rem; }
+    .form-line { margin-top: 16px; }
+    .form-line label { display: block; margin-bottom: 5px; color: var(--carbon-suave); font-size: .78rem; font-weight: 700; }
+    .form-line input { width: 100%; border: 1px solid rgba(27,24,21,.25); border-radius: 3px; padding: 11px; background: var(--blanco); color: var(--carbon); outline: none; }
+    .form-line input:focus { border-color: var(--vino); }
+    .modal .btn { width: 100%; margin-top: 22px; }
+
+    @media (max-width: 960px) {
+      .experience-grid { grid-template-columns: repeat(2, 1fr); }
+      .nav-links, .nav-cta { display: none; }
+      .mobile-toggle { display: block; }
+      .mobile-menu.open { display: block; }
+    }
+    @media (max-width: 700px) {
+      .container { width: min(var(--max-width), calc(100% - 32px)); }
+      .section { padding: 80px 0; }
+      .experience-grid, .reviews-grid, .location-grid-wrap { grid-template-columns: 1fr; }
+      .about-card { grid-template-columns: 1fr; gap: 26px; padding: 32px 24px; text-align: center; }
+      .founder-photo { margin: 0 auto; }
+      .about-copy p { margin-left: auto; margin-right: auto; }
+      .about-tags { justify-content: center; }
+      .menu-item { gap: 10px; }
+      .contact-actions, .social-actions { justify-content: flex-start; }
+    }
+    @media (max-width: 440px) {
+      .hero-actions .btn { width: 100%; }
+      .experience-grid { grid-template-columns: 1fr; }
+      .menu-tab { padding: 9px 12px; font-size: .82rem; }
+      .about-copy h3 { font-size: 1.9rem; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container nav-inner">
+      <a class="brand" href="#top">LA ALAMEDA</a>
+      <ul class="nav-links">
+        <li><a href="#experiencia">Experiencia</a></li>
+        <li><a href="#carta">Carta</a></li>
+        <li><a href="#terraza">Terraza</a></li>
+        <li><a href="#quienes-somos">Quiénes somos</a></li>
+        <li><a href="#ubicacion">Ubicación</a></li>
+      </ul>
+      <a class="btn btn-vino nav-cta" href="https://wa.me/34682469060" target="_blank" rel="noopener noreferrer">Reservar</a>
+      <button class="mobile-toggle" id="mobile-toggle" aria-label="Abrir menú">☰</button>
+    </div>
+    <div class="mobile-menu" id="mobile-menu">
+      <a href="#experiencia">Experiencia</a>
+      <a href="#carta">Carta</a>
+      <a href="#terraza">Terraza</a>
+      <a href="#quienes-somos">Quiénes somos</a>
+      <a href="#ubicacion">Ubicación</a>
+      <a class="btn btn-vino" href="https://wa.me/34682469060" target="_blank" rel="noopener noreferrer">Reservar por WhatsApp</a>
+    </div>
+  </nav>
+
+  <header class="hero" id="top">
+    <div class="hero-content">
+      <div class="eyebrow">Salamanca · Un lugar para todos</div>
+      <h1>La Alameda</h1>
+      <p>Café de mañana, tapas al mediodía y copas al caer la tarde — un rincón salmantino para quedarse.</p>
+      <div class="badges">
+        <span class="badge">Producto de cercanía</span>
+        <span class="badge">Terraza salmantina</span>
+        <span class="badge">Ambiente cuidado</span>
+      </div>
+      <div class="hero-actions">
+        <a class="btn btn-vino" href="#carta">Ver la carta <span>→</span></a>
+        <a class="btn btn-outline" href="https://wa.me/34682469060?text=Hola%2C%20quiero%20reservar%20mesa%20en%20La%20Alameda" target="_blank" rel="noopener noreferrer">Reservar por WhatsApp</a>
+        <a class="btn btn-outline" href="https://www.instagram.com/laalameda_bar" target="_blank" rel="noopener noreferrer">Instagram</a>
+      </div>
+    </div>
+  </header>
+
+  <section class="section history">
+    <div class="container">
+      <div class="eyebrow">Nuestra historia</div>
+      <h2>De un café con historia a un nuevo punto de encuentro</h2>
+      <div class="divider"></div>
+      <div class="history-flow"><span class="history-old">Gran Café El Pino</span><span>→</span><span class="history-new">La Alameda</span></div>
+      <p>Heredamos el alma de un clásico salmantino y la vestimos de nuevo: misma esquina, misma calidez, una identidad renovada para seguir siendo el lugar donde la gente se reúne.</p>
+    </div>
+  </section>
+
+  <section class="section" id="experiencia">
+    <div class="container">
+      <h2 class="section-title">Cuatro formas de vivir La Alameda</h2>
+      <div class="divider"></div>
+      <div class="experience-grid">
+        <article class="experience-card reveal"><img src="https://images.pexels.com/photos/6530961/pexels-photo-6530961.jpeg?auto=compress&cs=tinysrgb&h=650&w=940" alt="Ambiente acogedor"><div class="experience-copy"><h3>Ambiente Para Todos</h3><p>Ver partidos, charlar y pasar un buen rato — aquí hay sitio para todas las edades.</p></div></article>
+        <article class="experience-card reveal"><img src="https://images.pexels.com/photos/5914365/pexels-photo-5914365.jpeg?auto=compress&cs=tinysrgb&h=650&w=940" alt="Producto para compartir"><div class="experience-copy"><h3>Gastronomía</h3><p>Patatas, croquetas, montaditos y producto para compartir sin complicaciones.</p></div></article>
+        <article class="experience-card reveal"><img src="https://images.pexels.com/photos/18346996/pexels-photo-18346996.jpeg?auto=compress&cs=tinysrgb&h=650&w=940" alt="Terraza salmantina"><div class="experience-copy"><h3>Terraza Salmantina</h3><p>Vistas y ambiente al aire libre en el corazón de la ciudad.</p></div></article>
+        <article class="experience-card reveal"><img src="https://images.pexels.com/photos/1170598/pexels-photo-1170598.jpeg?auto=compress&cs=tinysrgb&h=650&w=940" alt="Copas al caer la tarde"><div class="experience-copy"><h3>Tardeo y Copas</h3><p>Música en vivo, gin-tonics y planes para alargar la tarde.</p></div></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section menu-section" id="carta">
+    <div class="container">
+      <h2 class="section-title">La carta</h2>
+      <p class="menu-intro">Precios por unidad. Copas servidas solas o con tónica/refresco.</p>
+      <div class="divider"></div>
+      <div class="menu-tabs" id="menu-tabs"></div>
+      <div class="menu-list" id="menu-list"></div>
+    </div>
+  </section>
+
+  <section class="section terrace" id="terraza">
+    <div class="container">
+      <div class="eyebrow">Terraza &amp; Eventos</div>
+      <h2>Tardeos con música en vivo</h2>
+      <div class="divider"></div>
+      <p>Nuestra terraza es el punto de encuentro cuando cae la tarde: sesiones en directo y promociones especiales algunos días de la semana.</p>
+      <div class="terrace-photo"><img src="https://images.pexels.com/photos/18346996/pexels-photo-18346996.jpeg?auto=compress&cs=tinysrgb&h=650&w=940" alt="Ambiente de terraza para disfrutar de música en vivo"><span>La tarde empieza aquí</span></div>
+      <a class="btn btn-gold" href="#ubicacion">Ver horarios <span class="pending">PENDIENTE</span></a>
+    </div>
+  </section>
+
+  <section class="section" id="quienes-somos">
+    <div class="container">
+      <h2 class="section-title">Quiénes somos</h2>
+      <div class="about-card reveal">
+        <div class="founder-photo"><img src="./public/images/image%20copy.png" alt="Steven, fundador de La Alameda"><span class="founder-heart">♥</span></div>
+        <div class="about-copy">
+          <div class="eyebrow">Una mirada al futuro</div>
+          <h3>Fundador Steven</h3>
+          <p>Steven es un joven autónomo con una idea clara: hacer crecer La Alameda sin perder lo que hace especial a Salamanca. Un bar cercano, alegre y abierto a todos, donde cada visita se convierta en un buen plan.</p>
+          <div class="about-tags"><span>♧ Para todos</span><span>→ Con ganas de crecer</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section reviews-section" id="resenas">
+    <div class="container">
+      <h2 class="section-title">Lo que dicen de nosotros</h2>
+      <p class="menu-intro">Experiencias recientes de quienes ya nos han visitado.</p>
+      <div class="divider"></div>
+      <div class="reviews-grid">
+        <article class="review-card reveal"><div class="review-top"><span class="stars">★★★★★</span><span class="review-time">Hace 8 meses</span></div><blockquote>“El camarero siempre manteniendo la amabilidad y la calma aunque el bar esté hasta el tope. ¡Volveré!”</blockquote><strong>Inés García Camarasa</strong></article>
+        <article class="review-card reveal"><div class="review-top"><span class="stars">★★★★★</span><span class="review-time">Hace 8 meses</span></div><blockquote>“Bar muy recomendable para estar con los amigos por el espacio, la comida y sobre todo el servicio, siendo lo más destacable de todo el establecimiento. 100% recomendable.”</blockquote><strong>El Dani S</strong></article>
+        <article class="review-card reveal"><div class="review-top"><span class="stars">★★★★★</span><span class="review-time">Hace 6 meses</span></div><blockquote>“El camarero muy agradable, buen servicio y la comida rica y barata.”</blockquote><strong>Carmen Diego Diez</strong></article>
+      </div>
+      <div class="review-links"><a class="btn btn-outline-vino" href="https://maps.app.goo.gl/wENtQKSLx1kEcGnX7" target="_blank" rel="noopener noreferrer">Reseñas en Google</a><a class="btn btn-outline-vino" href="https://maps.app.goo.gl/wENtQKSLx1kEcGnX7" target="_blank" rel="noopener noreferrer">Ver mapa</a><a class="btn btn-outline-vino" href="#">Ver en TripAdvisor <span class="pending">PENDIENTE</span></a></div>
+    </div>
+  </section>
+
+  <section class="section" id="ubicacion">
+    <div class="container location-grid-wrap">
+      <div class="location-card reveal"><div class="location-top"><span class="pin">⌖</span><span class="city">Salamanca</span></div><div class="location-bottom"><div class="eyebrow" style="color:var(--vino)">Estamos aquí</div><h3>Paseo de Carmelitas</h3><p>57 · 37002 Salamanca</p><a class="btn btn-vino" href="https://maps.app.goo.gl/wENtQKSLx1kEcGnX7" target="_blank" rel="noopener noreferrer" style="margin-top:20px">Abrir en Google Maps ↗</a></div></div>
+      <div class="contact reveal"><h2>Ubicación y contacto</h2><div class="divider" style="margin-left:0"></div><div class="contact-list"><div><b>⌖</b><span>Paseo de Carmelitas, 57, 37002 Salamanca</span></div><div><b>☎</b><a href="tel:682469060">682 469 060</a></div><div><b>◷</b><span>Lunes a domingo · 09:30 — 03:00</span></div></div><div class="contact-actions"><a class="btn btn-vino" href="https://maps.app.goo.gl/wENtQKSLx1kEcGnX7" target="_blank" rel="noopener noreferrer">Cómo llegar</a><a class="btn btn-outline-vino" href="https://wa.me/34682469060" target="_blank" rel="noopener noreferrer">WhatsApp</a><button class="btn btn-gold" id="reserve-button">Reservar mesa</button></div><div class="social-actions"><a class="btn btn-outline-vino" href="https://www.instagram.com/laalameda_bar" target="_blank" rel="noopener noreferrer">Instagram</a><a class="btn btn-outline-vino" href="#">TikTok <span class="pending">PENDIENTE</span></a><a class="btn btn-outline-vino" href="#">Facebook <span class="pending">PENDIENTE</span></a></div></div>
+    </div>
+  </section>
+
+  <footer><div class="display" style="font-size:1.4rem;font-weight:700">LA ALAMEDA</div><p>Salamanca — © <span id="year"></span></p><a href="#top">Volver arriba</a></footer>
+
+  <div class="modal-backdrop" id="reserve-modal" aria-hidden="true"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="reserve-title"><button class="modal-close" id="modal-close" aria-label="Cerrar">×</button><h2 id="reserve-title">Reservar mesa</h2><div class="divider" style="margin-left:0"></div><form id="reserve-form"><div class="form-line"><label for="name">Nombre</label><input id="name" type="text" placeholder="Tu nombre"></div><div class="form-line"><label for="date">Fecha</label><input id="date" type="date"></div><div class="form-line"><label for="people">Nº de personas</label><input id="people" type="number" min="1" value="2"></div><button class="btn btn-vino" type="submit">Enviar por WhatsApp</button></form></div></div>
+
+  <script>
+    const menuData = {
+      cafeteria: { label: 'Cafetería', items: [
+        ['Solo', 'Café de especialidad, 100% origen colombiano', '1,90€'], ['Con leche', 'Café de especialidad, 100% origen colombiano', '2€'], ['Cortado', 'Espresso con leche', '1,90€'], ['Irish Coffee', 'Café con nata', '3,50€', true]
+      ]},
+      pinchos: { label: 'Pinchos', items: [
+        ['Patatas', 'Bravas / alioli', '3€'], ['Jeta', '', '3€'], ['Tortilla de patatas', '', '3€'], ['Mini burguer', '', '2€'], ['Croquetas de jamón', '1 unidad', '2€']
+      ]},
+      montaditos: { label: 'Montaditos', items: [
+        ['Lomo y queso', '', '2€'], ['Bacon y queso', '', '2€'], ['Lomo y pimiento', '', '2€']
+      ]},
+      cervezas: { label: 'Cervezas', items: [
+        ['Caña', 'Estrella, 25cl', '1,90€'], ['Cañón', 'Estrella, 31cl', '3€'], ['Botellín', 'Estrella, 25cl', '2€'], ['Tercio', 'Estrella — también sin alcohol y sin gluten', '3€'], ['Premium IPA', 'Baskeland', '3,50€', true], ['Radler', 'Blemon', '3€']
+      ]},
+      copas: { label: 'Copas', items: [
+        ['Ginebras', 'solas o con tónica/refresco', 'heading'], ["Seagram's / Beefeater / Bombay / Puerto de Indias / Tanqueray / Larios", '', '7€'], ["Hendrick's", '', '8€', true], ['Rones', 'solos o con tónica/refresco', 'heading'], ['Barceló / Brugal / Cacique / Bacardi Carta Blanca / Arehucas / Capitán Morgan', '', '7€'], ['Whisky', 'solo o con tónica/refresco', 'heading'], ["White Label / Red Label / DYC / Ballantine's / Cutty Sark / JB", '', '7€'], ['DYC 8 años', '', '8€'], ['Black Label', '', '8,50€'], ['Gentleman Jack', '', '9€'], ['Glenfiddich', '', '10€'], ['Otros', '', 'heading'], ["Bailey's", 'Solo / con hielo', '5€'], ['Chupito licor de café', '', '3€']
+      ]},
+      vinos: { label: 'Vinos', items: [
+        ['Godello', 'Blanco', '4€'], ['Verdejo', 'Blanco', '3€'], ['Ribera', 'Tinto', '3€'], ['Toro', 'Tinto', '4€'], ['Rioja', 'Tinto', '3€'], ['Tinto de verano', '', '3,50€'], ['Vermut Izaguirre', 'Blanco o Rosso', '3,50€'], ['Licor de hierbas', '', '3,50€']
+      ]},
+      refrescos: { label: 'Refrescos', items: [
+        ['Refrescos', 'Coca-Cola, Coca-Cola Zero, Fanta Limón, Fanta Naranja, Aquarius, Tónica', '2,50€'], ['Agua', '', '2€'], ['Zumo', 'Piña, naranja o melocotón', '2€']
+      ]}
+    };
+
+    const tabs = document.getElementById('menu-tabs');
+    const list = document.getElementById('menu-list');
+    let activeMenu = 'cafeteria';
+
+    function renderMenu() {
+      tabs.innerHTML = Object.entries(menuData).map(([id, menu]) => `<button class="menu-tab ${id === activeMenu ? 'active' : ''}" data-menu="${id}">${menu.label}</button>`).join('');
+      list.innerHTML = Object.entries(menuData).map(([id, menu]) => `<div class="menu-category ${id === activeMenu ? 'active' : ''}" data-category="${id}">${menu.items.map(([name, desc, price, recommended]) => price === 'heading' ? `<div class="menu-heading">${name}<small>${desc ? ' — ' + desc : ''}</small></div>` : `<div class="menu-item"><div><h4>${name}${recommended ? '<span class="recommend">RECOMENDADO</span>' : ''}</h4>${desc ? `<small>${desc}</small>` : ''}</div><span class="price">${price}</span></div>`).join('')}</div>`).join('');
+      tabs.querySelectorAll('[data-menu]').forEach((button) => button.addEventListener('click', () => { activeMenu = button.dataset.menu; renderMenu(); }));
+    }
+    renderMenu();
+
+    const mobileToggle = document.getElementById('mobile-toggle');
+    const mobileMenu = document.getElementById('mobile-menu');
+    mobileToggle.addEventListener('click', () => mobileMenu.classList.toggle('open'));
+    mobileMenu.querySelectorAll('a').forEach((link) => link.addEventListener('click', () => mobileMenu.classList.remove('open')));
+
+    const modal = document.getElementById('reserve-modal');
+    const openModal = () => { modal.classList.add('open'); modal.setAttribute('aria-hidden', 'false'); document.getElementById('name').focus(); };
+    const closeModal = () => { modal.classList.remove('open'); modal.setAttribute('aria-hidden', 'true'); };
+    document.getElementById('reserve-button').addEventListener('click', openModal);
+    document.getElementById('modal-close').addEventListener('click', closeModal);
+    modal.addEventListener('click', (event) => { if (event.target === modal) closeModal(); });
+    document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeModal(); });
+    document.getElementById('reserve-form').addEventListener('submit', (event) => {
+      event.preventDefault();
+      const name = document.getElementById('name').value.trim() || '—';
+      const date = document.getElementById('date').value || '—';
+      const people = document.getElementById('people').value || '—';
+      const message = encodeURIComponent(`Hola, quiero reservar mesa en La Alameda. Nombre: ${name}. Fecha: ${date}. Personas: ${people}`);
+      window.open(`https://wa.me/34682469060?text=${message}`, '_blank', 'noopener');
+      closeModal();
+    });
+
+    const observer = new IntersectionObserver((entries) => entries.forEach((entry) => { if (entry.isIntersecting) entry.target.classList.add('visible'); }), { threshold: .12 });
+    document.querySelectorAll('.reveal').forEach((element) => observer.observe(element));
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
