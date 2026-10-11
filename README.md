@@ -2,16 +2,16 @@
 
 Web de La Alameda, construida con React, TypeScript y Vite.
 
-## Publicar gratis con GitHub Pages
+## Publicación en GitHub Pages
 
-El despliegue está configurado en `.github/workflows/deploy.yml`. Cada cambio que se suba a la rama `main` se compilará y publicará automáticamente.
+El proyecto ya está en el repositorio `rivenliclub25-prog/Laalameda`. El despliegue está configurado en `.github/workflows/deploy.yml`, pero GitHub Pages debe habilitarse una vez en la configuración del repositorio:
 
-1. Crea un repositorio en GitHub para este proyecto.
-2. Añade los archivos de esta carpeta al repositorio y súbelos a la rama `main`. No subas `node_modules`.
-3. En el repositorio, abre **Settings → Pages** y selecciona **GitHub Actions** como fuente de publicación.
-4. Abre **Actions** y espera a que termine correctamente el flujo **Deploy to GitHub Pages**. La URL pública aparece en el despliegue o en **Settings → Pages**.
+1. Abre **Settings → Pages** en el repositorio.
+2. En **Build and deployment → Source**, selecciona **GitHub Actions**.
+3. En **Actions**, vuelve a ejecutar el flujo fallido **Deploy to GitHub Pages**, o sube un nuevo cambio a `main`.
+4. Cuando termine correctamente, la web estará en `https://rivenliclub25-prog.github.io/Laalameda/`.
 
-La compilación ajusta la ruta base del repositorio para que también funcionen las imágenes y los enlaces de la página de QR.
+La compilación ajusta la ruta base del repositorio para que también funcionen las imágenes y los enlaces de la página de QR. GitHub Pages ofrece alojamiento estático: los formularios que deban guardar datos personales necesitan un servicio de backend aparte.
 
 ## Desarrollar localmente
 
@@ -30,4 +30,4 @@ npm run build
 
 ## Códigos QR
 
-Después de publicar, abre `https://TU-USUARIO.github.io/TU-REPOSITORIO/#qr`. Selecciona el destino y descarga el código SVG o imprímelo. Así los QR apuntan a la web pública y no a una vista previa local.
+Después de publicar, abre `https://rivenliclub25-prog.github.io/Laalameda/#qr`. Selecciona el destino y descarga el código SVG o imprímelo. Así los QR apuntan a la web pública y no a una vista previa local.
