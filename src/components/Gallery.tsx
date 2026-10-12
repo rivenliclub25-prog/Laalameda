@@ -14,12 +14,12 @@ export function Gallery() {
 
         <Reveal delay={1}>
           <div className="mx-auto max-w-[920px] overflow-hidden rounded-r-lg bg-marfil shadow-sm">
-            <div className="grid gap-8 px-6 py-10 sm:px-10 sm:py-12 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)] md:items-start md:gap-10 md:px-12 md:py-14">
-              <div className="relative h-[360px] overflow-hidden rounded-r-md bg-piedra shadow-inner md:h-[420px]">
+            <div className="grid gap-8 px-6 py-10 sm:px-10 sm:py-12 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)] lg:items-stretch lg:gap-10 lg:px-12 lg:py-14">
+              <div className="relative h-[360px] overflow-hidden rounded-r-md bg-piedra shadow-inner lg:h-full lg:max-h-[620px] lg:min-h-[520px] lg:self-center">
                 <img
                   src={publicAssetUrl('images/IMG_1661.jpg')}
                   alt="Joan Steven Zuñiga Pacheco"
-                  className="absolute inset-0 h-full w-full object-cover object-top"
+                  className="absolute inset-0 h-full w-full object-cover object-[center_25%]"
                   loading="lazy"
                 />
                 <div className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full bg-vino text-marfil">
@@ -27,7 +27,7 @@ export function Gallery() {
                 </div>
               </div>
 
-              <div className="mt-2 md:mt-0">
+              <div className="mt-2 lg:mt-0">
                 <div className="eyebrow text-center text-vino">Una mirada al futuro</div>
                 <strong className="mt-2 block max-w-[440px] text-balance text-center font-display text-[1.8rem] font-semibold leading-tight text-vino sm:text-[2rem]">
                   Joan Steven Zuñiga Pacheco
