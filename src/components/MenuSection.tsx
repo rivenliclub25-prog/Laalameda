@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Reveal } from '@/components/Reveal';
 import {
+  formatPromotionDiscount,
   formatPromotionPrice,
   isPromotionVisible,
   promotions,
@@ -68,7 +69,7 @@ export function MenuSection() {
                         )}
                         {promotion.discount !== undefined && promotion.priceCents !== 0 && (
                           <span className="inline-flex rounded-full bg-vino px-2.5 py-1 text-xs font-bold text-white">
-                            -{promotion.discount} %
+                            {formatPromotionDiscount(promotion.discount)}
                           </span>
                         )}
                       </span>

@@ -56,7 +56,7 @@ export const promotions: Promotion[] = [
     segmentIds: ['mananas'],
     contents: ['Café con leche, cortado o solo', 'Pincho de tortilla'],
     priceCents: 350,
-    discount: 22,
+    discount: 27,
     schedule: { days: [1, 2, 3, 4], startMinutes: 8 * 60, endMinutes: 12 * 60 },
     scheduleLabel: 'L-J · 8:00-12:00',
   },
@@ -66,7 +66,7 @@ export const promotions: Promotion[] = [
     segmentIds: ['mananas'],
     contents: ['Café con leche', 'Montadito de lomo y queso o de bacon y queso'],
     priceCents: 400,
-    discount: 13,
+    discount: -4,
     schedule: { days: [1, 2, 3, 4], startMinutes: 8 * 60, endMinutes: 12 * 60 },
     scheduleLabel: 'L-J · 8:00-12:00',
   },
@@ -76,7 +76,7 @@ export const promotions: Promotion[] = [
     segmentIds: ['tarde'],
     contents: ['2 cañas Estrella', 'Patatas bravas'],
     priceCents: 500,
-    discount: 25,
+    discount: 29,
     regularProducts: [
       { category: 'cervezas', name: 'Caña', quantity: 2 },
       { category: 'pinchos', name: 'Patatas', quantity: 1 },
@@ -91,7 +91,7 @@ export const promotions: Promotion[] = [
     description: 'Pack para 2',
     contents: ['2 cañones Estrella', 'Patatas bravas', 'Pincho de tortilla'],
     priceCents: 900,
-    discount: 18,
+    discount: 24,
     people: 2,
     schedule: { days: nights, startMinutes: 20 * 60, endMinutes: 3 * 60 },
     scheduleLabel: 'Cada noche · 20:00-3:00',
@@ -104,7 +104,7 @@ export const promotions: Promotion[] = [
     description: 'Pack para 4',
     contents: ['4 cañones Estrella', 'Patatas bravas'],
     priceCents: 1100,
-    discount: 11,
+    discount: 25,
     people: 4,
     schedule: { days: nights, startMinutes: 20 * 60, endMinutes: 3 * 60 },
     scheduleLabel: 'Cada noche · 20:00-3:00',
@@ -116,7 +116,7 @@ export const promotions: Promotion[] = [
     segmentIds: ['fin-de-semana'],
     contents: ['2 vermuts Izaguirre', 'Patatas bravas', 'Jeta'],
     priceCents: 750,
-    discount: 32,
+    discount: 24,
     schedule: { days: weekend, startMinutes: 0, endMinutes: 24 * 60 },
     scheduleLabel: 'S-D · fin de semana',
   },
@@ -127,7 +127,7 @@ export const promotions: Promotion[] = [
     description: 'Para compartir entre 4',
     contents: ['4 cañones Estrella', 'Patatas bravas', 'Pincho de tortilla', 'Croquetas de jamón'],
     priceCents: 1700,
-    discount: 14,
+    discount: 16,
     people: 4,
     schedule: { days: weekend, startMinutes: 0, endMinutes: 24 * 60 },
     scheduleLabel: 'S-D · fin de semana',
@@ -183,7 +183,7 @@ export const promotions: Promotion[] = [
     segmentIds: ['31-octubre'],
     contents: ['4 cañas Estrella', 'Patatas bravas', 'Pincho de tortilla'],
     priceCents: 1200,
-    discount: 10,
+    discount: 14,
     schedule: { days: [6], startMinutes: 0, endMinutes: 24 * 60 },
     scheduleLabel: '31 de octubre',
     expiresOn: '2026-10-31',
@@ -230,6 +230,10 @@ export function formatPromoPrice(priceCents: number): string {
     minimumFractionDigits: priceCents % 100 === 0 ? 0 : 2,
     maximumFractionDigits: 2,
   })} €`;
+}
+
+export function formatPromotionDiscount(discount: number): string {
+  return `${discount > 0 ? '-' : ''}${Math.abs(discount)} %`;
 }
 
 export function formatPromotionPrice(promotion: Promotion): string | null {
