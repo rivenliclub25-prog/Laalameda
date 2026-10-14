@@ -56,7 +56,7 @@ export const promotions: Promotion[] = [
     segmentIds: ['mananas'],
     contents: ['Café con leche, cortado o solo', 'Pincho de tortilla'],
     priceCents: 350,
-    discount: 27,
+    discount: 30,
     schedule: { days: [1, 2, 3, 4], startMinutes: 8 * 60, endMinutes: 12 * 60 },
     scheduleLabel: 'L-J · 8:00-12:00',
   },
@@ -66,7 +66,7 @@ export const promotions: Promotion[] = [
     segmentIds: ['mananas'],
     contents: ['Café con leche', 'Montadito de lomo y queso o de bacon y queso'],
     priceCents: 400,
-    discount: -4,
+    discount: 0,
     schedule: { days: [1, 2, 3, 4], startMinutes: 8 * 60, endMinutes: 12 * 60 },
     scheduleLabel: 'L-J · 8:00-12:00',
   },
@@ -91,7 +91,7 @@ export const promotions: Promotion[] = [
     description: 'Pack para 2',
     contents: ['2 cañones Estrella', 'Patatas bravas', 'Pincho de tortilla'],
     priceCents: 900,
-    discount: 24,
+    discount: 25,
     people: 2,
     schedule: { days: nights, startMinutes: 20 * 60, endMinutes: 3 * 60 },
     scheduleLabel: 'Cada noche · 20:00-3:00',
@@ -104,7 +104,7 @@ export const promotions: Promotion[] = [
     description: 'Pack para 4',
     contents: ['4 cañones Estrella', 'Patatas bravas'],
     priceCents: 1100,
-    discount: 25,
+    discount: 27,
     people: 4,
     schedule: { days: nights, startMinutes: 20 * 60, endMinutes: 3 * 60 },
     scheduleLabel: 'Cada noche · 20:00-3:00',
@@ -116,7 +116,7 @@ export const promotions: Promotion[] = [
     segmentIds: ['fin-de-semana'],
     contents: ['2 vermuts Izaguirre', 'Patatas bravas', 'Jeta'],
     priceCents: 750,
-    discount: 24,
+    discount: 25,
     schedule: { days: weekend, startMinutes: 0, endMinutes: 24 * 60 },
     scheduleLabel: 'S-D · fin de semana',
   },
@@ -127,7 +127,7 @@ export const promotions: Promotion[] = [
     description: 'Para compartir entre 4',
     contents: ['4 cañones Estrella', 'Patatas bravas', 'Pincho de tortilla', 'Croquetas de jamón'],
     priceCents: 1700,
-    discount: 16,
+    discount: 19,
     people: 4,
     schedule: { days: weekend, startMinutes: 0, endMinutes: 24 * 60 },
     scheduleLabel: 'S-D · fin de semana',
@@ -161,7 +161,7 @@ export const promotions: Promotion[] = [
     segmentIds: ['31-octubre'],
     contents: ['Vermut Izaguirre', 'Patatas bravas'],
     priceCents: 450,
-    discount: 17,
+    discount: 18,
     schedule: { days: [6], startMinutes: 0, endMinutes: 24 * 60 },
     scheduleLabel: '31 de octubre',
     expiresOn: '2026-10-31',
@@ -172,7 +172,7 @@ export const promotions: Promotion[] = [
     segmentIds: ['31-octubre'],
     contents: ['Chupito de licor de café', 'Uno por persona si vienes disfrazado'],
     priceCents: 100,
-    discount: 48,
+    discount: 50,
     schedule: { days: [6], startMinutes: 0, endMinutes: 24 * 60 },
     scheduleLabel: '31 de octubre',
     expiresOn: '2026-10-31',
@@ -233,7 +233,7 @@ export function formatPromoPrice(priceCents: number): string {
 }
 
 export function formatPromotionDiscount(discount: number): string {
-  return `-${Math.abs(discount)} %`;
+  return discount === 0 ? '0 %' : `-${Math.abs(discount)} %`;
 }
 
 export function formatPromotionPrice(promotion: Promotion): string | null {
