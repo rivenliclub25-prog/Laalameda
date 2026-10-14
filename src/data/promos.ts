@@ -233,7 +233,7 @@ export function formatPromoPrice(priceCents: number): string {
 }
 
 export function formatPromotionDiscount(discount: number): string {
-  return `${discount > 0 ? '-' : ''}${Math.abs(discount)} %`;
+  return `-${Math.abs(discount)} %`;
 }
 
 export function formatPromotionPrice(promotion: Promotion): string | null {
