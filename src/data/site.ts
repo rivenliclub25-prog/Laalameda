@@ -179,13 +179,22 @@ const baseMenuTabs: MenuTab[] = [
   },
 ];
 
-const spreadsheetMenuPrices = new Map(Object.entries(spreadsheetPrices.menu));
+const normalizeMenuName = (name: string) =>
+  name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('es')
+    .replace(/[^a-z0-9]/g, '');
+
+const spreadsheetMenuPrices = new Map(
+  Object.entries(spreadsheetPrices.menu).map(([name, price]) => [normalizeMenuName(name), price])
+);
 
 export const menuTabs: MenuTab[] = baseMenuTabs.map((tab) => ({
   ...tab,
   items: tab.items.map((item) => {
     if (!item.name || item.price === undefined) return item;
-    const price = spreadsheetMenuPrices.get(item.name);
+    const price = spreadsheetMenuPrices.get(normalizeMenuName(item.name));
     if (price === undefined) {
       throw new Error(`Falta el precio de "${item.name}" en los precios generados desde Excel.`);
     }
