@@ -1,3 +1,5 @@
+import { spreadsheetPrices } from './prices.generated';
+
 export const siteConfig = {
   name: 'La Alameda',
   city: 'Salamanca',
@@ -56,7 +58,7 @@ export interface MenuTab {
   items: MenuItem[];
 }
 
-export const menuTabs: MenuTab[] = [
+const baseMenuTabs: MenuTab[] = [
   {
     id: 'promos',
     label: 'Promos',
@@ -176,6 +178,20 @@ export const menuTabs: MenuTab[] = [
     ],
   },
 ];
+
+const spreadsheetMenuPrices = new Map(Object.entries(spreadsheetPrices.menu));
+
+export const menuTabs: MenuTab[] = baseMenuTabs.map((tab) => ({
+  ...tab,
+  items: tab.items.map((item) => {
+    if (!item.name || item.price === undefined) return item;
+    const price = spreadsheetMenuPrices.get(item.name);
+    if (price === undefined) {
+      throw new Error(`Falta el precio de "${item.name}" en los precios generados desde Excel.`);
+    }
+    return { ...item, price };
+  }),
+}));
 
 export const experiencePillars = [
   {

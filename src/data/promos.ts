@@ -1,4 +1,5 @@
 import { siteConfig, type MenuCategory } from '@/data/site';
+import { spreadsheetPrices } from './prices.generated';
 
 export type PromoSegmentId = 'mananas' | 'tarde' | 'noche' | 'fin-de-semana' | 'universitarios' | '31-octubre';
 
@@ -49,7 +50,7 @@ const weekdays = [1, 2, 3, 4, 5];
 const nights = [0, 1, 2, 3, 4, 5, 6];
 const weekend = [0, 6];
 
-export const promotions: Promotion[] = [
+const basePromotions: Promotion[] = [
   {
     id: 'desayuno-salmantino',
     title: 'Desayuno Salmantino',
@@ -200,6 +201,16 @@ export const promotions: Promotion[] = [
     expiresOn: '2026-10-31',
   },
 ];
+
+const spreadsheetPromotionPrices = new Map(Object.entries(spreadsheetPrices.promotions));
+
+export const promotions: Promotion[] = basePromotions.map((promotion) => {
+  const price = spreadsheetPromotionPrices.get(promotion.id);
+  if (price === undefined) {
+    throw new Error(`Faltan precio y descuento de "${promotion.title}" en los datos generados desde Excel.`);
+  }
+  return { ...promotion, ...price };
+});
 
 const clubSignupUrl = (promotion: Promotion) => {
   const message = encodeURIComponent(
