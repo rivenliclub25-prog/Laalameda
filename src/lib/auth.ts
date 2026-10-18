@@ -43,6 +43,9 @@ export async function signIn(email: string, password: string): Promise<AuthResul
   return { error: error ? translateAuthError(error) : null };
 }
 
+/** Cambiar a true cuando el proveedor Google esté activado en Supabase (ver guía). */
+export const googleEnabled = false;
+
 /** Preparado para cuando se active Google en Supabase (ver guía). */
 export async function signInWithGoogle(): Promise<AuthResult> {
   if (!isSupabaseConfigured) return notConfigured;

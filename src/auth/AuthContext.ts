@@ -1,4 +1,4 @@
-import { createContext, useContext } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 
 export interface AuthNotice {
@@ -24,4 +24,20 @@ export function useAuth(): AuthContextValue {
   const value = useContext(AuthContext);
   if (!value) throw new Error('useAuth debe usarse dentro de <AuthProvider>');
   return value;
+}
+
+/** Recoge el aviso global para mostrarlo en la página actual, de modo que no reaparezca en otras. */
+export function useAuthNotice() {
+  const { notice, clearNotice } = useAuth();
+  const [shown, setShown] = useState<AuthNotice | null>(notice);
+
+  useEffect(() => {
+    if (notice) {
+      setShown(notice);
+      clearNotice();
+    }
+  }, [notice, clearNotice]);
+
+  const dismiss = useCallback(() => setShown(null), []);
+  return [shown, dismiss] as const;
 }

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Menu, X } from 'lucide-react';
+import { Menu, UserRound, X } from 'lucide-react';
 import { navLinks, siteConfig } from '@/data/site';
+import { useAuth } from '@/auth/AuthContext';
+import { routeHref } from '@/lib/router';
 
 export function Navbar() {
   const [open, setOpen] = useState(false);
@@ -14,6 +16,12 @@ export function Navbar() {
   }, []);
 
   const handleNav = () => setOpen(false);
+
+  const { session } = useAuth();
+  const clubHref = routeHref(session ? '/perfil' : '/club');
+  const clubLabel = session ? 'Mi perfil' : 'Pertenecer al club';
+  const clubFocus =
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-piedra focus-visible:ring-offset-2 focus-visible:ring-offset-carbon';
 
   return (
     <nav
@@ -43,6 +51,10 @@ export function Navbar() {
         </ul>
 
         <div className="hidden items-center gap-3 lg:flex">
+          <a href={clubHref} className={`btn-gold ${clubFocus}`}>
+            {session && <UserRound size={16} aria-hidden="true" />}
+            {clubLabel}
+          </a>
           <a
             href={`https://wa.me/${siteConfig.whatsapp}`}
             target="_blank"
@@ -53,13 +65,20 @@ export function Navbar() {
           </a>
         </div>
 
-        <button
-          className="flex items-center justify-center rounded-r-sm p-2 text-marfil lg:hidden"
-          aria-label={open ? 'Cerrar menú' : 'Abrir menú'}
-          onClick={() => setOpen((v) => !v)}
-        >
-          {open ? <X size={22} /> : <Menu size={22} />}
-        </button>
+        <div className="flex items-center gap-1.5 lg:hidden">
+          <a href={clubHref} onClick={handleNav} className={`btn-gold px-3 py-2 text-xs ${clubFocus}`}>
+            {session && <UserRound size={14} aria-hidden="true" />}
+            {clubLabel}
+          </a>
+          <button
+            className={`flex items-center justify-center rounded-r-sm p-2 text-marfil ${clubFocus}`}
+            aria-label={open ? 'Cerrar menú' : 'Abrir menú'}
+            aria-expanded={open}
+            onClick={() => setOpen((v) => !v)}
+          >
+            {open ? <X size={22} /> : <Menu size={22} />}
+          </button>
+        </div>
       </div>
 
       {open && (

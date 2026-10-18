@@ -14,10 +14,16 @@ import { Footer } from '@/components/Footer';
 import { ReserveModal } from '@/components/ReserveModal';
 import { Watermark } from '@/components/Watermark';
 import { QRPage } from '@/components/QRPage';
+import { ClubSection } from '@/components/ClubSection';
 import { PageShell } from '@/components/club/PageShell';
 import { ProtectedRoute } from '@/auth/ProtectedRoute';
 import { useAuth } from '@/auth/AuthContext';
-import { useRoute, type RoutePath } from '@/lib/router';
+import { ClubPage } from '@/pages/ClubPage';
+import { RecuperarPage } from '@/pages/RecuperarPage';
+import { NuevaContrasenaPage } from '@/pages/NuevaContrasenaPage';
+import { PrivacidadPage } from '@/pages/PrivacidadPage';
+import { signOut } from '@/lib/auth';
+import { useRoute } from '@/lib/router';
 
 function HomePage({ anchor }: { anchor: string | null }) {
   const [reserveOpen, setReserveOpen] = useState(false);
@@ -48,6 +54,8 @@ function HomePage({ anchor }: { anchor: string | null }) {
 
         <PromotionsSection />
 
+        <ClubSection />
+
         <Evolution />
 
         <Experience />
@@ -70,35 +78,22 @@ function HomePage({ anchor }: { anchor: string | null }) {
   );
 }
 
-// Provisional (fase 1): se sustituye por las páginas reales en la fase 2.
-function StubPage({ title }: { title: string }) {
-  const { user, loading, configured } = useAuth();
+// Provisional: se sustituye por la página de perfil real en la fase 3.
+function PerfilStub() {
+  const { user } = useAuth();
   return (
     <PageShell>
       <div className="mx-auto max-w-[480px] text-center">
-        <h1 className="font-display text-[2.4rem] font-semibold text-vino">{title}</h1>
+        <h1 className="font-display text-[2.4rem] font-semibold text-vino">Mi perfil</h1>
         <div className="divider-gold my-4" />
-        <p className="text-sm text-carbon/70">
-          {!configured
-            ? 'Supabase no está configurado (falta el archivo .env).'
-            : loading
-              ? 'Comprobando sesión…'
-              : user
-                ? `Sesión iniciada como ${user.email}`
-                : 'Sin sesión iniciada.'}
-        </p>
+        <p className="text-sm text-carbon/70">Sesión iniciada como {user?.email}</p>
+        <button type="button" onClick={() => signOut()} className="btn-outline-vino mt-6">
+          Cerrar sesión
+        </button>
       </div>
     </PageShell>
   );
 }
-
-const pageTitles: Record<Exclude<RoutePath, '/' | '/qr'>, string> = {
-  '/club': 'Club La Alameda',
-  '/recuperar': 'Recuperar contraseña',
-  '/nueva-contrasena': 'Nueva contraseña',
-  '/privacidad': 'Política de privacidad',
-  '/perfil': 'Mi perfil',
-};
 
 function App() {
   const { path, anchor } = useRoute();
@@ -117,15 +112,22 @@ function App() {
     return <QRPage />;
   }
 
-  if (path === '/perfil') {
-    return (
-      <ProtectedRoute>
-        <StubPage title={pageTitles[path]} />
-      </ProtectedRoute>
-    );
+  switch (path) {
+    case '/club':
+      return <ClubPage />;
+    case '/recuperar':
+      return <RecuperarPage />;
+    case '/nueva-contrasena':
+      return <NuevaContrasenaPage />;
+    case '/privacidad':
+      return <PrivacidadPage />;
+    case '/perfil':
+      return (
+        <ProtectedRoute>
+          <PerfilStub />
+        </ProtectedRoute>
+      );
   }
-
-  return <StubPage title={pageTitles[path]} />;
 }
 
 export default App;
