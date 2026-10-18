@@ -1,8 +1,20 @@
 import { createClient } from '@supabase/supabase-js';
 import { publicBaseUrl } from '@/data/site';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+/** Se queda solo con el dominio, por si se copió la URL con "/rest/v1/" u otra ruta detrás. */
+function normalizeSupabaseUrl(value: string | undefined): string | undefined {
+  const trimmed = value?.trim().replace(/^["']|["']$/g, '');
+  if (!trimmed) return undefined;
+  try {
+    return new URL(trimmed).origin;
+  } catch {
+    console.warn('[club] VITE_SUPABASE_URL no es una URL válida:', trimmed);
+    return undefined;
+  }
+}
+
+const supabaseUrl = normalizeSupabaseUrl(import.meta.env.VITE_SUPABASE_URL);
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim().replace(/^["']|["']$/g, '');
 
 /** false si faltan las variables de entorno: la web sigue funcionando, pero el club se muestra como no disponible. */
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
