@@ -60,6 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading,
       configured: isSupabaseConfigured,
       notice,
+      notify: setNotice,
       clearNotice,
     }),
     [session, loading, notice, clearNotice]

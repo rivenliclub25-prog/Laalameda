@@ -1,13 +1,17 @@
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { useAuth } from '@/auth/AuthContext';
 import { navigate } from '@/lib/router';
 
 /** Muestra su contenido solo con sesión iniciada; si no, lleva a la página de acceso. */
 export function ProtectedRoute({ children }: { children: ReactNode }) {
   const { session, loading } = useAuth();
+  const hashOnMount = useRef(window.location.hash);
 
   useEffect(() => {
-    if (!loading && !session) navigate('/club', { replace: true });
+    // Si ya se está navegando a otra página (p. ej. a la home al cerrar sesión), no se interfiere.
+    if (!loading && !session && window.location.hash === hashOnMount.current) {
+      navigate('/club', { replace: true });
+    }
   }, [loading, session]);
 
   if (loading) {

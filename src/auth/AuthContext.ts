@@ -15,6 +15,8 @@ export interface AuthContextValue {
   configured: boolean;
   /** Mensaje tras volver de un enlace de correo (cuenta confirmada, enlace caducado…). */
   notice: AuthNotice | null;
+  /** Deja un aviso para la siguiente página (p. ej. tras borrar la cuenta). */
+  notify: (notice: AuthNotice) => void;
   clearNotice: () => void;
 }
 

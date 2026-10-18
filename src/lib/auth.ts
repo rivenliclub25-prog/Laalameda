@@ -70,6 +70,23 @@ export async function updatePassword(password: string): Promise<AuthResult> {
   return { error: error ? translateAuthError(error) : null };
 }
 
+/**
+ * Borra de verdad la cuenta: la función SQL delete_user() elimina al usuario de auth.users
+ * (solo el que tiene la sesión) y su perfil se borra en cascada.
+ */
+export async function deleteAccount(): Promise<AuthResult> {
+  if (!isSupabaseConfigured) return notConfigured;
+  const { error } = await supabase.rpc('delete_user');
+  if (error) {
+    console.error('[club] Error al borrar la cuenta:', error);
+    const text = 'No hemos podido borrar la cuenta. Inténtalo de nuevo en unos minutos.';
+    return { error: import.meta.env.DEV ? `${text} [${error.code} · ${error.message}]` : text };
+  }
+  // El usuario ya no existe en el servidor: basta con borrar la sesión guardada en este navegador.
+  await supabase.auth.signOut({ scope: 'local' });
+  return { error: null };
+}
+
 export async function signOut(): Promise<AuthResult> {
   if (!isSupabaseConfigured) return notConfigured;
   const { error } = await supabase.auth.signOut();

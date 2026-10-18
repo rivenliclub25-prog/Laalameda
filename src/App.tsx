@@ -15,14 +15,12 @@ import { ReserveModal } from '@/components/ReserveModal';
 import { Watermark } from '@/components/Watermark';
 import { QRPage } from '@/components/QRPage';
 import { ClubSection } from '@/components/ClubSection';
-import { PageShell } from '@/components/club/PageShell';
 import { ProtectedRoute } from '@/auth/ProtectedRoute';
-import { useAuth } from '@/auth/AuthContext';
 import { ClubPage } from '@/pages/ClubPage';
 import { RecuperarPage } from '@/pages/RecuperarPage';
 import { NuevaContrasenaPage } from '@/pages/NuevaContrasenaPage';
 import { PrivacidadPage } from '@/pages/PrivacidadPage';
-import { signOut } from '@/lib/auth';
+import { PerfilPage } from '@/pages/PerfilPage';
 import { useRoute } from '@/lib/router';
 
 function HomePage({ anchor }: { anchor: string | null }) {
@@ -78,23 +76,6 @@ function HomePage({ anchor }: { anchor: string | null }) {
   );
 }
 
-// Provisional: se sustituye por la página de perfil real en la fase 3.
-function PerfilStub() {
-  const { user } = useAuth();
-  return (
-    <PageShell>
-      <div className="mx-auto max-w-[480px] text-center">
-        <h1 className="font-display text-[2.4rem] font-semibold text-vino">Mi perfil</h1>
-        <div className="divider-gold my-4" />
-        <p className="text-sm text-carbon/70">Sesión iniciada como {user?.email}</p>
-        <button type="button" onClick={() => signOut()} className="btn-outline-vino mt-6">
-          Cerrar sesión
-        </button>
-      </div>
-    </PageShell>
-  );
-}
-
 function App() {
   const { path, anchor } = useRoute();
 
@@ -124,7 +105,7 @@ function App() {
     case '/perfil':
       return (
         <ProtectedRoute>
-          <PerfilStub />
+          <PerfilPage />
         </ProtectedRoute>
       );
   }
