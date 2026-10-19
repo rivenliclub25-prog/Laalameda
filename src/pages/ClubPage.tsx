@@ -4,7 +4,8 @@ import { PageShell } from '@/components/club/PageShell';
 import { Checkbox, ClubCard, Notice, SubmitButton, TextField, focusRing } from '@/components/club/FormControls';
 import { useAuth, useAuthNotice } from '@/auth/AuthContext';
 import { googleEnabled, signIn, signInWithGoogle, signUp } from '@/lib/auth';
-import { navigate, routeHref } from '@/lib/router';
+import { getHashParams, navigate, routeHref } from '@/lib/router';
+import { findPromotion } from '@/data/promos';
 import { MIN_PASSWORD_LENGTH, validateEmail, validateNewPassword, validatePasswordConfirm } from '@/lib/validation';
 
 type Mode = 'registro' | 'login';
@@ -18,12 +19,22 @@ const perks = [
 export function ClubPage() {
   const { session, configured } = useAuth();
   const [notice, dismissNotice] = useAuthNotice();
-  const [mode, setMode] = useState<Mode>('registro');
+  // "#/club?modo=login&promo=<id>": viene del botón "Activar con el club" de una promo.
+  const [{ initialMode, promo }] = useState(() => {
+    const params = getHashParams();
+    return {
+      initialMode: (params.get('modo') === 'login' ? 'login' : 'registro') as Mode,
+      promo: findPromotion(params.get('promo')),
+    };
+  });
+  const [mode, setMode] = useState<Mode>(initialMode);
 
-  // Con sesión iniciada no tiene sentido esta página: se va al perfil.
+  // Con sesión iniciada no tiene sentido esta página: vuelve a la promo de la que venía o va al perfil.
   useEffect(() => {
-    if (session) navigate('/perfil', { replace: true });
-  }, [session]);
+    if (!session) return;
+    if (promo) window.location.replace(`#promo-${promo.id}`);
+    else navigate('/perfil', { replace: true });
+  }, [session, promo]);
 
   const changeMode = (next: Mode) => {
     setMode(next);
@@ -84,6 +95,29 @@ export function ClubPage() {
           {notice && (
             <div className="mb-5">
               <Notice kind={notice.kind}>{notice.text}</Notice>
+            </div>
+          )}
+
+          {promo && !notice && (
+            <div className="mb-5">
+              <Notice kind="info">
+                Para activar <strong>{promo.title}</strong>, inicia sesión con tu cuenta del club.{' '}
+                {mode === 'login' ? (
+                  <>
+                    ¿Aún no eres socio?{' '}
+                    <button
+                      type="button"
+                      onClick={() => changeMode('registro')}
+                      className={`rounded-r-sm font-semibold text-vino underline ${focusRing}`}
+                    >
+                      Únete gratis
+                    </button>
+                    .
+                  </>
+                ) : (
+                  'Si aún no eres socio, crea tu cuenta gratis aquí abajo.'
+                )}
+              </Notice>
             </div>
           )}
 

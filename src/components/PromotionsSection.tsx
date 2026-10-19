@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
-import { ArrowRight, Clock3, MessageCircle, Users } from 'lucide-react';
+import { ArrowRight, Clock3, MessageCircle, UserRound, Users } from 'lucide-react';
 import { Reveal } from '@/components/Reveal';
+import { useAuth } from '@/auth/AuthContext';
 import {
-  clubSignupHref,
+  clubLoginHref,
+  clubPromoWhatsappHref,
+  findPromotion,
   formatPromotionPrice,
   formatPromoPrice,
   isPromotionActive,
@@ -14,7 +17,8 @@ import {
   type PromoSegmentId,
 } from '@/data/promos';
 
-function PromotionCard({ promotion }: { promotion: Promotion }) {
+function PromotionCard({ promotion, highlighted }: { promotion: Promotion; highlighted: boolean }) {
+  const { user } = useAuth();
   const reserveUrl = reservationHref(promotion);
   const pricePerPerson =
     promotion.priceCents !== undefined && promotion.people
@@ -24,7 +28,9 @@ function PromotionCard({ promotion }: { promotion: Promotion }) {
   return (
     <article
       id={`promo-${promotion.id}`}
-      className="flex h-full flex-col rounded-r-lg border border-piedra/50 bg-white/80 p-5 shadow-sm"
+      className={`flex h-full flex-col rounded-r-lg border border-piedra/50 bg-white/80 p-5 shadow-sm transition-shadow duration-500 ${
+        highlighted ? 'ring-2 ring-vino ring-offset-2 ring-offset-marfil' : ''
+      }`}
     >
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-vino/10 px-3 py-1 text-xs font-semibold text-vino">
@@ -85,14 +91,23 @@ function PromotionCard({ promotion }: { promotion: Promotion }) {
       </div>
 
       <div className="mt-auto flex flex-col gap-2 pt-5">
-        <a
-          href={clubSignupHref(promotion)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="btn-vino w-full"
-        >
-          <MessageCircle size={16} /> Activar con el club
-        </a>
+        {user ? (
+          <a
+            href={clubPromoWhatsappHref(promotion, {
+              nombre: user.user_metadata?.nombre as string | undefined,
+              email: user.email,
+            })}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-vino w-full"
+          >
+            <MessageCircle size={16} /> Activar con el club
+          </a>
+        ) : (
+          <a href={clubLoginHref(promotion)} className="btn-vino w-full">
+            <UserRound size={16} aria-hidden="true" /> Activar con el club
+          </a>
+        )}
         {reserveUrl && (
           <a
             href={reserveUrl}
@@ -112,9 +127,37 @@ export function PromotionsSection() {
   const [activeSegment, setActiveSegment] = useState<PromoSegmentId>('mananas');
   const [now, setNow] = useState(() => new Date());
 
+  const [highlightId, setHighlightId] = useState<string | null>(null);
+
   useEffect(() => {
     const interval = window.setInterval(() => setNow(new Date()), 60_000);
     return () => window.clearInterval(interval);
+  }, []);
+
+  // Un enlace "#promo-<id>" (desde Promos de hoy, la carta o al volver de iniciar sesión) abre la franja
+  // de esa promo, baja hasta la tarjeta y la resalta un momento.
+  useEffect(() => {
+    let timer: number | undefined;
+    const syncFromHash = () => {
+      const match = window.location.hash.match(/^#promo-(.+)$/);
+      const promotion = findPromotion(match ? decodeURIComponent(match[1]) : null);
+      if (!promotion) return;
+
+      setActiveSegment((prev) => (promotion.segmentIds.includes(prev) ? prev : promotion.segmentIds[0]));
+      setHighlightId(promotion.id);
+      window.requestAnimationFrame(() =>
+        document.getElementById(`promo-${promotion.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      );
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => setHighlightId(null), 2500);
+    };
+
+    syncFromHash();
+    window.addEventListener('hashchange', syncFromHash);
+    return () => {
+      window.removeEventListener('hashchange', syncFromHash);
+      window.clearTimeout(timer);
+    };
   }, []);
 
   const visiblePromotions = promotions.filter((promotion) => isPromotionVisible(promotion, now));
@@ -222,7 +265,7 @@ export function PromotionsSection() {
           className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
         >
           {segmentPromotions.map((promotion) => (
-            <PromotionCard key={promotion.id} promotion={promotion} />
+            <PromotionCard key={promotion.id} promotion={promotion} highlighted={highlightId === promotion.id} />
           ))}
         </div>
 

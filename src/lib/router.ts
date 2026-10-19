@@ -51,6 +51,12 @@ export function useRoute(): Route {
   return route;
 }
 
+/** Parámetros detrás de la ruta, p. ej. "#/club?modo=login&promo=x" → modo, promo. */
+export function getHashParams(): URLSearchParams {
+  const query = window.location.hash.split('?')[1] ?? '';
+  return new URLSearchParams(query);
+}
+
 export function routeHref(path: RoutePath): string {
   return path === '/' ? '#top' : `#${path}`;
 }
