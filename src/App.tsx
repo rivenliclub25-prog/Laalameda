@@ -17,8 +17,7 @@ import { QRPage } from '@/components/QRPage';
 import { ClubSection } from '@/components/ClubSection';
 import { ProtectedRoute } from '@/auth/ProtectedRoute';
 import { AdminRoute } from '@/auth/AdminRoute';
-import { useAuth } from '@/auth/AuthContext';
-import { PageShell } from '@/components/club/PageShell';
+import { AdminPage } from '@/pages/AdminPage';
 import { ClubPage } from '@/pages/ClubPage';
 import { RecuperarPage } from '@/pages/RecuperarPage';
 import { NuevaContrasenaPage } from '@/pages/NuevaContrasenaPage';
@@ -79,20 +78,6 @@ function HomePage({ anchor }: { anchor: string | null }) {
   );
 }
 
-// Provisional: se sustituye por el dashboard real en la fase B.
-function AdminStub() {
-  const { user } = useAuth();
-  return (
-    <PageShell>
-      <div className="mx-auto max-w-[480px] text-center">
-        <h1 className="font-display text-[2.4rem] font-semibold text-vino">Panel del club</h1>
-        <div className="divider-gold my-4" />
-        <p className="text-sm text-carbon/70">Acceso de administrador confirmado para {user?.email}.</p>
-      </div>
-    </PageShell>
-  );
-}
-
 function App() {
   const { path, anchor } = useRoute();
 
@@ -128,7 +113,7 @@ function App() {
     case '/admin':
       return (
         <AdminRoute>
-          <AdminStub />
+          <AdminPage />
         </AdminRoute>
       );
   }

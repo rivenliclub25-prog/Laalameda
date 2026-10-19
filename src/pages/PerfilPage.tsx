@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { Loader2, LogOut, Mail, MessageCircle, Trash2 } from 'lucide-react';
+import { LayoutDashboard, Loader2, LogOut, Mail, MessageCircle, ShieldCheck, Trash2 } from 'lucide-react';
 import { PageShell } from '@/components/club/PageShell';
 import { Checkbox, ClubCard, Notice, SubmitButton, TextField, focusRing } from '@/components/club/FormControls';
 import { DeleteAccountModal } from '@/components/club/DeleteAccountModal';
 import { useAuth, useAuthNotice } from '@/auth/AuthContext';
 import { signOut } from '@/lib/auth';
 import { fetchProfile, normalizePhone, updateProfile, type EditableProfile, type Profile } from '@/lib/profile';
-import { navigate } from '@/lib/router';
+import { navigate, routeHref } from '@/lib/router';
 
 interface FormState {
   nombre: string;
@@ -37,7 +37,7 @@ function formatMemberSince(iso: string) {
 }
 
 export function PerfilPage() {
-  const { user, notify } = useAuth();
+  const { user, notify, isAdmin } = useAuth();
   const [notice, dismissNotice] = useAuthNotice();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [form, setForm] = useState<FormState | null>(null);
@@ -154,6 +154,17 @@ export function PerfilPage() {
             <p className="text-sm text-carbon/70">Miembro del club desde {formatMemberSince(profile.created_at)}</p>
           )}
         </header>
+
+        {isAdmin && (
+          <div className="mt-6 flex flex-col items-center justify-between gap-3 rounded-r-md border border-piedra/60 bg-piedra-suave/60 px-4 py-3 text-sm text-carbon sm:flex-row">
+            <span className="inline-flex items-center gap-2 font-semibold">
+              <ShieldCheck size={17} className="text-vino" aria-hidden="true" /> Tienes acceso de administrador
+            </span>
+            <a href={routeHref('/admin')} className={`btn-vino w-full sm:w-auto ${focusRing}`}>
+              <LayoutDashboard size={16} aria-hidden="true" /> Panel
+            </a>
+          </div>
+        )}
 
         {notice && (
           <div className="mt-6">

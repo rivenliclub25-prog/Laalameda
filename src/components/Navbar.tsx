@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Menu, UserRound, X } from 'lucide-react';
+import { LayoutDashboard, Menu, UserRound, X } from 'lucide-react';
 import { navLinks, siteConfig } from '@/data/site';
 import { useAuth } from '@/auth/AuthContext';
 import { routeHref } from '@/lib/router';
@@ -17,7 +17,7 @@ export function Navbar() {
 
   const handleNav = () => setOpen(false);
 
-  const { session } = useAuth();
+  const { session, isAdmin } = useAuth();
   const clubHref = routeHref(session ? '/perfil' : '/club');
   const clubLabel = session ? 'Mi perfil' : 'Pertenecer al club';
   const clubFocus =
@@ -51,6 +51,14 @@ export function Navbar() {
         </ul>
 
         <div className="hidden items-center gap-3 lg:flex">
+          {isAdmin && (
+            <a
+              href={routeHref('/admin')}
+              className={`inline-flex items-center gap-1.5 rounded-r-sm text-sm font-medium text-piedra transition-colors hover:text-piedra-suave ${clubFocus}`}
+            >
+              <LayoutDashboard size={16} aria-hidden="true" /> Panel
+            </a>
+          )}
           <a href={clubHref} className={`btn-gold ${clubFocus}`}>
             {session && <UserRound size={16} aria-hidden="true" />}
             {clubLabel}
@@ -84,6 +92,17 @@ export function Navbar() {
       {open && (
         <div className="animate-slide-down border-t border-marfil/10 bg-carbon/98 px-4 pb-6 pt-2 backdrop-blur-md lg:hidden">
           <ul className="flex flex-col gap-1">
+            {isAdmin && (
+              <li>
+                <a
+                  href={routeHref('/admin')}
+                  onClick={handleNav}
+                  className="flex items-center gap-2 rounded-r-sm px-3 py-3 text-sm font-semibold text-piedra transition-colors hover:bg-marfil/10"
+                >
+                  <LayoutDashboard size={16} aria-hidden="true" /> Panel del club
+                </a>
+              </li>
+            )}
             {navLinks.map((link) => (
               <li key={link.href}>
                 <a
