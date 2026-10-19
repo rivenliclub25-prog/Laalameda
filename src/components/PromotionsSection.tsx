@@ -6,6 +6,7 @@ import {
   clubLoginHref,
   clubPromoWhatsappHref,
   findPromotion,
+  formatPromotionDiscount,
   formatPromotionPrice,
   formatPromoPrice,
   isPromotionActive,
@@ -85,7 +86,7 @@ function PromotionCard({ promotion, highlighted }: { promotion: Promotion; highl
         )}
         {promotion.discount !== undefined && promotion.priceCents !== 0 && (
           <span className="inline-flex rounded-full bg-vino px-3 py-1 text-sm font-bold text-white shadow-sm">
-            -{promotion.discount} %
+            {formatPromotionDiscount(promotion.discount)}
           </span>
         )}
       </div>
@@ -209,7 +210,7 @@ export function PromotionsSection() {
                         </span>
                         {promotion.discount !== undefined && promotion.priceCents !== 0 && (
                           <span className="rounded-full bg-vino px-2 py-0.5 text-[0.7rem] font-bold text-white">
-                            -{promotion.discount} %
+                            {formatPromotionDiscount(promotion.discount)}
                           </span>
                         )}
                       </span>

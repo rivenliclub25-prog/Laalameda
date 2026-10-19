@@ -59,21 +59,31 @@ Busca `experiencePillars` para cambiar los títulos, descripciones e imágenes d
 
 ### Carta y precios
 
-Archivo: `src/data/site.ts`
+Los precios públicos de carta y promociones se generan desde la copia privada del Excel. El archivo original contiene costos, márgenes y utilidades: **no lo subas al repositorio público**.
 
-Busca `menuTabs`. Cada producto tiene normalmente este formato:
+Para actualizar la web después de editar el Excel:
 
-```ts
-{ name: 'Nombre del producto', desc: 'Descripción', price: '3€' }
+1. Guarda y cierra el Excel.
+2. En la carpeta del proyecto, haz doble clic en `Actualizar precios.bat` y elige el Excel actualizado en la ventana.
+3. Confirma la publicación cuando el programa te pregunte. Se subirá solo el archivo generado con precios públicos y GitHub publicará la web automáticamente.
+
+También puedes generarlo desde una terminal:
+
+```sh
+npm.cmd run sync-prices -- "C:\ruta\privada\Promos_La_Alameda_v2.xlsx"
 ```
 
-Para marcar un producto como recomendado se añade `recommended: true`.
+El programa lee solo los nombres y precios de `Productos`, y el estado, nombre, precio normal y precio de promo de `Promos`. No copia costos, márgenes ni utilidades. El resultado público se guarda en `src/data/prices.generated.ts`. Guardar el Excel privado, por sí solo, no puede cambiar la web: hay que ejecutar `Actualizar precios.bat` después de cada edición y confirmar la publicación. No subas el `.xlsx` original; está excluido de Git.
+
+El script utiliza las filas de productos existentes y las promociones marcadas `Aprobado`. Mantén sus nombres para que las encuentre. `Pack Partido` de la web se vincula a `Pack Partido (2 personas)` de la hoja `Promos`, para conservar el precio acordado de 9 €. El `DYC 8 años` de la carta no aparece en el Excel actual, así que conserva su precio de 8 € hasta que se añada a la hoja `Productos`.
+
+Los nombres, descripciones, horarios, contenidos y segmentos de la carta y de las promociones siguen editándose en `src/data/site.ts` y `src/data/promos.ts`; el Excel solo aporta los precios y descuentos públicos.
 
 ### Promociones
 
 Archivo: `src/data/promos.ts`
 
-Aquí se mantienen las promociones, los segmentos, los horarios, los precios y los descuentos. Las promociones compartidas entre segmentos se declaran una sola vez y se asignan con `segmentIds`. Las promociones del 31 de octubre tienen una fecha de caducidad para dejar de mostrarse después del evento.
+Aquí se mantienen los nombres, contenidos, segmentos y horarios de las promociones. Los precios y descuentos publicados se toman del Excel. Las promociones compartidas entre segmentos se declaran una sola vez y se asignan con `segmentIds`. Las promociones del 31 de octubre tienen una fecha de caducidad para dejar de mostrarse después del evento.
 
 ### Terraza y eventos
 

@@ -1,4 +1,5 @@
 import { siteConfig, type MenuCategory } from '@/data/site';
+import { spreadsheetPrices } from './prices.generated';
 
 export type PromoSegmentId = 'mananas' | 'tarde' | 'noche' | 'fin-de-semana' | 'universitarios' | '31-octubre';
 
@@ -49,14 +50,14 @@ const weekdays = [1, 2, 3, 4, 5];
 const nights = [0, 1, 2, 3, 4, 5, 6];
 const weekend = [0, 6];
 
-export const promotions: Promotion[] = [
+const basePromotions: Promotion[] = [
   {
     id: 'desayuno-salmantino',
     title: 'Desayuno Salmantino',
     segmentIds: ['mananas'],
     contents: ['Café con leche, cortado o solo', 'Pincho de tortilla'],
     priceCents: 350,
-    discount: 22,
+    discount: 30,
     schedule: { days: [1, 2, 3, 4], startMinutes: 8 * 60, endMinutes: 12 * 60 },
     scheduleLabel: 'L-J · 8:00-12:00',
   },
@@ -66,7 +67,7 @@ export const promotions: Promotion[] = [
     segmentIds: ['mananas'],
     contents: ['Café con leche', 'Montadito de lomo y queso o de bacon y queso'],
     priceCents: 400,
-    discount: 13,
+    discount: 0,
     schedule: { days: [1, 2, 3, 4], startMinutes: 8 * 60, endMinutes: 12 * 60 },
     scheduleLabel: 'L-J · 8:00-12:00',
   },
@@ -76,7 +77,7 @@ export const promotions: Promotion[] = [
     segmentIds: ['tarde'],
     contents: ['2 cañas Estrella', 'Patatas bravas'],
     priceCents: 500,
-    discount: 25,
+    discount: 29,
     regularProducts: [
       { category: 'cervezas', name: 'Caña', quantity: 2 },
       { category: 'pinchos', name: 'Patatas', quantity: 1 },
@@ -91,7 +92,7 @@ export const promotions: Promotion[] = [
     description: 'Pack para 2',
     contents: ['2 cañones Estrella', 'Patatas bravas', 'Pincho de tortilla'],
     priceCents: 900,
-    discount: 18,
+    discount: 25,
     people: 2,
     schedule: { days: nights, startMinutes: 20 * 60, endMinutes: 3 * 60 },
     scheduleLabel: 'Cada noche · 20:00-3:00',
@@ -104,7 +105,7 @@ export const promotions: Promotion[] = [
     description: 'Pack para 4',
     contents: ['4 cañones Estrella', 'Patatas bravas'],
     priceCents: 1100,
-    discount: 11,
+    discount: 27,
     people: 4,
     schedule: { days: nights, startMinutes: 20 * 60, endMinutes: 3 * 60 },
     scheduleLabel: 'Cada noche · 20:00-3:00',
@@ -116,7 +117,7 @@ export const promotions: Promotion[] = [
     segmentIds: ['fin-de-semana'],
     contents: ['2 vermuts Izaguirre', 'Patatas bravas', 'Jeta'],
     priceCents: 750,
-    discount: 32,
+    discount: 25,
     schedule: { days: weekend, startMinutes: 0, endMinutes: 24 * 60 },
     scheduleLabel: 'S-D · fin de semana',
   },
@@ -127,7 +128,7 @@ export const promotions: Promotion[] = [
     description: 'Para compartir entre 4',
     contents: ['4 cañones Estrella', 'Patatas bravas', 'Pincho de tortilla', 'Croquetas de jamón'],
     priceCents: 1700,
-    discount: 14,
+    discount: 19,
     people: 4,
     schedule: { days: weekend, startMinutes: 0, endMinutes: 24 * 60 },
     scheduleLabel: 'S-D · fin de semana',
@@ -160,7 +161,8 @@ export const promotions: Promotion[] = [
     title: 'Aperitivo de inauguración',
     segmentIds: ['31-octubre'],
     contents: ['Vermut Izaguirre', 'Patatas bravas'],
-    discount: 17,
+    priceCents: 450,
+    discount: 18,
     schedule: { days: [6], startMinutes: 0, endMinutes: 24 * 60 },
     scheduleLabel: '31 de octubre',
     expiresOn: '2026-10-31',
@@ -170,7 +172,8 @@ export const promotions: Promotion[] = [
     title: 'Chupito disfrazado',
     segmentIds: ['31-octubre'],
     contents: ['Chupito de licor de café', 'Uno por persona si vienes disfrazado'],
-    discount: 48,
+    priceCents: 100,
+    discount: 50,
     schedule: { days: [6], startMinutes: 0, endMinutes: 24 * 60 },
     scheduleLabel: '31 de octubre',
     expiresOn: '2026-10-31',
@@ -180,7 +183,8 @@ export const promotions: Promotion[] = [
     title: 'Ronda de 4 · Halloween',
     segmentIds: ['31-octubre'],
     contents: ['4 cañas Estrella', 'Patatas bravas', 'Pincho de tortilla'],
-    discount: 10,
+    priceCents: 1200,
+    discount: 14,
     schedule: { days: [6], startMinutes: 0, endMinutes: 24 * 60 },
     scheduleLabel: '31 de octubre',
     expiresOn: '2026-10-31',
@@ -198,6 +202,15 @@ export const promotions: Promotion[] = [
   },
 ];
 
+const spreadsheetPromotionPrices = new Map(Object.entries(spreadsheetPrices.promotions));
+
+export const promotions: Promotion[] = basePromotions.map((promotion) => {
+  const price = spreadsheetPromotionPrices.get(promotion.id);
+  if (price === undefined) {
+    throw new Error(`Faltan precio y descuento de "${promotion.title}" en los datos generados desde Excel.`);
+  }
+  return { ...promotion, ...price };
+});
 
 export function isPromotionActive(promotion: Promotion, now: Date): boolean {
   if (!isPromotionVisible(promotion, now)) return false;
@@ -221,6 +234,10 @@ export function formatPromoPrice(priceCents: number): string {
     minimumFractionDigits: priceCents % 100 === 0 ? 0 : 2,
     maximumFractionDigits: 2,
   })} €`;
+}
+
+export function formatPromotionDiscount(discount: number): string {
+  return discount === 0 ? '0 %' : `-${Math.abs(discount)} %`;
 }
 
 export function formatPromotionPrice(promotion: Promotion): string | null {
