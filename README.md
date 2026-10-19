@@ -11,7 +11,18 @@ El proyecto ya está en el repositorio `rivenliclub25-prog/Laalameda`. El despli
 3. En **Actions**, vuelve a ejecutar el flujo fallido **Deploy to GitHub Pages**, o sube un nuevo cambio a `main`.
 4. Cuando termine correctamente, la web estará en `https://rivenliclub25-prog.github.io/Laalameda/`.
 
-La compilación ajusta la ruta base del repositorio para que también funcionen las imágenes y los enlaces de la página de QR. GitHub Pages ofrece alojamiento estático: los formularios que deban guardar datos personales necesitan un servicio de backend aparte.
+La compilación ajusta la ruta base del repositorio para que también funcionen las imágenes y los enlaces de la página de QR. GitHub Pages ofrece alojamiento estático. Los datos del club de clientes se guardan en Supabase.
+
+## Club de clientes (Supabase)
+
+El club (registro, perfil y panel de administración en `#/admin`) usa Supabase. Necesita dos variables con la URL del proyecto y la clave pública *anon*:
+
+- **En local**: copia `.env.example` como `.env` y rellénalo. El archivo `.env` no se sube a git.
+- **En GitHub Pages**: en **Settings → Secrets and variables → Actions** crea los secretos `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`. El workflow los usa al compilar.
+
+Si faltan, la web funciona igual y el club aparece como "disponible muy pronto". La clave `service_role` no debe ponerse nunca ni en el código ni en los secretos.
+
+La base de datos se crea ejecutando en el SQL Editor de Supabase, en este orden, `supabase/schema.sql` y `supabase/admin.sql`. Para hacer admin a alguien, cambia su `role` a `admin` en **Table Editor → profiles**.
 
 ## Desarrollar localmente
 

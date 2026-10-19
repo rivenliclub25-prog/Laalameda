@@ -122,9 +122,10 @@ Por último, añade un apartado aparte, para hacerlo más adelante, sobre cómo 
 
 # Estado actual (actualizado 2026-10-19)
 
-Ramas (ninguna con push ni merge a `main`):
-- `club-clientes`: club de clientes (fases 1–3).
-- `admin-dashboard`: creada desde `club-clientes`, añade el rol de admin, el panel y la activación de promos con el club. **Es la rama más reciente: trabajar aquí.**
+Ramas:
+- **`main`: desplegada en GitHub Pages con todo el club y el panel de admin (fase 4).** A partir de ahora se trabaja desde `main`, o desde ramas nuevas creadas a partir de ella.
+- `club-clientes` y `admin-dashboard`: ramas históricas, ya incluidas en `main`. No tienen push.
+- `main` también recibe los commits automáticos del script de precios (`Actualizar precios.bat` → `scripts/publish-prices.ps1`), que exige estar en `main` y hace push él mismo. Antes de trabajar, ejecuta `git pull`.
 
 ## Club de clientes: hecho y probado
 - **Fase 1 — estructura y auth** (commit `e325b3d`): cliente en `src/lib/supabase.ts`, `AuthProvider`, `ProtectedRoute`, router propio, `supabase/schema.sql`, `.env.example`.
@@ -152,6 +153,16 @@ Ramas (ninguna con push ni merge a `main`):
   - Los enlaces `#promo-<id>` abren la franja correcta y resaltan la tarjeta. Esto arregla también los de "Promos de hoy" y la carta.
 - Cuenta del usuario: ya es admin. Hay una cuenta de prueba normal creada desde *Authentication → Add user*.
 
+## Fase 4 — despliegue: hecho (2026-10-19)
+- Se ha mezclado `main` (sincronización de precios desde Excel) en `admin-dashboard`, con conflictos en `promos.ts` y `PromotionsSection.tsx` resueltos conservando las dos partes (commit `790eec8`). Después se ha subido a `main`.
+- `.github/workflows/deploy.yml` pasa al build los secretos `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` como variables de entorno.
+- El usuario ha creado en GitHub los dos secretos (**Settings → Secrets and variables → Actions**).
+- En Supabase (**Authentication → URL Configuration**):
+  - Site URL: `https://rivenliclub25-prog.github.io/Laalameda/`.
+  - Redirect URLs: `https://rivenliclub25-prog.github.io/Laalameda/**` y `http://localhost:5173/**`.
+- `README.md` documenta cómo configurar el club (`.env`, Secrets y orden de los SQL).
+- **Pendiente de confirmar:** repetir en la web publicada el flujo completo (registro, confirmación, login, perfil, recuperación, cierre de sesión, borrado, panel y promos).
+
 ## Cómo asignar o quitar un admin
 - La persona se registra antes en la web como cualquier cliente.
 - **Table Editor → profiles →** celda `role` → `admin` → Save.
@@ -177,10 +188,7 @@ Ramas (ninguna con push ni merge a `main`):
 - **Al volver del login, no se abre WhatsApp automáticamente** (el navegador lo bloquearía). Se vuelve a la tarjeta de la promo para que la persona pulse otra vez.
 
 ## Pendiente
-- **Fase 4 — despliegue** (aplazada por decisión del usuario):
-  - Leer `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` desde los GitHub Secrets en `.github/workflows/deploy.yml`.
-  - Añadir las URLs de producción en Supabase.
-  - Hacer el merge de `admin-dashboard` (que ya contiene `club-clientes`) a `main` y probar en GitHub Pages, incluidos el panel y las promos.
+- **Probar en producción** el flujo completo en `https://rivenliclub25-prog.github.io/Laalameda/`, sobre todo los enlaces de los correos.
 - **Mejoras opcionales del panel** (no pedidas todavía):
   - Que un admin pueda cambiar roles desde la web con una RPC `admin_set_role` (habría que adaptar `protect_role`).
   - Editar o borrar socios.
@@ -191,5 +199,5 @@ Ramas (ninguna con push ni merge a `main`):
   - Que el mensaje de WhatsApp use el nombre del perfil y no el del registro.
 - Guía completa de Supabase paso a paso (puntos 1–9 de arriba) + apartado de Google.
 - Probar la fase 3 entera si no se ha hecho (guardar perfil, cerrar sesión, borrar cuenta).
-- SMTP propio (Resend/Brevo) antes de abrir el club al público.
+- **SMTP propio (Resend/Brevo), urgente ahora que la web está publicada.** El correo por defecto de Supabase solo envía a los miembros del equipo y tiene un límite de pocos correos por hora, así que los clientes reales no recibirán el correo de confirmación hasta configurarlo. Alternativa temporal: desactivar "Confirm email" en Supabase.
 - Completar los datos de la política de privacidad.
