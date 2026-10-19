@@ -13,6 +13,13 @@ export interface AuthContextValue {
   loading: boolean;
   /** false si faltan las variables de entorno de Supabase. */
   configured: boolean;
+  /**
+   * true si el perfil tiene role = 'admin'. Solo sirve para mostrar u ocultar cosas en la web:
+   * la seguridad real está en la base de datos (RLS y admin_list_users).
+   */
+  isAdmin: boolean;
+  /** true mientras se consulta el rol del usuario recién conectado. */
+  roleLoading: boolean;
   /** Mensaje tras volver de un enlace de correo (cuenta confirmada, enlace caducado…). */
   notice: AuthNotice | null;
   /** Deja un aviso para la siguiente página (p. ej. tras borrar la cuenta). */

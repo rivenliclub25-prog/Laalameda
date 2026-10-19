@@ -51,6 +51,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // Rol del usuario conectado. Se guarda junto a su id para saber si corresponde a la sesión actual.
+  const userId = session?.user.id ?? null;
+  const [roleState, setRoleState] = useState<{ userId: string; isAdmin: boolean } | null>(null);
+
+  useEffect(() => {
+    if (!userId) {
+      setRoleState(null);
+      return;
+    }
+    let active = true;
+    supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (!active) return;
+        // Si falla (p. ej. aún no se ha ejecutado admin.sql), se trata como usuario normal.
+        if (error) console.error('[club] No se pudo leer el rol:', error);
+        setRoleState({ userId, isAdmin: data?.role === 'admin' });
+      });
+    return () => {
+      active = false;
+    };
+  }, [userId]);
+
+  const roleLoading = userId !== null && roleState?.userId !== userId;
+  const isAdmin = !roleLoading && userId !== null && roleState?.isAdmin === true;
+
   const clearNotice = useCallback(() => setNotice(null), []);
 
   const value = useMemo(
@@ -59,11 +88,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user: session?.user ?? null,
       loading,
       configured: isSupabaseConfigured,
+      isAdmin,
+      roleLoading,
       notice,
       notify: setNotice,
       clearNotice,
     }),
-    [session, loading, notice, clearNotice]
+    [session, loading, isAdmin, roleLoading, notice, clearNotice]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

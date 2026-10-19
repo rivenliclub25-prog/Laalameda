@@ -78,3 +78,9 @@ export const supabase = createClient(
     },
   }
 );
+
+// Solo en local (npm run dev): permite usar `supabase` desde la consola del navegador para hacer pruebas.
+// En la web publicada no existe.
+if (import.meta.env.DEV) {
+  (window as unknown as { supabase: typeof supabase }).supabase = supabase;
+}

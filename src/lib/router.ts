@@ -6,9 +6,17 @@ import { useEffect, useState } from 'react';
  * - "#carta", "#promos"…   → anclas de la home, como hasta ahora.
  * - "#qr"                  → página de códigos QR (se mantiene la URL antigua).
  */
-export type RoutePath = '/' | '/qr' | '/club' | '/recuperar' | '/nueva-contrasena' | '/privacidad' | '/perfil';
+export type RoutePath =
+  | '/'
+  | '/qr'
+  | '/club'
+  | '/recuperar'
+  | '/nueva-contrasena'
+  | '/privacidad'
+  | '/perfil'
+  | '/admin';
 
-const routes: RoutePath[] = ['/qr', '/club', '/recuperar', '/nueva-contrasena', '/privacidad', '/perfil'];
+const routes: RoutePath[] = ['/qr', '/club', '/recuperar', '/nueva-contrasena', '/privacidad', '/perfil', '/admin'];
 
 export interface Route {
   path: RoutePath;
