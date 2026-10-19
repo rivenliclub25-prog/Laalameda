@@ -19,6 +19,7 @@ const menuAliases = new Map([
   ['botellinestrella', 'Botellín'],
   ['botellinestrellasg', 'Botellín Estrella sin gluten'],
   ['tercioestrella', 'Tercio'],
+  ['tercio', 'Tercio sin marca'],
   ['premiumipa', 'Premium IPA'],
   ['irishcoffe', 'Irish Coffee'],
   ['hendricks', "Hendrick's"],

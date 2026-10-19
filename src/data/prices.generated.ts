@@ -2,17 +2,18 @@ export const spreadsheetPrices = {
   "menu": {
     "DYC 8 años": "8€",
     "Caña": "2€",
-    "Caña 1906": "2€",
-    "Cañón": "3€",
+    "Caña 1906": "3€",
+    "Cañón": "2€",
     "Cañón 1906": "3€",
     "Botellín": "2€",
-    "Tercio": "3€",
+    "Tercio": "2,50€",
     "Premium IPA": "3,50€",
     "Radler": "3€",
-    "Botellín Estrella sin gluten": "2€",
-    "Solo": "1,90€",
-    "Con leche": "2€",
-    "Cortado": "1,90€",
+    "Botellín Estrella sin gluten": "2,50€",
+    "Tercio sin marca": "3€",
+    "Solo": "2€",
+    "Con leche": "3€",
+    "Cortado": "2€",
     "Irish Coffee": "3,50€",
     "Seagram's": "7€",
     "Beefeater": "7€",
@@ -47,7 +48,7 @@ export const spreadsheetPrices = {
     "Rioja": "3€",
     "Vermut Izaguirre": "2,50€",
     "Coca-Cola": "2,50€",
-    "Agua": "2€",
+    "Agua": "2,50€",
     "Coca-Cola Zero": "2,50€",
     "Coca-Cola Zero Zero": "2,50€",
     "Fanta Naranja": "2,50€",
@@ -71,11 +72,11 @@ export const spreadsheetPrices = {
   "promotions": {
     "desayuno-salmantino": {
       "priceCents": 350,
-      "discount": 30
+      "discount": 42
     },
     "desayuno-fuerte": {
       "priceCents": 400,
-      "discount": 0
+      "discount": 20
     },
     "dos-canas-y-bravas": {
       "priceCents": 500,
@@ -83,11 +84,11 @@ export const spreadsheetPrices = {
     },
     "pack-partido": {
       "priceCents": 900,
-      "discount": 25
+      "discount": 10
     },
     "previa-alameda": {
       "priceCents": 1100,
-      "discount": 27
+      "discount": 0
     },
     "vermut-alameda": {
       "priceCents": 750,
@@ -95,7 +96,7 @@ export const spreadsheetPrices = {
     },
     "picoteo-para-4": {
       "priceCents": 1700,
-      "discount": 19
+      "discount": 0
     },
     "cubo-5-botellines": {
       "priceCents": 900,
