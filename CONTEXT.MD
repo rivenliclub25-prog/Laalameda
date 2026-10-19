@@ -120,16 +120,43 @@ Por último, añade un apartado aparte, para hacerlo más adelante, sobre cómo 
 
 ---
 
-# Estado actual (actualizado 2026-10-18)
+# Estado actual (actualizado 2026-10-19)
 
-Rama de trabajo: `club-clientes` (aún sin merge a `main`, sin push).
+Ramas (ninguna con push ni merge a `main`):
+- `club-clientes`: club de clientes (fases 1–3).
+- `admin-dashboard`: creada desde `club-clientes`, añade el rol de admin, el panel y la activación de promos con el club. **Es la rama más reciente: trabajar aquí.**
 
-## Hecho y probado
+## Club de clientes: hecho y probado
 - **Fase 1 — estructura y auth** (commit `e325b3d`): cliente en `src/lib/supabase.ts`, `AuthProvider`, `ProtectedRoute`, router propio, `supabase/schema.sql`, `.env.example`.
 - **Fase 2 — páginas y estilos** (commit `409cccb`): `#/club` (login/registro), `#/recuperar`, `#/nueva-contrasena`, `#/privacidad`, botón del header y sección "Hazte del club" en la home.
 - **Fix** (commit `0473baa`): la URL de Supabase se normaliza al dominio (el `.env` tenía `/rest/v1/` y daba 404). En `npm run dev` los errores muestran el detalle técnico entre corchetes.
 - **Fase 3 — perfil y borrado** (commit `a4c067c`): `#/perfil` con datos, consentimientos email/WhatsApp, cerrar sesión y borrar cuenta (`rpc('delete_user')`).
 - Supabase: proyecto creado, `schema.sql` ejecutado, `.env` local configurado, Site URL y Redirect URLs de localhost puestas. Registro, confirmación y login probados OK.
+
+## Rol de admin y panel de socios: hecho y probado (rama `admin-dashboard`)
+- **Fase A — base de datos y rol** (commit `dd4d7bf`): `supabase/admin.sql`, **ya ejecutado** en Supabase. Incluye:
+  - Columna `role` (`user`/`admin`) y trigger `protect_role`.
+  - `handle_new_user` forzando `role = 'user'`.
+  - `is_admin()` y la política "los admins leen todos los perfiles".
+  - RPC `admin_list_users()`.
+  - En el frontend: `AuthProvider` expone `isAdmin` y `roleLoading`, `AdminRoute` protege la ruta y se añade `#/admin` al router.
+  - Pruebas OK: un admin ve la lista; una cuenta normal es redirigida y la RPC le da `42501`; cambiarse el rol desde la consola da `permission denied`.
+- **Fase B — dashboard** (commit `6d470ae`): `#/admin` en solo lectura.
+  - Contadores, buscador (sin tildes; el teléfono por cifras) y filtros (acepta email, acepta WhatsApp, cumpleaños este mes).
+  - Orden por alta, tabla en escritorio y tarjetas en móvil.
+  - Exportar CSV de lo filtrado, con el aviso de contactar solo por el canal aceptado.
+  - Enlace "Panel" (solo admins) en el header, el menú móvil y Mi perfil.
+- **Promos con el club** (commit `a978704`):
+  - Sin sesión, "Activar con el club" lleva a `#/club?modo=login&promo=<id>` y, al iniciar sesión, vuelve a la tarjeta de esa promo.
+  - Con sesión, abre WhatsApp con el nombre y el email del socio.
+  - Los enlaces `#promo-<id>` abren la franja correcta y resaltan la tarjeta. Esto arregla también los de "Promos de hoy" y la carta.
+- Cuenta del usuario: ya es admin. Hay una cuenta de prueba normal creada desde *Authentication → Add user*.
+
+## Cómo asignar o quitar un admin
+- La persona se registra antes en la web como cualquier cliente.
+- **Table Editor → profiles →** celda `role` → `admin` → Save.
+- O bien, en el SQL Editor, el `update` de ejemplo que hay al final de `supabase/admin.sql`, que trae también cómo quitar el rol y cómo listar los admins.
+- Funciona desde el panel de Supabase porque ahí no hay sesión de usuario (`auth.uid()` es nulo). Desde la web es imposible.
 
 ## Decisiones tomadas (no cambiar sin hablarlo)
 - **Router**: no se usa `HashRouter` porque rompería las anclas de la home (`#carta`, `#promos`…). Router propio en `src/lib/router.ts`: páginas con `#/ruta`, anclas sin barra. `#qr` se mantiene.
@@ -137,9 +164,31 @@ Rama de trabajo: `club-clientes` (aún sin merge a `main`, sin push).
 - Contraseña mínima de 8 caracteres en la UI.
 - Política de privacidad con texto base: faltan titular, NIF y email (marcados "PENDIENTE").
 - Google: botón maquetado como "Próximamente". Se activa poniendo `googleEnabled = true` en `src/lib/auth.ts`.
+- **Rol de admin en `public.profiles.role`**, no en `app_metadata`: así no hace falta la `service_role`. `schema.sql` no se modifica; los cambios de base de datos nuevos van en archivos aparte, como `admin.sql`.
+- **Doble protección del rol**:
+  - El permiso de columnas de `schema.sql` no incluye `role`, así que el error que se ve en la web es `permission denied`.
+  - Además está el trigger `protect_role` por si algún día se amplían esos permisos.
+- **`isAdmin` en el frontend solo muestra u oculta cosas.** La seguridad real está en RLS y en la comprobación dentro de `admin_list_users()`.
+- **Las políticas usan `is_admin()`** (`security definer`) para evitar la recursión de RLS.
+- **Los admins solo leen.** No pueden editar ni borrar a otros usuarios todavía.
+- **`window.supabase` existe solo en `npm run dev`**, para hacer pruebas desde la consola. Comprobado que no está en el build de producción.
+- **CSV**: separado por `;` y en UTF-8 con BOM, para Excel en español. Se protege contra la inyección de fórmulas. Excel puede mostrar los teléfonos sin `+`, aunque el dato del CSV es correcto.
+- **Los contadores del panel** se calculan sobre todos los socios (los admins incluidos), no sobre lo filtrado.
+- **Al volver del login, no se abre WhatsApp automáticamente** (el navegador lo bloquearía). Se vuelve a la tarjeta de la promo para que la persona pulse otra vez.
 
 ## Pendiente
-- **Fase 4 — despliegue** (aplazada por decisión del usuario): leer `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` desde los GitHub Secrets en `.github/workflows/deploy.yml`, añadir las URLs de producción en Supabase, merge a `main` y probar en GitHub Pages.
+- **Fase 4 — despliegue** (aplazada por decisión del usuario):
+  - Leer `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` desde los GitHub Secrets en `.github/workflows/deploy.yml`.
+  - Añadir las URLs de producción en Supabase.
+  - Hacer el merge de `admin-dashboard` (que ya contiene `club-clientes`) a `main` y probar en GitHub Pages, incluidos el panel y las promos.
+- **Mejoras opcionales del panel** (no pedidas todavía):
+  - Que un admin pueda cambiar roles desde la web con una RPC `admin_set_role` (habría que adaptar `protect_role`).
+  - Editar o borrar socios.
+  - Paginación si hay muchos socios.
+  - Teléfonos con `+` en Excel.
+- **Mejoras opcionales de las promos**:
+  - Que el enlace de confirmación del registro devuelva a la promo, no a Mi perfil.
+  - Que el mensaje de WhatsApp use el nombre del perfil y no el del registro.
 - Guía completa de Supabase paso a paso (puntos 1–9 de arriba) + apartado de Google.
 - Probar la fase 3 entera si no se ha hecho (guardar perfil, cerrar sesión, borrar cuenta).
 - SMTP propio (Resend/Brevo) antes de abrir el club al público.
