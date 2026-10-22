@@ -11,9 +11,9 @@ export const spreadsheetPrices = {
     "Radler": "3€",
     "Botellín Estrella sin gluten": "2,50€",
     "Tercio sin marca": "3€",
-    "Solo": "2€",
+    "Solo": "1,90€",
     "Con leche": "3€",
-    "Cortado": "2€",
+    "Cortado": "1,90€",
     "Irish Coffee": "3,50€",
     "Seagram's": "7€",
     "Beefeater": "7€",
@@ -71,8 +71,8 @@ export const spreadsheetPrices = {
   },
   "promotions": {
     "desayuno-salmantino": {
-      "priceCents": 350,
-      "discount": 42
+      "priceCents": 400,
+      "discount": 33
     },
     "desayuno-fuerte": {
       "priceCents": 400,
