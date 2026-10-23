@@ -209,6 +209,13 @@ Ramas:
     - Tras canjear, «¡Canjeado!» y vuelve solo al escáner a los 3 s.
   - **Sonido y vibración** (`src/lib/feedback.ts`, con Web Audio, sin archivos). El interruptor 🔊/🔇 se recuerda en `localStorage`.
   - **Enlaces:** «Canjear tickets» en `useAccountLinks()` (menú Mi cuenta y menú móvil) y una franja «Eres del personal del bar» en Mi perfil.
+  - **Probado por el usuario en el móvil** (puerto HTTPS de GitHub): lee el QR y canjea. Arreglos posteriores:
+    - **La cámara no se veía** (aunque leía): el `<video>` se ocultaba con `visibility: hidden` y `qr-scanner` lo deja entonces a tamaño 0 para siempre (para evitar un fallo de Safari). Ahora el vídeo nunca se oculta y se tapa con un panel cuando la cámara está apagada. **No ocultar nunca ese `<video>` con `display` ni `visibility`.**
+    - **El socio no veía el canje sin recargar:**
+      - `subscribeMyTickets` se reconecta sola si el canal falla o se cierra.
+      - Mis tickets comprueba además el estado cada 5 s, mientras haya un ticket por usar y la pantalla esté visible.
+      - La celebración «¡Canjeado!» sale una sola vez, venga del tiempo real o de la comprobación.
+      - En `npm run dev`, la consola muestra el estado de la conexión (`[club] Tiempo real (Mis tickets): …`).
 - **T4 — admin y T5 (opcional):** pendientes.
 - **Antes de publicar `tickets` en `main`:** en cuanto se publique, todos los botones de promo saldrán como «Disponible próximamente» hasta que el bar encienda las promos en `promotions`. Hay que encender las que correspondan antes o justo después de publicar.
 

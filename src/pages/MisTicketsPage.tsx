@@ -34,14 +34,39 @@ export function MisTicketsPage() {
   const ticketsRef = useRef<Ticket[]>([]);
   ticketsRef.current = tickets;
 
-  const load = useCallback(async () => {
-    if (!userId) return;
-    setError(null);
-    const result = await fetchMyTickets(userId);
-    setTickets(result.tickets);
-    setError(result.error);
-    setLoading(false);
-  }, [userId]);
+  // Si alguno de los tickets que llegan estaba disponible y ahora está canjeado, se celebra.
+  // Sirve tanto para el tiempo real como para la comprobación periódica (y no se repite).
+  const celebrateIfRedeemed = useCallback((incoming: Ticket[]) => {
+    const redeemed = incoming.find((t) => {
+      const before = ticketsRef.current.find((x) => x.id === t.id);
+      return before?.estado === 'disponible' && t.estado === 'canjeado';
+    });
+    if (redeemed) {
+      setCelebrate(redeemed);
+      navigator.vibrate?.([90, 50, 90]);
+    }
+  }, []);
+
+  const load = useCallback(
+    async ({ silent = false } = {}) => {
+      if (!userId) return;
+      if (!silent) setError(null);
+      const result = await fetchMyTickets(userId);
+      if (result.error) {
+        // En las comprobaciones de fondo, un fallo puntual no borra la lista.
+        if (!silent) {
+          setError(result.error);
+          setLoading(false);
+        }
+        return;
+      }
+      celebrateIfRedeemed(result.tickets);
+      ticketsRef.current = result.tickets;
+      setTickets(result.tickets);
+      setLoading(false);
+    },
+    [userId, celebrateIfRedeemed]
+  );
 
   useEffect(() => {
     load();
@@ -51,16 +76,14 @@ export function MisTicketsPage() {
   useEffect(() => {
     if (!userId) return;
     const unsubscribe = subscribeMyTickets(userId, (changed) => {
-      const before = ticketsRef.current.find((t) => t.id === changed.id);
-      if (before?.estado === 'disponible' && changed.estado === 'canjeado') {
-        setCelebrate(changed);
-        navigator.vibrate?.([90, 50, 90]);
-      }
-      setTickets((prev) => {
-        const exists = prev.some((t) => t.id === changed.id);
-        const next = exists ? prev.map((t) => (t.id === changed.id ? changed : t)) : [changed, ...prev];
-        return next.sort((a, b) => b.created_at.localeCompare(a.created_at));
-      });
+      celebrateIfRedeemed([changed]);
+      const prev = ticketsRef.current;
+      const exists = prev.some((t) => t.id === changed.id);
+      const next = (exists ? prev.map((t) => (t.id === changed.id ? changed : t)) : [changed, ...prev]).sort((a, b) =>
+        b.created_at.localeCompare(a.created_at)
+      );
+      ticketsRef.current = next;
+      setTickets(next);
     });
     // Si la conexión en tiempo real se cortó (móvil en segundo plano), se recarga al volver.
     const onVisible = () => {
@@ -71,7 +94,7 @@ export function MisTicketsPage() {
       unsubscribe();
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [userId, load]);
+  }, [userId, load, celebrateIfRedeemed]);
 
   const withState = useMemo(
     () =>
@@ -90,6 +113,17 @@ export function MisTicketsPage() {
     const interval = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(interval);
   }, [available.length]);
+
+  // Respaldo del tiempo real: mientras haya un ticket por usar y la pantalla esté a la vista, se
+  // comprueba cada 5 s. Si la conexión en tiempo real falla, el canje aparece igualmente sin recargar.
+  const hasUsable = available.some((x) => x.state === 'disponible');
+  useEffect(() => {
+    if (!hasUsable) return;
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === 'visible') load({ silent: true });
+    }, 5000);
+    return () => window.clearInterval(interval);
+  }, [hasUsable, load]);
 
   // Al llegar desde "Obtener ticket", baja hasta ese ticket.
   const highlightedId =
@@ -123,7 +157,7 @@ export function MisTicketsPage() {
         ) : error ? (
           <div className="mt-8 space-y-4">
             <Notice kind="error">{error}</Notice>
-            <button type="button" onClick={load} className={`btn-outline-vino ${focusRing}`}>
+            <button type="button" onClick={() => load()} className={`btn-outline-vino ${focusRing}`}>
               <RefreshCw size={16} aria-hidden="true" /> Reintentar
             </button>
           </div>

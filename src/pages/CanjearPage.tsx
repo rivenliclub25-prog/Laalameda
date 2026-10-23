@@ -223,14 +223,11 @@ function QrScannerBox({ paused, onScan }: { paused: boolean; onScan: (text: stri
   return (
     <section aria-label="Lector de QR">
       <div className="relative overflow-hidden rounded-r-lg border border-piedra/50 bg-carbon shadow-md">
-        <video
-          ref={videoRef}
-          muted
-          playsInline
-          className={`aspect-square w-full object-cover ${status === 'on' ? '' : 'invisible'}`}
-        />
+        {/* El vídeo nunca se oculta (ni con display ni con visibility): qr-scanner lo detecta y lo deja
+            a tamaño 0 para siempre. Cuando la cámara está apagada, se tapa con el panel de encima. */}
+        <video ref={videoRef} muted playsInline className="block aspect-square w-full object-cover" />
         {status !== 'on' && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 text-center text-marfil">
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-carbon p-6 text-center text-marfil">
             {status === 'starting' ? (
               <>
                 <Loader2 size={34} className="animate-spin text-piedra" aria-hidden="true" />

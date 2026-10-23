@@ -98,20 +98,52 @@ export async function fetchMyTickets(userId: string): Promise<{ tickets: Ticket[
   return { tickets: data as Ticket[], error: null };
 }
 
-/** Avisa en tiempo real de los cambios en los tickets del socio (p. ej. cuando el camarero canjea). */
-export function subscribeMyTickets(userId: string, onChange: (ticket: Ticket) => void): () => void {
-  const channel = supabase
-    .channel(`mis-tickets-${userId}`)
-    .on(
+/**
+ * Avisa en tiempo real de los cambios en los tickets del socio (p. ej. cuando el camarero canjea).
+ * Si la conexión falla o se cierra, se vuelve a suscribir sola al cabo de unos segundos.
+ */
+export function subscribeMyTickets(
+  userId: string,
+  onChange: (ticket: Ticket) => void,
+  onStatus?: (connected: boolean) => void
+): () => void {
+  let stopped = false;
+  let retryTimer: number | undefined;
+  let channel: ReturnType<typeof supabase.channel> | null = null;
+
+  const connect = () => {
+    const current = supabase.channel(`mis-tickets-${userId}-${Date.now()}`).on(
       'postgres_changes',
       { event: '*', schema: 'public', table: 'tickets', filter: `user_id=eq.${userId}` },
       (payload: RealtimePostgresChangesPayload<Ticket>) => {
         if (payload.new && 'id' in payload.new) onChange(payload.new as Ticket);
       }
-    )
-    .subscribe();
+    );
+    channel = current;
+    current.subscribe((status, err) => {
+      // Los avisos de canales viejos (p. ej. el CLOSED al quitarlos) se ignoran.
+      if (stopped || channel !== current) return;
+      if (import.meta.env.DEV) console.info('[club] Tiempo real (Mis tickets):', status, err ?? '');
+      onStatus?.(status === 'SUBSCRIBED');
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+        window.clearTimeout(retryTimer);
+        retryTimer = window.setTimeout(() => {
+          if (stopped || channel !== current) return;
+          channel = null;
+          supabase.removeChannel(current);
+          connect();
+        }, 5000);
+      }
+    });
+  };
+
+  connect();
   return () => {
-    supabase.removeChannel(channel);
+    stopped = true;
+    window.clearTimeout(retryTimer);
+    const current = channel;
+    channel = null;
+    if (current) supabase.removeChannel(current);
   };
 }
 
