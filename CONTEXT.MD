@@ -120,10 +120,13 @@ Por último, añade un apartado aparte, para hacerlo más adelante, sobre cómo 
 
 ---
 
-# Estado actual (actualizado 2026-10-19)
+# Estado actual (actualizado 2026-10-23)
+
+**Proyecto de Supabase en uso: `hinebaxynlpjisteuaus`.** Es el de `.env` y el de los GitHub Secrets, y el de la web publicada (comprobado el 2026-10-23). El otro proyecto (`eisuyvozingpasbqvrdx`) no se usa: tenerlo mezclado con el bueno dio `401 Invalid API key`.
 
 Ramas:
-- **`main`: desplegada en GitHub Pages con todo el club y el panel de admin (fase 4).** A partir de ahora se trabaja desde `main`, o desde ramas nuevas creadas a partir de ella.
+- **`main`: desplegada en GitHub Pages con todo el club y el panel de admin (fase 4).**
+- **`tickets`: fase de tickets (ver `TICKETS.md`).** Se creó desde `main` actualizado y todo lo de tickets se hace aquí. Al empezar cada fase hay que mezclar `main` en `tickets`, porque el script de precios hace push a `main`.
 - `club-clientes` y `admin-dashboard`: ramas históricas, ya incluidas en `main`. No tienen push.
 - `main` también recibe los commits automáticos del script de precios (`Actualizar precios.bat` → `scripts/publish-prices.ps1`), que exige estar en `main` y hace push él mismo. Antes de trabajar, ejecuta `git pull`.
 
@@ -162,6 +165,39 @@ Ramas:
   - Redirect URLs: `https://rivenliclub25-prog.github.io/Laalameda/**` y `http://localhost:5173/**`.
 - `README.md` documenta cómo configurar el club (`.env`, Secrets y orden de los SQL).
 - **Pendiente de confirmar:** repetir en la web publicada el flujo completo (registro, confirmación, login, perfil, recuperación, cierre de sesión, borrado, panel y promos).
+
+## Tickets del club (rama `tickets`, especificación en `TICKETS.md`)
+- **T1 — base de datos: hecha. Falta ejecutar `supabase/tickets.sql` en Supabase.**
+  - **Qué contiene:**
+    - `app_settings` (`hora_cierre` 03:00, margen de 30 min).
+    - `promotions`, con la semilla de las 13 promos de `promos.ts`: todas `solo_club = true`, `activa = false`, `max_usos = 1` y `ventana_usos = 'dia'`, sin precios.
+    - `profiles.es_camarero`.
+    - `tickets` (incluida en Realtime) y `ticket_events`.
+    - RPC: `create_ticket`, `lookup_ticket`, `redeem_ticket`, `admin_void_ticket`, `admin_reopen_ticket`, `admin_ticket_stats`, `admin_set_camarero`, `promos_estado` y `promo_activa`.
+    - `admin_list_users` ahora devuelve también `es_camarero`.
+  - **Verificación:** el archivo se ha ejecutado dos veces en un PostgreSQL en memoria (PGlite) con una simulación de Supabase, y han pasado 34 pruebas: las de `TICKETS.md`, las del admin, la caducidad y las franjas que cruzan la medianoche. Falta confirmarlo en Supabase.
+- **T2 — socio, T3 — camarero, T4 — admin y T5 (opcional):** pendientes.
+
+### Decisiones de tickets (no cambiar sin hablarlo)
+- **Packs** (Pack Partido, Previa, Picoteo para 4, Ronda de 4): **un ticket cubre el pack entero**, y lo pide el socio que hace el pedido. La regla "una promo por persona" se aplica al resto.
+- **Promos de club:** las 13 empiezan **apagadas**. El bar enciende las que quiera con `activa`.
+- **Límite inicial: 1 uso por socio y jornada.** Se cambia por promo (`max_usos`, `ventana_usos`) sin tocar la lógica.
+  - La jornada respeta `hora_cierre`: la 01:30 del sábado cuenta como el viernes.
+  - La semana va de lunes a domingo y el mes es el natural, todo en hora de Madrid.
+  - Cuentan los tickets canjeados y el disponible.
+- **`descuento_texto` sin precios** (solo el contenido). Los precios siguen en el Excel y en `promos.ts`; se migrarán a Supabase más adelante.
+- **`protect_role` (ampliado en `tickets.sql`)** protege `role` y `es_camarero`.
+  - Bloquea los cambios que llegan **directamente desde la API** (roles `anon`/`authenticated`).
+  - Los permite desde el SQL Editor y el Table Editor, y desde las RPC `security definer` que comprueban por dentro que quien llama es admin (`admin_set_camarero`).
+  - Antes se basaba en `auth.uid()`, pero eso habría bloqueado a `admin_set_camarero`.
+- **Códigos de error estables** en el mensaje de la excepción: `PROMO_INACTIVA`, `PROMO_FUERA_DE_HORARIO`, `LIMITE_USOS`, `TICKET_YA_CANJEADO`, `TICKET_PROPIO`, `NO_ES_CAMARERO`… La lista completa está en la sección 8 de `tickets.sql`.
+  - `lookup_ticket` no lanza error si el ticket no vale: devuelve `valido = false` y el `motivo`.
+- **`redeem_ticket` comprueba el interruptor `activa`, no la franja horaria.** La franja ya está reflejada en `expires_at`, así el margen de cortesía sirve de verdad.
+- **Caducidad:** lo primero que llegue entre el fin de la franja, el `fin` de la promo y el cierre de la jornada, más el margen.
+  - Las promos sin franja (todo el día) caducan al cierre de la jornada.
+  - Los tickets caducados se marcan al pedir uno nuevo. En la web hay que mostrar como caducado cualquier ticket con `expires_at` pasado.
+- **Códigos `ALA-XXXX`:** 31 caracteres posibles (sin 0/O/1/I/L), generados con `gen_random_bytes` sin sesgo, y con reintento si hay colisión.
+- **Lector QR (T3):** propuesta `qr-scanner` (Nimiq, licencia MIT). Para generar el QR, `qrcode.react`, que ya está instalado.
 
 ## Cómo asignar o quitar un admin
 - La persona se registra antes en la web como cualquier cliente.
