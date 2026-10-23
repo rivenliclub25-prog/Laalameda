@@ -19,6 +19,8 @@ import { ProtectedRoute } from '@/auth/ProtectedRoute';
 import { AdminRoute } from '@/auth/AdminRoute';
 import { AdminPage } from '@/pages/AdminPage';
 import { MisTicketsPage } from '@/pages/MisTicketsPage';
+import { CanjearPage } from '@/pages/CanjearPage';
+import { CamareroRoute } from '@/auth/CamareroRoute';
 import { ClubPage } from '@/pages/ClubPage';
 import { RecuperarPage } from '@/pages/RecuperarPage';
 import { NuevaContrasenaPage } from '@/pages/NuevaContrasenaPage';
@@ -116,6 +118,12 @@ function App() {
         <ProtectedRoute>
           <MisTicketsPage />
         </ProtectedRoute>
+      );
+    case '/canjear':
+      return (
+        <CamareroRoute>
+          <CanjearPage />
+        </CamareroRoute>
       );
     case '/admin':
       return (

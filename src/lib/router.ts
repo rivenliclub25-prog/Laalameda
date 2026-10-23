@@ -15,7 +15,8 @@ export type RoutePath =
   | '/privacidad'
   | '/perfil'
   | '/admin'
-  | '/mis-tickets';
+  | '/mis-tickets'
+  | '/canjear';
 
 const routes: RoutePath[] = [
   '/qr',
@@ -26,6 +27,7 @@ const routes: RoutePath[] = [
   '/perfil',
   '/admin',
   '/mis-tickets',
+  '/canjear',
 ];
 
 export interface Route {

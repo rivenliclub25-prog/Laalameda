@@ -196,7 +196,21 @@ Ramas:
     - Las dos salen de la misma lista, `useAccountLinks()` en `Navbar.tsx`. **Las opciones nuevas (p. ej. «Canjear» en T3) se añaden solo ahí.**
   - «Mis tickets» también está enlazado desde Mi perfil.
   - El QR apunta a `#/canjear?c=…`, que aún no existe (llega en T3).
-- **T3 — camarero, T4 — admin y T5 (opcional):** pendientes.
+- **T3 — camarero: hecha, pendiente de que el usuario la pruebe** (con un puerto HTTPS de GitHub, porque la cámara exige https).
+  - **`#/canjear`** (`CanjearPage.tsx`), protegida por `CamareroRoute`:
+    - Sin sesión: lleva a `#/club?modo=login&volver=canjear&c=…` y, al entrar, vuelve con el mismo código.
+    - Con sesión pero sin ser camarero: va a Mi perfil con el aviso «Este código lo canjea el personal del bar…».
+  - **Lector QR:** `qr-scanner@1.4.2` (MIT, última versión de 2022, estable). Se carga con `import()` solo al pulsar «Abrir cámara», en su propio archivo (unos 16 KB comprimidos con el worker). Usa la cámara trasera y se para mientras se muestra un resultado.
+  - **Código a mano:** prefijo `ALA-` fijo y 4 caracteres. `parseScannedCode()` acepta la URL del QR, `ALA-XXXX`, `alaxxxx` o `xxxx`.
+  - **Con `?c=` en la URL:** comprueba el ticket automáticamente y quita el parámetro de la URL.
+  - **Resultado a pantalla completa:**
+    - Verde `#2f6b3f` si es válido: promo, contenido, nombre de pila, hora de caducidad, importe opcional en € (se guarda en céntimos) y botones CANJEAR / Cancelar.
+    - Rojo vino si no lo es: el motivo en una frase, más detalle como «Canjeado a las 21:14».
+    - Tras canjear, «¡Canjeado!» y vuelve solo al escáner a los 3 s.
+  - **Sonido y vibración** (`src/lib/feedback.ts`, con Web Audio, sin archivos). El interruptor 🔊/🔇 se recuerda en `localStorage`.
+  - **Enlaces:** «Canjear tickets» en `useAccountLinks()` (menú Mi cuenta y menú móvil) y una franja «Eres del personal del bar» en Mi perfil.
+- **T4 — admin y T5 (opcional):** pendientes.
+- **Antes de publicar `tickets` en `main`:** en cuanto se publique, todos los botones de promo saldrán como «Disponible próximamente» hasta que el bar encienda las promos en `promotions`. Hay que encender las que correspondan antes o justo después de publicar.
 
 ### Decisiones de tickets (no cambiar sin hablarlo)
 - **Packs** (Pack Partido, Previa, Picoteo para 4, Ronda de 4): **un ticket cubre el pack entero**, y lo pide el socio que hace el pedido. La regla "una promo por persona" se aplica al resto.

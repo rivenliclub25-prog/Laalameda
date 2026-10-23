@@ -5,6 +5,7 @@ import {
   LogOut,
   Mail,
   MessageCircle,
+  ScanLine,
   ShieldCheck,
   Ticket as TicketIcon,
   Trash2,
@@ -46,7 +47,7 @@ function formatMemberSince(iso: string) {
 }
 
 export function PerfilPage() {
-  const { user, notify, isAdmin } = useAuth();
+  const { user, notify, isAdmin, esCamarero } = useAuth();
   const [notice, dismissNotice] = useAuthNotice();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [form, setForm] = useState<FormState | null>(null);
@@ -171,6 +172,17 @@ export function PerfilPage() {
             </span>
             <a href={routeHref('/admin')} className={`btn-vino w-full sm:w-auto ${focusRing}`}>
               <LayoutDashboard size={16} aria-hidden="true" /> Panel
+            </a>
+          </div>
+        )}
+
+        {esCamarero && (
+          <div className="mt-4 flex flex-col items-center justify-between gap-3 rounded-r-md border border-piedra/60 bg-piedra-suave/60 px-4 py-3 text-sm text-carbon sm:flex-row">
+            <span className="inline-flex items-center gap-2 font-semibold">
+              <ScanLine size={17} className="text-vino" aria-hidden="true" /> Eres del personal del bar
+            </span>
+            <a href={routeHref('/canjear')} className={`btn-vino w-full sm:w-auto ${focusRing}`}>
+              <ScanLine size={16} aria-hidden="true" /> Canjear tickets
             </a>
           </div>
         )}

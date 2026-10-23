@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { publicBaseUrl } from '@/data/site';
-import { ticketErrorCode, translateTicketError } from '@/lib/ticketErrors';
+import { ticketErrorCode, translateTicketCode, translateTicketError } from '@/lib/ticketErrors';
 
 /** Una fila de public.tickets (ver supabase/tickets.sql). */
 export interface Ticket {
@@ -113,6 +113,64 @@ export function subscribeMyTickets(userId: string, onChange: (ticket: Ticket) =>
   return () => {
     supabase.removeChannel(channel);
   };
+}
+
+// ---------------------------------------------------------------------
+// Camarero
+// ---------------------------------------------------------------------
+
+/** Resultado de lookup_ticket(): no lanza error si el ticket no vale, devuelve el motivo. */
+export interface TicketLookup {
+  valido: boolean;
+  motivo: string | null;
+  codigo: string;
+  estado: Ticket['estado'] | null;
+  promo_id: string | null;
+  promo_nombre: string | null;
+  promo_descuento: string | null;
+  socio_nombre: string | null;
+  created_at: string | null;
+  expires_at: string | null;
+  canjeado_at: string | null;
+}
+
+export async function lookupTicket(codigo: string): Promise<{ result: TicketLookup | null; error: string | null }> {
+  const { data, error } = await supabase.rpc('lookup_ticket', { p_codigo: codigo });
+  if (error) return { result: null, error: translateTicketError(error) };
+  const row = (data as TicketLookup[] | null)?.[0] ?? null;
+  return { result: row, error: row ? null : translateTicketCode(null) };
+}
+
+export async function redeemTicket(
+  codigo: string,
+  importeCentimos: number | null
+): Promise<{ ticket: Ticket | null; error: string | null; code: string | null }> {
+  const { data, error } = await supabase.rpc('redeem_ticket', {
+    p_codigo: codigo,
+    p_importe_centimos: importeCentimos,
+  });
+  if (error) return { ticket: null, error: translateTicketError(error), code: ticketErrorCode(error) };
+  return { ticket: data as Ticket, error: null, code: null };
+}
+
+/**
+ * Saca el código de lo que lea el escáner: la URL del QR (".../#/canjear?c=ALA-7K3P") o un código
+ * suelto ("ALA-7K3P", "7k3p"). Devuelve null si no parece un código de ticket.
+ */
+export function parseScannedCode(text: string): string | null {
+  const trimmed = text.trim();
+  const fromUrl = trimmed.match(/[?&]c=([^&#\s]+)/);
+  const raw = (fromUrl ? decodeURIComponent(fromUrl[1]) : trimmed).toUpperCase().replace(/\s+/g, '');
+  const match = raw.match(/^(?:ALA-?)?([2-9A-HJKMNP-Z]{4})$/);
+  return match ? `ALA-${match[1]}` : null;
+}
+
+/** "2,50" → 250 céntimos. Vacío → null. Devuelve undefined si no es un importe válido. */
+export function parseEurosToCents(value: string): number | null | undefined {
+  const clean = value.trim().replace(/\s|€/g, '').replace(',', '.');
+  if (!clean) return null;
+  if (!/^\d+(\.\d{1,2})?$/.test(clean)) return undefined;
+  return Math.round(Number(clean) * 100);
 }
 
 // ---------------------------------------------------------------------

@@ -6,6 +6,7 @@ import { useAuth, useAuthNotice } from '@/auth/AuthContext';
 import { googleEnabled, signIn, signInWithGoogle, signUp } from '@/lib/auth';
 import { getHashParams, navigate, routeHref } from '@/lib/router';
 import { findPromotion } from '@/data/promos';
+import { parseScannedCode } from '@/lib/tickets';
 import { MIN_PASSWORD_LENGTH, validateEmail, validateNewPassword, validatePasswordConfirm } from '@/lib/validation';
 
 type Mode = 'registro' | 'login';
@@ -19,22 +20,26 @@ const perks = [
 export function ClubPage() {
   const { session, configured } = useAuth();
   const [notice, dismissNotice] = useAuthNotice();
-  // "#/club?modo=login&promo=<id>": viene del botón "Activar con el club" de una promo.
-  const [{ initialMode, promo }] = useState(() => {
+  // "#/club?modo=login&promo=<id>": viene del botón "Obtener ticket" de una promo.
+  // "#/club?modo=login&volver=canjear&c=<código>": un camarero que escaneó un QR sin haber iniciado sesión.
+  const [{ initialMode, promo, volverCanjear, codigo }] = useState(() => {
     const params = getHashParams();
     return {
       initialMode: (params.get('modo') === 'login' ? 'login' : 'registro') as Mode,
       promo: findPromotion(params.get('promo')),
+      volverCanjear: params.get('volver') === 'canjear',
+      codigo: parseScannedCode(params.get('c') ?? ''),
     };
   });
   const [mode, setMode] = useState<Mode>(initialMode);
 
-  // Con sesión iniciada no tiene sentido esta página: vuelve a la promo de la que venía o va al perfil.
+  // Con sesión iniciada no tiene sentido esta página: vuelve a donde estaba o va al perfil.
   useEffect(() => {
     if (!session) return;
-    if (promo) window.location.replace(`#promo-${promo.id}`);
+    if (volverCanjear) navigate('/canjear', { replace: true, params: codigo ? { c: codigo } : undefined });
+    else if (promo) window.location.replace(`#promo-${promo.id}`);
     else navigate('/perfil', { replace: true });
-  }, [session, promo]);
+  }, [session, promo, volverCanjear, codigo]);
 
   const changeMode = (next: Mode) => {
     setMode(next);
@@ -95,6 +100,22 @@ export function ClubPage() {
           {notice && (
             <div className="mb-5">
               <Notice kind={notice.kind}>{notice.text}</Notice>
+            </div>
+          )}
+
+          {volverCanjear && !notice && (
+            <div className="mb-5">
+              <Notice kind="info">
+                Inicia sesión con tu cuenta del personal del bar para canjear
+                {codigo ? (
+                  <>
+                    {' '}el ticket <strong>{codigo}</strong>
+                  </>
+                ) : (
+                  ' tickets'
+                )}
+                .
+              </Notice>
             </div>
           )}
 

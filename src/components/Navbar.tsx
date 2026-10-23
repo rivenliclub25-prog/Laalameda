@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FocusEvent } from 'react';
-import { ChevronDown, LayoutDashboard, LogOut, Menu, Ticket as TicketIcon, UserRound, X } from 'lucide-react';
+import { ChevronDown, LayoutDashboard, LogOut, Menu, ScanLine, Ticket as TicketIcon, UserRound, X } from 'lucide-react';
 import { navLinks, siteConfig } from '@/data/site';
 import { useAuth } from '@/auth/AuthContext';
 import { signOut } from '@/lib/auth';
@@ -19,12 +19,13 @@ interface AccountLink {
  * escritorio y la sección "Tu cuenta" del menú móvil. Para añadir una opción, basta con hacerlo aquí.
  */
 function useAccountLinks(): AccountLink[] {
-  const { session, isAdmin } = useAuth();
+  const { session, isAdmin, esCamarero } = useAuth();
   if (!session) return [];
   const links: AccountLink[] = [
     { href: routeHref('/perfil'), label: 'Mi perfil', icon: UserRound },
     { href: routeHref('/mis-tickets'), label: 'Mis tickets', icon: TicketIcon },
   ];
+  if (esCamarero) links.push({ href: routeHref('/canjear'), label: 'Canjear tickets', icon: ScanLine });
   if (isAdmin) links.push({ href: routeHref('/admin'), label: 'Panel del club', icon: LayoutDashboard });
   return links;
 }
