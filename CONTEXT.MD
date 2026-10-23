@@ -191,7 +191,10 @@ Ramas:
     - Disponibles: QR grande, código, contenido, cuenta atrás, y «Promo desactivada» si el bar la apaga.
     - Historial con fechas.
     - Confirmación a pantalla completa y vibración cuando el camarero canjea (Realtime). Se recarga al volver a la pestaña.
-  - Enlace «Mis tickets» en el header (en pantallas medianas solo el icono), en el menú móvil y en Mi perfil.
+  - **Probado por el usuario: el canje en tiempo real funciona.**
+  - **Header** (corrección tras T2, porque con el enlace «Panel» se rompía en escritorio): con sesión, las opciones de la cuenta van en un único desplegable **«Mi cuenta ▾»** (Mi perfil, Mis tickets, Panel del club si es admin, Cerrar sesión). En el móvil van en la sección «Tu cuenta» del menú ☰.
+    - Las dos salen de la misma lista, `useAccountLinks()` en `Navbar.tsx`. **Las opciones nuevas (p. ej. «Canjear» en T3) se añaden solo ahí.**
+  - «Mis tickets» también está enlazado desde Mi perfil.
   - El QR apunta a `#/canjear?c=…`, que aún no existe (llega en T3).
 - **T3 — camarero, T4 — admin y T5 (opcional):** pendientes.
 
