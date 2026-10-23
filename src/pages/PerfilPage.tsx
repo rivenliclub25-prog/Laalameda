@@ -1,5 +1,14 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { LayoutDashboard, Loader2, LogOut, Mail, MessageCircle, ShieldCheck, Trash2 } from 'lucide-react';
+import {
+  LayoutDashboard,
+  Loader2,
+  LogOut,
+  Mail,
+  MessageCircle,
+  ShieldCheck,
+  Ticket as TicketIcon,
+  Trash2,
+} from 'lucide-react';
 import { PageShell } from '@/components/club/PageShell';
 import { Checkbox, ClubCard, Notice, SubmitButton, TextField, focusRing } from '@/components/club/FormControls';
 import { DeleteAccountModal } from '@/components/club/DeleteAccountModal';
@@ -260,6 +269,9 @@ export function PerfilPage() {
         </ClubCard>
 
         <section className="mt-8 text-center" aria-label="Opciones de la cuenta">
+          <a href={routeHref('/mis-tickets')} className={`btn-vino mb-4 w-full py-3 ${focusRing}`}>
+            <TicketIcon size={16} aria-hidden="true" /> Mis tickets
+          </a>
           {signOutError && (
             <div className="mb-4">
               <Notice kind="error">{signOutError}</Notice>

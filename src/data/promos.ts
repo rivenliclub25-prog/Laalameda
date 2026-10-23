@@ -253,18 +253,6 @@ export function clubLoginHref(promotion: Promotion): string {
   return `#/club?modo=login&promo=${encodeURIComponent(promotion.id)}`;
 }
 
-/** Con sesión: WhatsApp con los datos del socio, para que el bar pueda comprobarlo. */
-export function clubPromoWhatsappHref(
-  promotion: Promotion,
-  member: { nombre?: string | null; email?: string | null }
-): string {
-  const quien = [member.nombre?.trim(), member.email && `(${member.email})`].filter(Boolean).join(' ');
-  const message = encodeURIComponent(
-    `Hola, soy socio del club de La Alameda${quien ? `: ${quien}` : ''}. Quiero activar la promo ${promotion.title}.`
-  );
-  return `https://wa.me/${siteConfig.whatsapp}?text=${message}`;
-}
-
 export function findPromotion(id: string | null): Promotion | null {
   return (id && promotions.find((promotion) => promotion.id === id)) || null;
 }

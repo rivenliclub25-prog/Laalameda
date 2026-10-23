@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
-import { ArrowRight, Clock3, MessageCircle, UserRound, Users } from 'lucide-react';
+import { ArrowRight, Clock3, Loader2, MessageCircle, Ticket as TicketIcon, Users } from 'lucide-react';
 import { Reveal } from '@/components/Reveal';
+import { Notice } from '@/components/club/FormControls';
 import { useAuth } from '@/auth/AuthContext';
+import { createTicket, usePromoStates, type PromoState } from '@/lib/tickets';
+import { navigate } from '@/lib/router';
 import {
   clubLoginHref,
-  clubPromoWhatsappHref,
   findPromotion,
   formatPromotionDiscount,
   formatPromotionPrice,
@@ -18,8 +20,101 @@ import {
   type PromoSegmentId,
 } from '@/data/promos';
 
-function PromotionCard({ promotion, highlighted }: { promotion: Promotion; highlighted: boolean }) {
+/**
+ * "Obtener ticket": sin sesión lleva a iniciar sesión (y vuelve aquí); con sesión crea el ticket y
+ * lleva a Mis tickets. Si la promo está apagada o fuera de horario, aparece desactivado.
+ */
+function TicketButton({
+  promotion,
+  state,
+  statesLoaded,
+}: {
+  promotion: Promotion;
+  state: PromoState | undefined;
+  statesLoaded: boolean;
+}) {
   const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  if (!statesLoaded) {
+    return (
+      <button type="button" disabled className="btn-vino w-full cursor-wait opacity-70 hover:translate-y-0">
+        <Loader2 size={16} className="animate-spin" aria-hidden="true" /> Obtener ticket
+      </button>
+    );
+  }
+
+  if (!state?.disponible_ahora) {
+    return (
+      <button
+        type="button"
+        disabled
+        className="btn w-full cursor-not-allowed border border-carbon/20 bg-carbon/5 text-carbon/60"
+      >
+        <Clock3 size={16} aria-hidden="true" />
+        {state?.activa ? 'No disponible ahora' : 'Disponible próximamente'}
+      </button>
+    );
+  }
+
+  if (!user) {
+    return (
+      <a href={clubLoginHref(promotion)} className="btn-vino w-full">
+        <TicketIcon size={16} aria-hidden="true" /> Obtener ticket
+      </a>
+    );
+  }
+
+  const handleClick = async () => {
+    setLoading(true);
+    setError(null);
+    const result = await createTicket(promotion.id);
+    setLoading(false);
+    if (result.ticket) {
+      navigate('/mis-tickets', { params: { t: result.ticket.id } });
+    } else if (result.code === 'TICKET_YA_DISPONIBLE') {
+      navigate('/mis-tickets', { params: { promo: promotion.id } });
+    } else {
+      setError(result.error);
+    }
+  };
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={handleClick}
+        disabled={loading}
+        aria-busy={loading}
+        className="btn-vino w-full disabled:cursor-wait disabled:opacity-70 disabled:hover:translate-y-0"
+      >
+        {loading ? (
+          <>
+            <Loader2 size={16} className="animate-spin" aria-hidden="true" /> Generando…
+          </>
+        ) : (
+          <>
+            <TicketIcon size={16} aria-hidden="true" /> Obtener ticket
+          </>
+        )}
+      </button>
+      {error && <Notice kind="error">{error}</Notice>}
+    </>
+  );
+}
+
+function PromotionCard({
+  promotion,
+  highlighted,
+  promoState,
+  statesLoaded,
+}: {
+  promotion: Promotion;
+  highlighted: boolean;
+  promoState: PromoState | undefined;
+  statesLoaded: boolean;
+}) {
   const reserveUrl = reservationHref(promotion);
   const pricePerPerson =
     promotion.priceCents !== undefined && promotion.people
@@ -92,23 +187,7 @@ function PromotionCard({ promotion, highlighted }: { promotion: Promotion; highl
       </div>
 
       <div className="mt-auto flex flex-col gap-2 pt-5">
-        {user ? (
-          <a
-            href={clubPromoWhatsappHref(promotion, {
-              nombre: user.user_metadata?.nombre as string | undefined,
-              email: user.email,
-            })}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-vino w-full"
-          >
-            <MessageCircle size={16} /> Activar con el club
-          </a>
-        ) : (
-          <a href={clubLoginHref(promotion)} className="btn-vino w-full">
-            <UserRound size={16} aria-hidden="true" /> Activar con el club
-          </a>
-        )}
+        <TicketButton promotion={promotion} state={promoState} statesLoaded={statesLoaded} />
         {reserveUrl && (
           <a
             href={reserveUrl}
@@ -129,6 +208,16 @@ export function PromotionsSection() {
   const [now, setNow] = useState(() => new Date());
 
   const [highlightId, setHighlightId] = useState<string | null>(null);
+  const { states: promoStates, loaded: statesLoaded } = usePromoStates();
+
+  // En local, avisa si alguna promo de promos.ts no está en la tabla promotions (su botón sale como no disponible).
+  useEffect(() => {
+    if (!import.meta.env.DEV || !promoStates) return;
+    const missing = promotions.filter((promotion) => !promoStates.has(promotion.id)).map((p) => p.id);
+    if (missing.length > 0) {
+      console.warn('[club] Estas promos de promos.ts no están en la tabla promotions:', missing);
+    }
+  }, [promoStates]);
 
   useEffect(() => {
     const interval = window.setInterval(() => setNow(new Date()), 60_000);
@@ -266,7 +355,13 @@ export function PromotionsSection() {
           className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
         >
           {segmentPromotions.map((promotion) => (
-            <PromotionCard key={promotion.id} promotion={promotion} highlighted={highlightId === promotion.id} />
+            <PromotionCard
+              key={promotion.id}
+              promotion={promotion}
+              highlighted={highlightId === promotion.id}
+              promoState={promoStates?.get(promotion.id)}
+              statesLoaded={statesLoaded}
+            />
           ))}
         </div>
 

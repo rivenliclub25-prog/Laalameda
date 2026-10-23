@@ -18,6 +18,8 @@ export interface AuthContextValue {
    * la seguridad real está en la base de datos (RLS y admin_list_users).
    */
   isAdmin: boolean;
+  /** true si el perfil tiene es_camarero (puede canjear tickets). Igual que isAdmin: solo para la interfaz. */
+  esCamarero: boolean;
   /** true mientras se consulta el rol del usuario recién conectado. */
   roleLoading: boolean;
   /** Mensaje tras volver de un enlace de correo (cuenta confirmada, enlace caducado…). */

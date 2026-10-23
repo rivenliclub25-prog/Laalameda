@@ -18,6 +18,7 @@ import { ClubSection } from '@/components/ClubSection';
 import { ProtectedRoute } from '@/auth/ProtectedRoute';
 import { AdminRoute } from '@/auth/AdminRoute';
 import { AdminPage } from '@/pages/AdminPage';
+import { MisTicketsPage } from '@/pages/MisTicketsPage';
 import { ClubPage } from '@/pages/ClubPage';
 import { RecuperarPage } from '@/pages/RecuperarPage';
 import { NuevaContrasenaPage } from '@/pages/NuevaContrasenaPage';
@@ -108,6 +109,12 @@ function App() {
       return (
         <ProtectedRoute>
           <PerfilPage />
+        </ProtectedRoute>
+      );
+    case '/mis-tickets':
+      return (
+        <ProtectedRoute>
+          <MisTicketsPage />
         </ProtectedRoute>
       );
     case '/admin':

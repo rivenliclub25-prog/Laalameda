@@ -14,9 +14,19 @@ export type RoutePath =
   | '/nueva-contrasena'
   | '/privacidad'
   | '/perfil'
-  | '/admin';
+  | '/admin'
+  | '/mis-tickets';
 
-const routes: RoutePath[] = ['/qr', '/club', '/recuperar', '/nueva-contrasena', '/privacidad', '/perfil', '/admin'];
+const routes: RoutePath[] = [
+  '/qr',
+  '/club',
+  '/recuperar',
+  '/nueva-contrasena',
+  '/privacidad',
+  '/perfil',
+  '/admin',
+  '/mis-tickets',
+];
 
 export interface Route {
   path: RoutePath;
@@ -57,12 +67,14 @@ export function getHashParams(): URLSearchParams {
   return new URLSearchParams(query);
 }
 
-export function routeHref(path: RoutePath): string {
-  return path === '/' ? '#top' : `#${path}`;
+export function routeHref(path: RoutePath, params?: Record<string, string>): string {
+  if (path === '/') return '#top';
+  const query = params ? new URLSearchParams(params).toString() : '';
+  return `#${path}${query ? `?${query}` : ''}`;
 }
 
-export function navigate(path: RoutePath, { replace = false } = {}) {
-  const href = routeHref(path);
+export function navigate(path: RoutePath, { replace = false, params }: { replace?: boolean; params?: Record<string, string> } = {}) {
+  const href = routeHref(path, params);
   if (replace) {
     window.location.replace(href);
   } else {

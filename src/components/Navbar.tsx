@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { LayoutDashboard, Menu, UserRound, X } from 'lucide-react';
+import { LayoutDashboard, Menu, Ticket as TicketIcon, UserRound, X } from 'lucide-react';
 import { navLinks, siteConfig } from '@/data/site';
 import { useAuth } from '@/auth/AuthContext';
 import { routeHref } from '@/lib/router';
@@ -51,6 +51,17 @@ export function Navbar() {
         </ul>
 
         <div className="hidden items-center gap-3 lg:flex">
+          {session && (
+            <a
+              href={routeHref('/mis-tickets')}
+              title="Mis tickets"
+              className={`inline-flex items-center gap-1.5 rounded-r-sm text-sm font-medium text-marfil/85 transition-colors hover:text-piedra ${clubFocus}`}
+            >
+              <TicketIcon size={17} aria-hidden="true" />
+              {/* En pantallas medianas solo el icono, para que quepa todo el header. */}
+              <span className="sr-only xl:not-sr-only">Mis tickets</span>
+            </a>
+          )}
           {isAdmin && (
             <a
               href={routeHref('/admin')}
@@ -92,6 +103,17 @@ export function Navbar() {
       {open && (
         <div className="animate-slide-down border-t border-marfil/10 bg-carbon/98 px-4 pb-6 pt-2 backdrop-blur-md lg:hidden">
           <ul className="flex flex-col gap-1">
+            {session && (
+              <li>
+                <a
+                  href={routeHref('/mis-tickets')}
+                  onClick={handleNav}
+                  className="flex items-center gap-2 rounded-r-sm px-3 py-3 text-sm font-semibold text-piedra transition-colors hover:bg-marfil/10"
+                >
+                  <TicketIcon size={16} aria-hidden="true" /> Mis tickets
+                </a>
+              </li>
+            )}
             {isAdmin && (
               <li>
                 <a

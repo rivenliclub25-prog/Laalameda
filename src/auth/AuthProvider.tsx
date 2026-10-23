@@ -51,9 +51,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // Rol del usuario conectado. Se guarda junto a su id para saber si corresponde a la sesión actual.
+  // Permisos del usuario conectado (admin, camarero). Se guardan junto a su id para saber si
+  // corresponden a la sesión actual.
   const userId = session?.user.id ?? null;
-  const [roleState, setRoleState] = useState<{ userId: string; isAdmin: boolean } | null>(null);
+  const [roleState, setRoleState] = useState<{ userId: string; isAdmin: boolean; esCamarero: boolean } | null>(
+    null
+  );
 
   useEffect(() => {
     if (!userId) {
@@ -63,14 +66,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let active = true;
     supabase
       .from('profiles')
-      .select('role')
+      // "*" en vez de columnas concretas: si falta alguna (SQL sin ejecutar), no falla todo.
+      .select('*')
       .eq('id', userId)
       .maybeSingle()
       .then(({ data, error }) => {
         if (!active) return;
-        // Si falla (p. ej. aún no se ha ejecutado admin.sql), se trata como usuario normal.
+        // Si falla, se trata como usuario normal.
         if (error) console.error('[club] No se pudo leer el rol:', error);
-        setRoleState({ userId, isAdmin: data?.role === 'admin' });
+        setRoleState({ userId, isAdmin: data?.role === 'admin', esCamarero: data?.es_camarero === true });
       });
     return () => {
       active = false;
@@ -79,6 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const roleLoading = userId !== null && roleState?.userId !== userId;
   const isAdmin = !roleLoading && userId !== null && roleState?.isAdmin === true;
+  const esCamarero = !roleLoading && userId !== null && roleState?.esCamarero === true;
 
   const clearNotice = useCallback(() => setNotice(null), []);
 
@@ -89,12 +94,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading,
       configured: isSupabaseConfigured,
       isAdmin,
+      esCamarero,
       roleLoading,
       notice,
       notify: setNotice,
       clearNotice,
     }),
-    [session, loading, isAdmin, roleLoading, notice, clearNotice]
+    [session, loading, isAdmin, esCamarero, roleLoading, notice, clearNotice]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

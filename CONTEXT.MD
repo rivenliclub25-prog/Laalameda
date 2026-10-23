@@ -176,7 +176,24 @@ Ramas:
     - RPC: `create_ticket`, `lookup_ticket`, `redeem_ticket`, `admin_void_ticket`, `admin_reopen_ticket`, `admin_ticket_stats`, `admin_set_camarero`, `promos_estado` y `promo_activa`.
     - `admin_list_users` ahora devuelve también `es_camarero`.
   - **Verificación:** el archivo se ha ejecutado dos veces en un PostgreSQL en memoria (PGlite) con una simulación de Supabase, y han pasado 34 pruebas: las de `TICKETS.md`, las del admin, la caducidad y las franjas que cruzan la medianoche. Falta confirmarlo en Supabase.
-- **T2 — socio, T3 — camarero, T4 — admin y T5 (opcional):** pendientes.
+- `tickets.sql` **ya ejecutado** en Supabase, y las pruebas manuales pasan (confirmado por el usuario el 2026-10-23).
+- **T2 — socio: hecha, pendiente de que el usuario la pruebe.**
+  - `AuthProvider` expone `esCamarero`. Lo lee junto con `role` en la misma consulta (`select('*')`, para que no falle si falta alguna columna).
+  - `src/lib/tickets.ts`: tipos, `createTicket`, `fetchMyTickets`, `subscribeMyTickets` (Realtime filtrado por `user_id`), el hook `usePromoStates` (una llamada a `promos_estado()`, refrescada cada 5 minutos y al volver a la pestaña), `ticketQrUrl` y `ticketDisplayState`.
+  - `src/lib/ticketErrors.ts` traduce los códigos de error a español.
+  - **Botón "Obtener ticket"** en las tarjetas de promo. Sustituye a "Activar con el club" y desaparece el WhatsApp de activación.
+    - Sin sesión: lleva a iniciar sesión y luego vuelve a la tarjeta.
+    - Con sesión: crea el ticket y lleva a `#/mis-tickets?t=<id>`.
+    - Si la promo está apagada: «Disponible próximamente». Si está encendida pero fuera de horario: «No disponible ahora».
+    - Si ya hay un ticket disponible de esa promo: lleva a ese ticket.
+    - Si un id de `promos.ts` no está en `promotions`: el botón sale como no disponible, con un aviso en la consola en desarrollo.
+  - **`#/mis-tickets`** (protegida):
+    - Disponibles: QR grande, código, contenido, cuenta atrás, y «Promo desactivada» si el bar la apaga.
+    - Historial con fechas.
+    - Confirmación a pantalla completa y vibración cuando el camarero canjea (Realtime). Se recarga al volver a la pestaña.
+  - Enlace «Mis tickets» en el header (en pantallas medianas solo el icono), en el menú móvil y en Mi perfil.
+  - El QR apunta a `#/canjear?c=…`, que aún no existe (llega en T3).
+- **T3 — camarero, T4 — admin y T5 (opcional):** pendientes.
 
 ### Decisiones de tickets (no cambiar sin hablarlo)
 - **Packs** (Pack Partido, Previa, Picoteo para 4, Ronda de 4): **un ticket cubre el pack entero**, y lo pide el socio que hace el pedido. La regla "una promo por persona" se aplica al resto.
