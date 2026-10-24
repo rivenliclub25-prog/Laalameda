@@ -144,6 +144,38 @@ export function SubmitButton({ loading, loadingText, children, disabled }: Submi
   );
 }
 
+interface SwitchProps {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  /** Texto para lectores de pantalla (el interruptor no lleva texto visible). */
+  label: string;
+  disabled?: boolean;
+}
+
+/** Interruptor encendido/apagado (role="switch"). */
+export function Switch({ checked, onChange, label, disabled }: SwitchProps) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      disabled={disabled}
+      onClick={() => onChange(!checked)}
+      className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 disabled:cursor-wait disabled:opacity-60 ${focusRing} ${
+        checked ? 'bg-vino' : 'bg-carbon/25'
+      }`}
+    >
+      <span
+        aria-hidden="true"
+        className={`inline-block h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${
+          checked ? 'translate-x-6' : 'translate-x-1'
+        }`}
+      />
+    </button>
+  );
+}
+
 /** Tarjeta de los formularios del club, con el estilo de las tarjetas de la web. */
 export function ClubCard({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (

@@ -16,7 +16,9 @@ export interface Ticket {
   created_at: string;
   expires_at: string;
   canjeado_at: string | null;
+  canjeado_por: string | null;
   anulado_at: string | null;
+  anulado_por: string | null;
   motivo_anulacion: string | null;
   importe_descuento_centimos: number | null;
 }

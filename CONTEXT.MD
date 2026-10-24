@@ -216,7 +216,30 @@ Ramas:
       - Mis tickets comprueba además el estado cada 5 s, mientras haya un ticket por usar y la pantalla esté visible.
       - La celebración «¡Canjeado!» sale una sola vez, venga del tiempo real o de la comprobación.
       - En `npm run dev`, la consola muestra el estado de la conexión (`[club] Tiempo real (Mis tickets): …`).
-- **T4 — admin y T5 (opcional):** pendientes.
+  - **El usuario confirmó que la cámara y la sincronización ya funcionan** (2026-10-24).
+- **T4 — admin: hecha, pendiente de que el usuario la pruebe.** No necesita SQL nuevo: usa las tablas y RPC de `tickets.sql`. Los permisos de admin se comprobaron con PGlite.
+  - **`#/admin` con pestañas** (`?seccion=socios|promos|tickets|estadisticas`, se mantiene al recargar y se navega con las flechas del teclado). `AdminPage.tsx` es solo la página con las pestañas; cada pestaña está en `src/components/admin/`.
+  - **Socios** (`SociosSection.tsx`, el panel anterior trasladado): interruptor **Camarero** por socio (`admin_set_camarero`, el cambio se ve al momento y se deshace si falla), filtro «Camareros» y columna en el CSV.
+  - **Promos** (`PromosSection.tsx`):
+    - Tarjeta **«Ajustes de la jornada»** (hora de cierre y margen, `app_settings`).
+    - Lista de promos con el interruptor Activa/Apagada y la etiqueta «Disponible ahora» o «Fuera de horario».
+    - **Editor** (días, franja con el aviso de «cruza la medianoche», periodo y límite de usos).
+  - **Tickets** (`TicketsSection.tsx`):
+    - Búsqueda por código o por nombre o email del socio. El nombre se cruza en el navegador con la lista de socios, porque `tickets.user_id` apunta a `auth.users` y no se puede unir directamente.
+    - Filtro por estado. Sin búsqueda, los 50 más recientes.
+    - **Detalle** con el registro de eventos y las acciones **Anular** y **Deshacer canje**, con motivo obligatorio.
+  - **Estadísticas** (`StatsSection.tsx`):
+    - Periodo: jornada de hoy, 7 días, 30 días o fechas a medida.
+    - Contadores y % de canje, y tabla por promo con totales.
+    - **Gráfico de canjes por hora** en orden de jornada (8:00 → 7:00), en barras HTML sin librería, con tooltip, etiqueta del pico y vista en tabla.
+    - El color de las barras es `#A3283A`, un tono del vino de la marca validado con la guía de dataviz; el `#6E1423` no pasaba la banda de luminosidad.
+  - **Componentes compartidos nuevos:** `Switch` (en `FormControls.tsx`) y `Modal.tsx`.
+- **Decisiones de T4:**
+  - **(a) El texto del horario de la tarjeta de la web sigue saliendo de `promos.ts`.** Editar días o franja en el panel cambia cuándo se puede pedir y canjear el ticket, pero no ese texto. El editor lo avisa. Se resolverá al migrar las promos a Supabase.
+  - **Los ajustes de la jornada se editan desde el panel.**
+  - **Las fechas y horas del panel usan la hora del navegador**, que se supone en Madrid.
+  - **El total de euros descontados no está en las estadísticas**: haría falta un cambio de SQL. Pendiente si se quiere.
+- **T5 (opcional):** pendiente.
 - **Antes de publicar `tickets` en `main`:** en cuanto se publique, todos los botones de promo saldrán como «Disponible próximamente» hasta que el bar encienda las promos en `promotions`. Hay que encender las que correspondan antes o justo después de publicar.
 
 ### Decisiones de tickets (no cambiar sin hablarlo)

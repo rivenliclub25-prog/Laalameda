@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { translateTicketError } from '@/lib/ticketErrors';
 
 /** Una fila de admin_list_users() (ver supabase/admin.sql). */
 export interface AdminUser {
@@ -10,6 +11,8 @@ export interface AdminUser {
   acepta_email: boolean;
   acepta_whatsapp: boolean;
   role: 'user' | 'admin';
+  /** Desde tickets.sql. Si aún no se ha ejecutado, llega undefined (se trata como false). */
+  es_camarero?: boolean;
   created_at: string;
   email_confirmed_at: string | null;
   last_sign_in_at: string | null;
@@ -28,6 +31,12 @@ export async function fetchAdminUsers(): Promise<{ users: AdminUser[]; error: st
   return { users: (data ?? []) as AdminUser[], error: null };
 }
 
+/** Da o quita el permiso de camarero (RPC admin_set_camarero, solo admins). */
+export async function setCamarero(userId: string, valor: boolean): Promise<{ error: string | null }> {
+  const { error } = await supabase.rpc('admin_set_camarero', { p_user: userId, p_valor: valor });
+  return { error: error ? translateTicketError(error) : null };
+}
+
 // ---------------------------------------------------------------------
 // Filtros, orden y contadores
 // ---------------------------------------------------------------------
@@ -37,6 +46,7 @@ export interface AdminFilters {
   aceptaEmail: boolean;
   aceptaWhatsapp: boolean;
   cumpleEsteMes: boolean;
+  camareros: boolean;
   sort: 'recientes' | 'antiguos';
 }
 
@@ -45,6 +55,7 @@ export const defaultFilters: AdminFilters = {
   aceptaEmail: false,
   aceptaWhatsapp: false,
   cumpleEsteMes: false,
+  camareros: false,
   sort: 'recientes',
 };
 
@@ -70,6 +81,7 @@ export function filterUsers(users: AdminUser[], filters: AdminFilters, now = new
     if (filters.aceptaEmail && !user.acepta_email) return false;
     if (filters.aceptaWhatsapp && !user.acepta_whatsapp) return false;
     if (filters.cumpleEsteMes && !isBirthdayThisMonth(user, now)) return false;
+    if (filters.camareros && !user.es_camarero) return false;
     if (!query) return true;
 
     const inText = normalizeText(`${user.nombre ?? ''} ${user.email}`).includes(query);
@@ -126,6 +138,9 @@ function csvDate(iso: string | null) {
   return iso ? new Date(iso).toLocaleDateString('es-ES') : '';
 }
 
+/** Marca de orden de bytes (BOM) para que Excel reconozca el UTF-8. */
+const BOM = String.fromCharCode(0xfeff);
+
 /** CSV separado por ";" y con BOM UTF-8, para que Excel en español lo abra con columnas y tildes bien. */
 export function buildCsv(users: AdminUser[]) {
   const header = [
@@ -138,6 +153,7 @@ export function buildCsv(users: AdminUser[]) {
     'Fecha de alta',
     'Email confirmado',
     'Rol',
+    'Camarero',
   ];
   const rows = users.map((u) => [
     u.nombre,
@@ -149,8 +165,9 @@ export function buildCsv(users: AdminUser[]) {
     csvDate(u.created_at),
     u.email_confirmed_at !== null,
     u.role === 'admin' ? 'Admin' : 'Socio',
+    u.es_camarero === true,
   ]);
-  return '﻿' + [header, ...rows].map((row) => row.map(csvCell).join(';')).join('\r\n');
+  return BOM + [header, ...rows].map((row) => row.map(csvCell).join(';')).join('\r\n');
 }
 
 export function downloadCsv(users: AdminUser[], filters: AdminFilters) {
@@ -158,6 +175,7 @@ export function downloadCsv(users: AdminUser[], filters: AdminFilters) {
   if (filters.aceptaEmail) parts.push('email');
   if (filters.aceptaWhatsapp) parts.push('whatsapp');
   if (filters.cumpleEsteMes) parts.push('cumple-mes');
+  if (filters.camareros) parts.push('camareros');
   parts.push(new Date().toISOString().slice(0, 10));
 
   const blob = new Blob([buildCsv(users)], { type: 'text/csv;charset=utf-8' });
