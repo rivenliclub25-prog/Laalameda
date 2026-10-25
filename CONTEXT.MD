@@ -243,7 +243,7 @@ Ramas:
 - **T4 probada por el usuario: todo funciona** (2026-10-25).
 - **Promos de El Clásico** (25 de octubre de 2026, solo esa jornada):
   - Nueva franja **«⚽ El Clásico»**, la primera de la lista. Se abre por defecto mientras tenga promos visibles y, al acabar, vuelve sola a otra franja.
-  - **4 cañones Estrella a 7 €** (−13 %; en carta 8 €) y **4 tercios Estrella a 8,50 €** (−15 %; en carta 10 €). El usuario pidió 10 € en las dos, pero los cañones salían más caros que en carta y los tercios sin descuento; eligió ajustarlos.
+  - **Precios definitivos (cambio obligatorio del usuario antes de publicar): 4 cañones Estrella a 9 € y 4 tercios Estrella a 10 €, sin etiqueta de descuento.** Primero fueron 7 € y 8,50 € con −13 % y −15 %. Con la carta de la web (cañón 2 €, tercio 2,50 €) esos porcentajes ya no eran ciertos, así que se quitaron.
   - **1 ticket por socio y promo**, válido toda la jornada hasta el cierre (03:00 del lunes; el ticket caduca a las 03:30 con el margen).
   - **Precio fijo:** campo nuevo `fixedPrice: true` en `promos.ts`, para promos cuyo precio no viene del Excel. Sin esa marca, una promo sin precio en `prices.generated.ts` sigue dando error a propósito. El script de precios no las toca.
   - **Visibilidad:** campo nuevo `visibleUntil` (ISO) en `promos.ts`, para que la tarjeta se vea hasta las 03:00 y no solo hasta medianoche.

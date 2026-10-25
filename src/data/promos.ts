@@ -222,15 +222,15 @@ const basePromotions: Promotion[] = [
     expiresOn: '2026-10-31',
   },
   // El Clásico (25 de octubre de 2026): solo esa jornada, hasta el cierre (03:00 del lunes).
-  // Precio fijo (no viene del Excel). En carta: 4 cañones = 8 €, 4 tercios = 10 €.
+  // Precio fijo (no viene del Excel): 4 cañones 9 €, 4 tercios 10 €. Sin etiqueta de descuento,
+  // porque con la carta actual (cañón 2 €, tercio 2,50 €) no hay rebaja que anunciar.
   {
     id: 'clasico-4-canones',
     title: '4 cañones · El Clásico',
     segmentIds: ['el-clasico'],
     description: 'Ronda para ver el partido',
     contents: ['4 cañones Estrella'],
-    priceCents: 700,
-    discount: 13,
+    priceCents: 900,
     fixedPrice: true,
     exclusive: true,
     // Jornada del bar: del domingo a las 3:00 al lunes a las 3:00 (cruza la medianoche).
@@ -244,8 +244,7 @@ const basePromotions: Promotion[] = [
     segmentIds: ['el-clasico'],
     description: 'Ronda para ver el partido',
     contents: ['4 tercios Estrella'],
-    priceCents: 850,
-    discount: 15,
+    priceCents: 1000,
     fixedPrice: true,
     exclusive: true,
     // Jornada del bar: del domingo a las 3:00 al lunes a las 3:00 (cruza la medianoche).
