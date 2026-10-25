@@ -204,8 +204,19 @@ function PromotionCard({
 }
 
 export function PromotionsSection() {
-  const [activeSegment, setActiveSegment] = useState<PromoSegmentId>('mananas');
+  // Se abre la primera franja que tenga promos visibles (las especiales, como El Clásico, van primero).
+  const firstSegmentWithPromos = (at: Date): PromoSegmentId =>
+    promoSegments.find((segment) =>
+      promotions.some((promo) => promo.segmentIds.includes(segment.id) && isPromotionVisible(promo, at))
+    )?.id ?? 'mananas';
+  const [activeSegment, setActiveSegment] = useState<PromoSegmentId>(() => firstSegmentWithPromos(new Date()));
   const [now, setNow] = useState(() => new Date());
+
+  // Si la franja abierta se queda sin promos (p. ej. acaba El Clásico con la página abierta), cambia a otra.
+  useEffect(() => {
+    const hasVisible = promotions.some((p) => p.segmentIds.includes(activeSegment) && isPromotionVisible(p, now));
+    if (!hasVisible) setActiveSegment(firstSegmentWithPromos(now));
+  }, [now, activeSegment]);
 
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const { states: promoStates, loaded: statesLoaded } = usePromoStates();

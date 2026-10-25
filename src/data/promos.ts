@@ -1,7 +1,14 @@
 import { siteConfig, type MenuCategory } from '@/data/site';
 import { spreadsheetPrices } from './prices.generated';
 
-export type PromoSegmentId = 'mananas' | 'tarde' | 'noche' | 'fin-de-semana' | 'universitarios' | '31-octubre';
+export type PromoSegmentId =
+  | 'el-clasico'
+  | 'mananas'
+  | 'tarde'
+  | 'noche'
+  | 'fin-de-semana'
+  | 'universitarios'
+  | '31-octubre';
 
 export interface PromoSegment {
   id: PromoSegmentId;
@@ -35,9 +42,18 @@ export interface Promotion {
   scheduleLabel: string;
   reserveMessage?: string;
   expiresOn?: string;
+  /** Momento exacto (ISO) en que la promo deja de verse. Para promos de una jornada que acaban de madrugada. */
+  visibleUntil?: string;
+  /**
+   * Precio fijo escrito aquí, que NO viene del Excel (promos de un día). Sin esta marca, una promo sin
+   * precio en prices.generated.ts da error a propósito, para que no se publique sin precio.
+   */
+  fixedPrice?: true;
 }
 
 export const promoSegments: PromoSegment[] = [
+  // Primera de la lista: mientras tenga promos visibles, es la pestaña que se abre por defecto.
+  { id: 'el-clasico', label: '⚽ El Clásico', audience: 'Hoy hay partido: promos solo para socios del club' },
   { id: 'mananas', label: '☕ Mañanas', audience: 'Vecinos y trabajadores' },
   { id: 'tarde', label: '🍺 Tarde', audience: 'Parejas y compañeros' },
   { id: 'noche', label: '🌙 Noche', audience: 'Grupos' },
@@ -200,11 +216,40 @@ const basePromotions: Promotion[] = [
     scheduleLabel: '31 de octubre',
     expiresOn: '2026-10-31',
   },
+  // El Clásico (25 de octubre de 2026): solo esa jornada, hasta el cierre (03:00 del lunes).
+  // Precio fijo (no viene del Excel). En carta: 4 cañones = 8 €, 4 tercios = 10 €.
+  {
+    id: 'clasico-4-canones',
+    title: '4 cañones · El Clásico',
+    segmentIds: ['el-clasico'],
+    description: 'Ronda para ver el partido',
+    contents: ['4 cañones Estrella'],
+    priceCents: 700,
+    discount: 13,
+    fixedPrice: true,
+    schedule: { days: [0], startMinutes: 0, endMinutes: 24 * 60 },
+    scheduleLabel: 'Hoy · hasta el cierre',
+    visibleUntil: '2026-10-26T03:00:00+01:00',
+  },
+  {
+    id: 'clasico-4-tercios',
+    title: '4 tercios · El Clásico',
+    segmentIds: ['el-clasico'],
+    description: 'Ronda para ver el partido',
+    contents: ['4 tercios Estrella'],
+    priceCents: 850,
+    discount: 15,
+    fixedPrice: true,
+    schedule: { days: [0], startMinutes: 0, endMinutes: 24 * 60 },
+    scheduleLabel: 'Hoy · hasta el cierre',
+    visibleUntil: '2026-10-26T03:00:00+01:00',
+  },
 ];
 
 const spreadsheetPromotionPrices = new Map(Object.entries(spreadsheetPrices.promotions));
 
 export const promotions: Promotion[] = basePromotions.map((promotion) => {
+  if (promotion.fixedPrice) return promotion;
   const price = spreadsheetPromotionPrices.get(promotion.id);
   if (price === undefined) {
     throw new Error(`Faltan precio y descuento de "${promotion.title}" en los datos generados desde Excel.`);
@@ -264,6 +309,7 @@ export function reservationHref(promotion: Promotion): string | null {
 }
 
 export function isPromotionVisible(promotion: Promotion, now: Date): boolean {
+  if (promotion.visibleUntil && now.getTime() >= new Date(promotion.visibleUntil).getTime()) return false;
   return !promotion.expiresOn || localDate(now) <= promotion.expiresOn;
 }
 

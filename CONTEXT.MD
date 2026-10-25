@@ -239,6 +239,14 @@ Ramas:
   - **Los ajustes de la jornada se editan desde el panel.**
   - **Las fechas y horas del panel usan la hora del navegador**, que se supone en Madrid.
   - **El total de euros descontados no está en las estadísticas**: haría falta un cambio de SQL. Pendiente si se quiere.
+- **T4 probada por el usuario: todo funciona** (2026-10-25).
+- **Promos de El Clásico** (25 de octubre de 2026, solo esa jornada):
+  - Nueva franja **«⚽ El Clásico»**, la primera de la lista. Se abre por defecto mientras tenga promos visibles y, al acabar, vuelve sola a otra franja.
+  - **4 cañones Estrella a 7 €** (−13 %; en carta 8 €) y **4 tercios Estrella a 8,50 €** (−15 %; en carta 10 €). El usuario pidió 10 € en las dos, pero los cañones salían más caros que en carta y los tercios sin descuento; eligió ajustarlos.
+  - **1 ticket por socio y promo**, válido toda la jornada hasta el cierre (03:00 del lunes; el ticket caduca a las 03:30 con el margen).
+  - **Precio fijo:** campo nuevo `fixedPrice: true` en `promos.ts`, para promos cuyo precio no viene del Excel. Sin esa marca, una promo sin precio en `prices.generated.ts` sigue dando error a propósito. El script de precios no las toca.
+  - **Visibilidad:** campo nuevo `visibleUntil` (ISO) en `promos.ts`, para que la tarjeta se vea hasta las 03:00 y no solo hasta medianoche.
+  - **Base de datos:** `supabase/promos-clasico.sql` crea las dos filas en `promotions`, ya encendidas, con `fin = 2026-10-26 03:00 Europe/Madrid`. Se puede ejecutar varias veces. Verificado con PGlite, incluido el cambio al horario de invierno de ese mismo día.
 - **T5 (opcional):** pendiente.
 - **Antes de publicar `tickets` en `main`:** en cuanto se publique, todos los botones de promo saldrán como «Disponible próximamente» hasta que el bar encienda las promos en `promotions`. Hay que encender las que correspondan antes o justo después de publicar.
 
