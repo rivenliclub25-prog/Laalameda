@@ -247,6 +247,8 @@ Ramas:
   - **1 ticket por socio y promo**, válido toda la jornada hasta el cierre (03:00 del lunes; el ticket caduca a las 03:30 con el margen).
   - **Precio fijo:** campo nuevo `fixedPrice: true` en `promos.ts`, para promos cuyo precio no viene del Excel. Sin esa marca, una promo sin precio en `prices.generated.ts` sigue dando error a propósito. El script de precios no las toca.
   - **Visibilidad:** campo nuevo `visibleUntil` (ISO) en `promos.ts`, para que la tarjeta se vea hasta las 03:00 y no solo hasta medianoche.
+  - **Exclusivas:** campo nuevo `exclusive: true` en `promos.ts`. Mientras haya alguna promo exclusiva visible, **el resto se ocultan en toda la web**: «Promos de hoy», las pestañas de franjas, la pestaña Promos de la carta y las etiquetas «En promo». Lo calcula `isPromotionVisible()`. A las 03:00 todo vuelve a la normalidad solo.
+  - **Horario en `promos.ts`:** domingo de 03:00 a lunes 03:00 (cruza la medianoche), para que «Promos de hoy» las siga mostrando después de las 00:00.
   - **Base de datos:** `supabase/promos-clasico.sql` crea las dos filas en `promotions`, ya encendidas, con `fin = 2026-10-26 03:00 Europe/Madrid`. Se puede ejecutar varias veces. Verificado con PGlite, incluido el cambio al horario de invierno de ese mismo día.
 - **T5 (opcional):** pendiente.
 - **Antes de publicar `tickets` en `main`:** en cuanto se publique, todos los botones de promo saldrán como «Disponible próximamente» hasta que el bar encienda las promos en `promotions`. Hay que encender las que correspondan antes o justo después de publicar.

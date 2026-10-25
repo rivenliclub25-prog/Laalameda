@@ -113,6 +113,7 @@ export function MenuSection() {
                           <span className="mt-0.5 block text-xs font-primary opacity-65">{item.desc}</span>
                         )}
                         {promotions
+                          .filter((promotion) => isPromotionVisible(promotion, new Date()))
                           .flatMap((promotion) =>
                             promotion.regularProducts?.filter(
                               (product) => product.category === tab.id && product.name === item.name

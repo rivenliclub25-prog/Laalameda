@@ -49,6 +49,11 @@ export interface Promotion {
    * precio en prices.generated.ts da error a propósito, para que no se publique sin precio.
    */
   fixedPrice?: true;
+  /**
+   * Promo exclusiva (p. ej. un día de partido): mientras haya alguna exclusiva visible, el resto de
+   * promos se ocultan en toda la web. Al caducar (visibleUntil / expiresOn), todo vuelve a la normalidad.
+   */
+  exclusive?: true;
 }
 
 export const promoSegments: PromoSegment[] = [
@@ -227,7 +232,9 @@ const basePromotions: Promotion[] = [
     priceCents: 700,
     discount: 13,
     fixedPrice: true,
-    schedule: { days: [0], startMinutes: 0, endMinutes: 24 * 60 },
+    exclusive: true,
+    // Jornada del bar: del domingo a las 3:00 al lunes a las 3:00 (cruza la medianoche).
+    schedule: { days: [0], startMinutes: 3 * 60, endMinutes: 3 * 60 },
     scheduleLabel: 'Hoy · hasta el cierre',
     visibleUntil: '2026-10-26T03:00:00+01:00',
   },
@@ -240,7 +247,9 @@ const basePromotions: Promotion[] = [
     priceCents: 850,
     discount: 15,
     fixedPrice: true,
-    schedule: { days: [0], startMinutes: 0, endMinutes: 24 * 60 },
+    exclusive: true,
+    // Jornada del bar: del domingo a las 3:00 al lunes a las 3:00 (cruza la medianoche).
+    schedule: { days: [0], startMinutes: 3 * 60, endMinutes: 3 * 60 },
     scheduleLabel: 'Hoy · hasta el cierre',
     visibleUntil: '2026-10-26T03:00:00+01:00',
   },
@@ -308,9 +317,20 @@ export function reservationHref(promotion: Promotion): string | null {
   return `https://wa.me/${siteConfig.whatsapp}?text=${message}`;
 }
 
-export function isPromotionVisible(promotion: Promotion, now: Date): boolean {
+/** Si la promo está dentro de sus fechas (sin tener en cuenta las exclusivas). */
+function isWithinDates(promotion: Promotion, now: Date): boolean {
   if (promotion.visibleUntil && now.getTime() >= new Date(promotion.visibleUntil).getTime()) return false;
   return !promotion.expiresOn || localDate(now) <= promotion.expiresOn;
+}
+
+/** ¿Hay ahora alguna promo exclusiva (p. ej. El Clásico)? Entonces solo se muestran las exclusivas. */
+export function hasExclusivePromotions(now: Date): boolean {
+  return promotions.some((promotion) => promotion.exclusive && isWithinDates(promotion, now));
+}
+
+export function isPromotionVisible(promotion: Promotion, now: Date): boolean {
+  if (!isWithinDates(promotion, now)) return false;
+  return promotion.exclusive === true || !hasExclusivePromotions(now);
 }
 
 function localDate(date: Date): string {
