@@ -125,7 +125,7 @@ Por último, añade un apartado aparte, para hacerlo más adelante, sobre cómo 
 **Proyecto de Supabase en uso: `hinebaxynlpjisteuaus`.** Es el de `.env` y el de los GitHub Secrets, y el de la web publicada (comprobado el 2026-10-23). El otro proyecto (`eisuyvozingpasbqvrdx`) no se usa: tenerlo mezclado con el bueno dio `401 Invalid API key`.
 
 Ramas:
-- **`main`: la web publicada en GitHub Pages.** El 2026-10-25 se avanzó a `tickets` (T1–T4 y El Clásico), así que la web real ya tiene los tickets. El push lo hace el usuario, porque la terminal de Claude no tiene credenciales de GitHub.
+- **`main`: la web publicada en GitHub Pages.** **Publicada el 2026-10-25** con los tickets (T1–T4) y El Clásico (commit `677c11a`). Se comprobó que la web real carga la versión nueva y usa el proyecto `hinebaxynlpjisteuaus`. Desde ese día el push desde la terminal de Claude funciona.
 - **`tickets`: rama de trabajo de los tickets (ver `TICKETS.md`).** Las ampliaciones de tickets se siguen haciendo aquí. Al empezar cada fase hay que mezclar `main` en `tickets`, porque el script de precios hace push a `main`.
 - **Tras publicar:** las 13 promos originales están **apagadas** (los socios ven «Disponible próximamente») hasta que el bar las encienda en **Panel → Promos**. Las de El Clásico se encienden con `supabase/promos-clasico.sql`.
 - `club-clientes` y `admin-dashboard`: ramas históricas, ya incluidas en `main`. No tienen push.
