@@ -5,7 +5,7 @@ import { Checkbox, ClubCard, Notice, SubmitButton, TextField, focusRing } from '
 import { useAuth, useAuthNotice } from '@/auth/AuthContext';
 import { googleEnabled, signIn, signInWithGoogle, signUp } from '@/lib/auth';
 import { getHashParams, navigate, routeHref } from '@/lib/router';
-import { findPromotion } from '@/data/promos';
+import { findPromotion, useCatalog } from '@/lib/catalog';
 import { parseScannedCode } from '@/lib/tickets';
 import { MIN_PASSWORD_LENGTH, validateEmail, validateNewPassword, validatePasswordConfirm } from '@/lib/validation';
 
@@ -22,24 +22,27 @@ export function ClubPage() {
   const [notice, dismissNotice] = useAuthNotice();
   // "#/club?modo=login&promo=<id>": viene del botón "Obtener ticket" de una promo.
   // "#/club?modo=login&volver=canjear&c=<código>": un camarero que escaneó un QR sin haber iniciado sesión.
-  const [{ initialMode, promo, volverCanjear, codigo }] = useState(() => {
+  const [{ initialMode, promoId, volverCanjear, codigo }] = useState(() => {
     const params = getHashParams();
     return {
       initialMode: (params.get('modo') === 'login' ? 'login' : 'registro') as Mode,
-      promo: findPromotion(params.get('promo')),
+      // Solo ids válidos (letras, números y guiones), para usarlos en la URL de vuelta.
+      promoId: /^[a-z0-9-]+$/.test(params.get('promo') ?? '') ? params.get('promo') : null,
       volverCanjear: params.get('volver') === 'canjear',
       codigo: parseScannedCode(params.get('c') ?? ''),
     };
   });
+  const { catalog } = useCatalog();
+  const promo = findPromotion(catalog, promoId);
   const [mode, setMode] = useState<Mode>(initialMode);
 
   // Con sesión iniciada no tiene sentido esta página: vuelve a donde estaba o va al perfil.
   useEffect(() => {
     if (!session) return;
     if (volverCanjear) navigate('/canjear', { replace: true, params: codigo ? { c: codigo } : undefined });
-    else if (promo) window.location.replace(`#promo-${promo.id}`);
+    else if (promoId) window.location.replace(`#promo-${promoId}`);
     else navigate('/perfil', { replace: true });
-  }, [session, promo, volverCanjear, codigo]);
+  }, [session, promoId, volverCanjear, codigo]);
 
   const changeMode = (next: Mode) => {
     setMode(next);
@@ -119,10 +122,10 @@ export function ClubPage() {
             </div>
           )}
 
-          {promo && !notice && (
+          {promoId && !notice && (
             <div className="mb-5">
               <Notice kind="info">
-                Para activar <strong>{promo.title}</strong>, inicia sesión con tu cuenta del club.{' '}
+                Para activar {promo ? <strong>{promo.title}</strong> : 'esta promo'}, inicia sesión con tu cuenta del club.{' '}
                 {mode === 'login' ? (
                   <>
                     ¿Aún no eres socio?{' '}

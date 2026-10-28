@@ -8,7 +8,7 @@ Este documento es la especificación viva de la **fase POS** de la web de La Ala
 - Al decidir algo se anota la decisión y la fecha. Si cambia la propuesta, se actualizan las secciones afectadas y se apunta en el **Historial** (al final).
 - No se programa ninguna fase hasta que estén 🟢 las decisiones de las que depende (ver «Fases»).
 
-Última actualización: 2026-10-28 · Estado: **P1a en curso** (plan de P1 aprobado el 2026-10-28, sección 8).
+Última actualización: 2026-10-28 · Estado: **P1a hecha, pendiente de prueba** (falta ejecutar `catalogo.sql` en Supabase; ver «Estado de P1a» en la sección 8).
 
 ---
 
@@ -349,6 +349,28 @@ No se borra nada ahora. Cuando la carta y las promos lean de Supabase y estén p
 4. **No se publica en `main` antes del 2026-11-02** (inauguración y Halloween el sábado 31).
 5. Las promos de Halloween se migran igualmente; con `visible_hasta` pasado, no se ven.
 
+### Estado de P1a (2026-10-28): hecha, pendiente de prueba
+
+- Rama `pos` creada desde `main` (`35d85f0`). Código en la rama; **nada publicado** (no antes del 2026-11-02).
+- Hecho según el plan: `supabase/catalogo.sql`, `scripts/catalog-snapshot.mjs`, `public/catalogo.json`, `src/lib/catalog.ts`; `MenuSection`, `PromotionsSection` y `ClubPage` leen del catálogo; paso «Generar copia de la carta» en `deploy.yml`; script `catalog-snapshot` en `package.json`.
+- **Decisiones al implementar** (aprobadas el 2026-10-28):
+  - **Tipos:** todas las promos `pack`, salvo «Ronda gratis + sorteo» (`sorteo`) y «Chupito disfrazado» (`obsequio`, con su precio de 1 €).
+  - **Sin sesión solo se lee lo publicado:** promos con `publicada`. Se aplica igual a productos (`activo`), categorías, separadores y franjas (`visible`), que se añaden para poder ocultarlos en P1b.
+    - Se sustituye la política «Todos ven las promos» de `tickets.sql`.
+    - `promos_estado()` solo devuelve promos sin publicar a los admins.
+  - **Primera carga:** si el navegador tiene copia, se pinta al instante y sin aviso; el aviso solo sale si Supabase falla.
+  - **«Promos de hoy»** se calcula con el horario de la base de datos (el mismo de `promo_activa()`), en hora de Madrid.
+  - **Migración de datos una sola vez**, con la marca `p1a-carta-y-promos` en `catalogo_migraciones`. Volver a ejecutar el archivo recrea tablas, funciones y permisos, pero no toca datos (tampoco vuelve a crear lo que se haya borrado).
+  - **La pestaña «Promos» de la carta** sigue en el código: es una vista, no una categoría.
+- **Verificación:**
+  - 26 pruebas de SQL en PGlite (lectura pública, permisos de socio y admin, segunda ejecución sin pisar cambios, tickets funcionando).
+  - Comparación automática entre `src/data` y `catalogo()`: **todo idéntico** (pestañas, 67 productos con precios formateados, separadores, 15 promos, 7 franjas, «En promo», y visibilidad y «Promos de hoy» en 344 momentos de dos semanas).
+  - typecheck, lint y build sin errores.
+- **Pendiente para cerrar P1a:**
+  1. Ejecutar `catalogo.sql` en Supabase.
+  2. Regenerar `public/catalogo.json` desde Supabase (`npm run catalog-snapshot`); el actual se generó en PGlite.
+  3. Probar en local: se ve igual que la web publicada y, sin Supabase, se ve la copia con aviso.
+
 ### Respuestas al plan (2026-10-28)
 
 1. P1 se divide en **P1a y P1b**, con pausa para probar entre ellas.
@@ -376,3 +398,4 @@ No se borra nada ahora. Cuando la carta y las promos lean de Supabase y estén p
   - D13: se migran productos, precios y promos; el resto de la web se queda en el código.
 - **2026-10-28** — Propuesto el plan de P1 (sección 8), dividido en P1a (base de datos, migración y web leyendo de Supabase) y P1b (edición desde el panel).
 - **2026-10-28** — Plan de P1 aprobado: sin publicación diaria; categorías, separadores y franjas editables desde el panel; descuento % manual. Empieza P1a.
+- **2026-10-28** — P1a implementada en la rama `pos` y verificada en PGlite; pendiente de ejecutar `catalogo.sql` en Supabase y de la prueba del usuario.

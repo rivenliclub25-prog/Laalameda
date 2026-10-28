@@ -1,15 +1,23 @@
 import { useState } from 'react';
 import { Reveal } from '@/components/Reveal';
+import { Notice } from '@/components/club/FormControls';
 import {
   formatPromotionDiscount,
   formatPromotionPrice,
   isPromotionVisible,
-  promotions,
-} from '@/data/promos';
-import { menuTabs, type MenuCategory } from '@/data/site';
+  useCatalog,
+} from '@/lib/catalog';
+
+// La pestaña "Promos" de la carta es una vista (lista las promos visibles), no una categoría de productos.
+const PROMOS_TAB = { id: 'promos', label: 'Promos' };
 
 export function MenuSection() {
-  const [active, setActive] = useState<MenuCategory>('promos');
+  const [active, setActive] = useState<string>('promos');
+  const { catalog, fromBackup } = useCatalog();
+  const now = new Date();
+  const promotions = catalog?.promotions ?? [];
+  const visiblePromotions = promotions.filter((promotion) => isPromotionVisible(promotion, now, promotions));
+  const tabs = [PROMOS_TAB, ...(catalog?.menuTabs ?? [])];
 
   return (
     <section id="carta" className="bg-piedra-suave py-20 lg:py-32">
@@ -24,9 +32,15 @@ export function MenuSection() {
           <div className="divider-gold mt-4" />
         </Reveal>
 
+        {fromBackup && (
+          <div className="mx-auto mb-6 max-w-[640px]">
+            <Notice kind="info">Estás viendo una copia guardada de la carta: algunos precios pueden no estar al día.</Notice>
+          </div>
+        )}
+
         <Reveal delay={1}>
           <div className="mb-10 flex flex-wrap justify-center gap-2.5">
-            {menuTabs.map((tab) => (
+            {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActive(tab.id)}
@@ -45,41 +59,40 @@ export function MenuSection() {
         </Reveal>
 
         <div className="mx-auto max-w-[640px]">
-          {active === 'promos' && (
+          {!catalog && <MenuSkeleton />}
+          {catalog && active === 'promos' && (
             <div className="grid gap-3">
-              {promotions
-                .filter((promotion) => isPromotionVisible(promotion, new Date()))
-                .map((promotion) => {
-                  const price = formatPromotionPrice(promotion);
-                  return (
-                    <a
-                      key={promotion.id}
-                      href={`#promo-${promotion.id}`}
-                      className="flex items-baseline justify-between gap-4 border-b border-dashed border-carbon/25 pb-2.5 transition-colors hover:text-vino"
-                    >
-                      <span>
-                        <span className="font-display text-lg font-semibold">{promotion.title}</span>
-                        <span className="mt-0.5 block text-xs opacity-65">{promotion.scheduleLabel}</span>
-                      </span>
-                      <span className="flex flex-wrap items-center justify-end gap-2 text-right">
-                        {price && (
-                          <span className="font-display text-lg font-semibold text-vino">
-                            {price}
-                          </span>
-                        )}
-                        {promotion.discount !== undefined && promotion.priceCents !== 0 && (
-                          <span className="inline-flex rounded-full bg-vino px-2.5 py-1 text-xs font-bold text-white">
-                            {formatPromotionDiscount(promotion.discount)}
-                          </span>
-                        )}
-                      </span>
-                    </a>
-                  );
-                })}
+              {visiblePromotions.map((promotion) => {
+                const price = formatPromotionPrice(promotion);
+                return (
+                  <a
+                    key={promotion.id}
+                    href={`#promo-${promotion.id}`}
+                    className="flex items-baseline justify-between gap-4 border-b border-dashed border-carbon/25 pb-2.5 transition-colors hover:text-vino"
+                  >
+                    <span>
+                      <span className="font-display text-lg font-semibold">{promotion.title}</span>
+                      <span className="mt-0.5 block text-xs opacity-65">{promotion.scheduleLabel}</span>
+                    </span>
+                    <span className="flex flex-wrap items-center justify-end gap-2 text-right">
+                      {price && (
+                        <span className="font-display text-lg font-semibold text-vino">
+                          {price}
+                        </span>
+                      )}
+                      {promotion.discount !== undefined && promotion.priceCents !== 0 && (
+                        <span className="inline-flex rounded-full bg-vino px-2.5 py-1 text-xs font-bold text-white">
+                          {formatPromotionDiscount(promotion.discount)}
+                        </span>
+                      )}
+                    </span>
+                  </a>
+                );
+              })}
             </div>
           )}
-          {menuTabs.map((tab) => (
-            <div key={tab.id} className={active === tab.id && tab.id !== 'promos' ? 'block' : 'hidden'}>
+          {catalog?.menuTabs.map((tab) => (
+            <div key={tab.id} className={active === tab.id ? 'block' : 'hidden'}>
               <div className="grid gap-4">
                 {tab.items.map((item, idx) => {
                   if (item.sectionHeader) {
@@ -97,6 +110,10 @@ export function MenuSection() {
                       </div>
                     );
                   }
+                  // "En promo": promos visibles que llevan este producto.
+                  const inPromos = visiblePromotions.filter((promotion) =>
+                    item.id ? promotion.productIds.includes(item.id) : false
+                  );
                   return (
                     <div
                       key={idx}
@@ -112,27 +129,18 @@ export function MenuSection() {
                         {item.desc && (
                           <span className="mt-0.5 block text-xs font-primary opacity-65">{item.desc}</span>
                         )}
-                        {promotions
-                          .filter((promotion) => isPromotionVisible(promotion, new Date()))
-                          .flatMap((promotion) =>
-                            promotion.regularProducts?.filter(
-                              (product) => product.category === tab.id && product.name === item.name
-                            ).map(() => promotion.id) ?? []
-                          )
-                          .filter((id, index, ids) => ids.indexOf(id) === index)
-                          .map((id) => (
-                            <a
-                              key={id}
-                              href={`#promo-${id}`}
-                              className="mt-1 inline-flex rounded-full bg-vino/10 px-2 py-0.5 text-[0.68rem] font-semibold text-vino hover:bg-vino/20"
-                            >
-                              En promo
-                            </a>
-                          ))}
+                        {inPromos.map((promotion) => (
+                          <a
+                            key={promotion.id}
+                            href={`#promo-${promotion.id}`}
+                            className="mt-1 inline-flex rounded-full bg-vino/10 px-2 py-0.5 text-[0.68rem] font-semibold text-vino hover:bg-vino/20"
+                          >
+                            En promo
+                          </a>
+                        ))}
                       </div>
                       <div className="flex items-center gap-1.5 whitespace-nowrap">
                         <span className="font-display text-lg font-semibold text-vino">{item.price}</span>
-                        {item.pending && <span className="pend-badge">PENDIENTE</span>}
                       </div>
                     </div>
                   );
@@ -143,5 +151,19 @@ export function MenuSection() {
         </div>
       </div>
     </section>
+  );
+}
+
+/** Solo en la primera visita, mientras llega la carta. */
+function MenuSkeleton() {
+  return (
+    <div className="grid gap-4" role="status" aria-label="Cargando la carta">
+      {Array.from({ length: 5 }, (_, i) => (
+        <div key={i} className="flex animate-pulse items-baseline justify-between gap-4 border-b border-dashed border-carbon/25 pb-2.5">
+          <span className="h-5 w-1/2 rounded-r-sm bg-carbon/10" />
+          <span className="h-5 w-12 rounded-r-sm bg-carbon/10" />
+        </div>
+      ))}
+    </div>
   );
 }

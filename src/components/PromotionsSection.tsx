@@ -13,12 +13,10 @@ import {
   formatPromoPrice,
   isPromotionActive,
   isPromotionVisible,
-  promoSegments,
-  promotions,
   reservationHref,
+  useCatalog,
   type Promotion,
-  type PromoSegmentId,
-} from '@/data/promos';
+} from '@/lib/catalog';
 
 /**
  * "Obtener ticket": sin sesión lleva a iniciar sesión (y vuelve aquí); con sesión crea el ticket y
@@ -204,31 +202,40 @@ function PromotionCard({
 }
 
 export function PromotionsSection() {
+  const { catalog, fromBackup } = useCatalog();
+  const promotions = catalog?.promotions ?? [];
+  const promoSegments = catalog?.segments ?? [];
+
   // Se abre la primera franja que tenga promos visibles (las especiales, como El Clásico, van primero).
-  const firstSegmentWithPromos = (at: Date): PromoSegmentId =>
+  const firstSegmentWithPromos = (at: Date): string =>
     promoSegments.find((segment) =>
-      promotions.some((promo) => promo.segmentIds.includes(segment.id) && isPromotionVisible(promo, at))
+      promotions.some((promo) => promo.segmentIds.includes(segment.id) && isPromotionVisible(promo, at, promotions))
     )?.id ?? 'mananas';
-  const [activeSegment, setActiveSegment] = useState<PromoSegmentId>(() => firstSegmentWithPromos(new Date()));
+  const [activeSegment, setActiveSegment] = useState<string>(() => firstSegmentWithPromos(new Date()));
   const [now, setNow] = useState(() => new Date());
 
-  // Si la franja abierta se queda sin promos (p. ej. acaba El Clásico con la página abierta), cambia a otra.
+  // Si la franja abierta no tiene promos (al llegar la carta o, p. ej., al acabar El Clásico con la
+  // página abierta), cambia a la primera que tenga.
   useEffect(() => {
-    const hasVisible = promotions.some((p) => p.segmentIds.includes(activeSegment) && isPromotionVisible(p, now));
+    if (!catalog) return;
+    const hasVisible = promotions.some(
+      (p) => p.segmentIds.includes(activeSegment) && isPromotionVisible(p, now, promotions)
+    );
     if (!hasVisible) setActiveSegment(firstSegmentWithPromos(now));
-  }, [now, activeSegment]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [catalog, now, activeSegment]);
 
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const { states: promoStates, loaded: statesLoaded } = usePromoStates();
 
-  // En local, avisa si alguna promo de promos.ts no está en la tabla promotions (su botón sale como no disponible).
+  // En local, avisa si alguna promo de la carta no tiene estado de tickets (su botón sale como no disponible).
   useEffect(() => {
-    if (!import.meta.env.DEV || !promoStates) return;
-    const missing = promotions.filter((promotion) => !promoStates.has(promotion.id)).map((p) => p.id);
+    if (!import.meta.env.DEV || !promoStates || !catalog) return;
+    const missing = catalog.promotions.filter((promotion) => !promoStates.has(promotion.id)).map((p) => p.id);
     if (missing.length > 0) {
-      console.warn('[club] Estas promos de promos.ts no están en la tabla promotions:', missing);
+      console.warn('[club] Estas promos no tienen estado en promos_estado():', missing);
     }
-  }, [promoStates]);
+  }, [promoStates, catalog]);
 
   useEffect(() => {
     const interval = window.setInterval(() => setNow(new Date()), 60_000);
@@ -241,7 +248,7 @@ export function PromotionsSection() {
     let timer: number | undefined;
     const syncFromHash = () => {
       const match = window.location.hash.match(/^#promo-(.+)$/);
-      const promotion = findPromotion(match ? decodeURIComponent(match[1]) : null);
+      const promotion = findPromotion(catalog, match ? decodeURIComponent(match[1]) : null);
       if (!promotion) return;
 
       setActiveSegment((prev) => (promotion.segmentIds.includes(prev) ? prev : promotion.segmentIds[0]));
@@ -259,11 +266,12 @@ export function PromotionsSection() {
       window.removeEventListener('hashchange', syncFromHash);
       window.clearTimeout(timer);
     };
-  }, []);
+    // Se repite cuando llega la carta, por si se entró con "#promo-…" en la URL.
+  }, [catalog]);
 
-  const visiblePromotions = promotions.filter((promotion) => isPromotionVisible(promotion, now));
+  const visiblePromotions = promotions.filter((promotion) => isPromotionVisible(promotion, now, promotions));
   const activePromotions = visiblePromotions.filter((promotion) =>
-    isPromotionActive(promotion, now)
+    isPromotionActive(promotion, now, promotions)
   );
   const segmentPromotions = visiblePromotions.filter((promotion) =>
     promotion.segmentIds.includes(activeSegment)
@@ -279,6 +287,14 @@ export function PromotionsSection() {
           </h2>
         </Reveal>
 
+        {fromBackup && (
+          <div className="mb-6">
+            <Notice kind="info">
+              Estás viendo una copia guardada de las promos: algunos precios pueden no estar al día.
+            </Notice>
+          </div>
+        )}
+
         <Reveal>
           <div className="mb-8 rounded-r-lg border border-piedra/50 bg-piedra-suave p-5 text-carbon sm:p-7">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -290,7 +306,12 @@ export function PromotionsSection() {
                 {now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
               </span>
             </div>
-            {activePromotions.length > 0 ? (
+            {!catalog ? (
+              <div className="mt-5 grid animate-pulse gap-x-6 gap-y-3 sm:grid-cols-2" role="status" aria-label="Cargando promociones">
+                <span className="h-10 rounded-r-sm bg-carbon/10" />
+                <span className="h-10 rounded-r-sm bg-carbon/10" />
+              </div>
+            ) : activePromotions.length > 0 ? (
               <ul className="mt-5 grid gap-x-6 sm:grid-cols-2">
                 {activePromotions.map((promotion) => (
                   <li key={promotion.id} className="border-b border-carbon/15">
@@ -365,6 +386,10 @@ export function PromotionsSection() {
           aria-labelledby={`segment-${activeSegment}`}
           className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
         >
+          {!catalog &&
+            Array.from({ length: 3 }, (_, i) => (
+              <div key={i} className="h-72 animate-pulse rounded-r-lg border border-piedra/50 bg-white/60" aria-hidden="true" />
+            ))}
           {segmentPromotions.map((promotion) => (
             <PromotionCard
               key={promotion.id}

@@ -1,0 +1,1327 @@
+{
+  "promos": [
+    {
+      "id": "desayuno-salmantino",
+      "fin": null,
+      "tipo": "pack",
+      "items": [],
+      "orden": 0,
+      "inicio": null,
+      "nombre": "Desayuno Salmantino",
+      "franjas": [
+        "mananas"
+      ],
+      "hora_fin": "12:00:00",
+      "personas": null,
+      "exclusiva": false,
+      "solo_club": true,
+      "contenidos": [
+        "Café con leche, cortado o solo",
+        "Pincho de tortilla"
+      ],
+      "descripcion": null,
+      "dias_semana": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "hora_inicio": "08:00:00",
+      "descuento_pct": 33,
+      "texto_horario": "L-J · 8:00-12:00",
+      "visible_hasta": null,
+      "mensaje_reserva": null,
+      "precio_centimos": 400
+    },
+    {
+      "id": "desayuno-fuerte",
+      "fin": null,
+      "tipo": "pack",
+      "items": [],
+      "orden": 1,
+      "inicio": null,
+      "nombre": "Desayuno Fuerte",
+      "franjas": [
+        "mananas"
+      ],
+      "hora_fin": "12:00:00",
+      "personas": null,
+      "exclusiva": false,
+      "solo_club": true,
+      "contenidos": [
+        "Café con leche",
+        "Montadito de lomo y queso o de bacon y queso"
+      ],
+      "descripcion": null,
+      "dias_semana": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "hora_inicio": "08:00:00",
+      "descuento_pct": 20,
+      "texto_horario": "L-J · 8:00-12:00",
+      "visible_hasta": null,
+      "mensaje_reserva": null,
+      "precio_centimos": 400
+    },
+    {
+      "id": "dos-canas-y-bravas",
+      "fin": null,
+      "tipo": "pack",
+      "items": [
+        {
+          "cantidad": 2,
+          "product_id": "cervezas-cana"
+        },
+        {
+          "cantidad": 1,
+          "product_id": "pinchos-patatas"
+        }
+      ],
+      "orden": 2,
+      "inicio": null,
+      "nombre": "Dos cañas y bravas",
+      "franjas": [
+        "tarde"
+      ],
+      "hora_fin": "20:00:00",
+      "personas": null,
+      "exclusiva": false,
+      "solo_club": true,
+      "contenidos": [
+        "2 cañas Estrella",
+        "Patatas bravas"
+      ],
+      "descripcion": null,
+      "dias_semana": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "hora_inicio": "16:00:00",
+      "descuento_pct": 29,
+      "texto_horario": "L-V · 16:00-20:00",
+      "visible_hasta": null,
+      "mensaje_reserva": null,
+      "precio_centimos": 500
+    },
+    {
+      "id": "pack-partido",
+      "fin": null,
+      "tipo": "pack",
+      "items": [],
+      "orden": 3,
+      "inicio": null,
+      "nombre": "Pack Partido",
+      "franjas": [
+        "noche"
+      ],
+      "hora_fin": "03:00:00",
+      "personas": 2,
+      "exclusiva": false,
+      "solo_club": true,
+      "contenidos": [
+        "2 cañones Estrella",
+        "Patatas bravas",
+        "Pincho de tortilla"
+      ],
+      "descripcion": "Pack para 2",
+      "dias_semana": null,
+      "hora_inicio": "20:00:00",
+      "descuento_pct": 10,
+      "texto_horario": "Cada noche · 20:00-3:00",
+      "visible_hasta": null,
+      "mensaje_reserva": "Hola, quiero reservar para 2 con el Pack Partido",
+      "precio_centimos": 900
+    },
+    {
+      "id": "previa-alameda",
+      "fin": null,
+      "tipo": "pack",
+      "items": [],
+      "orden": 4,
+      "inicio": null,
+      "nombre": "Previa Alameda",
+      "franjas": [
+        "noche",
+        "universitarios"
+      ],
+      "hora_fin": "03:00:00",
+      "personas": 4,
+      "exclusiva": false,
+      "solo_club": true,
+      "contenidos": [
+        "4 cañones Estrella",
+        "Patatas bravas"
+      ],
+      "descripcion": "Pack para 4",
+      "dias_semana": null,
+      "hora_inicio": "20:00:00",
+      "descuento_pct": 0,
+      "texto_horario": "Cada noche · 20:00-3:00",
+      "visible_hasta": null,
+      "mensaje_reserva": "Hola, quiero reservar para 4 con la Previa Alameda",
+      "precio_centimos": 1100
+    },
+    {
+      "id": "vermut-alameda",
+      "fin": null,
+      "tipo": "pack",
+      "items": [],
+      "orden": 5,
+      "inicio": null,
+      "nombre": "Vermut Alameda",
+      "franjas": [
+        "fin-de-semana"
+      ],
+      "hora_fin": null,
+      "personas": null,
+      "exclusiva": false,
+      "solo_club": true,
+      "contenidos": [
+        "2 vermuts Izaguirre",
+        "Patatas bravas",
+        "Jeta"
+      ],
+      "descripcion": null,
+      "dias_semana": [
+        6,
+        7
+      ],
+      "hora_inicio": null,
+      "descuento_pct": 25,
+      "texto_horario": "S-D · fin de semana",
+      "visible_hasta": null,
+      "mensaje_reserva": null,
+      "precio_centimos": 750
+    },
+    {
+      "id": "picoteo-para-4",
+      "fin": null,
+      "tipo": "pack",
+      "items": [],
+      "orden": 6,
+      "inicio": null,
+      "nombre": "Picoteo para 4",
+      "franjas": [
+        "fin-de-semana",
+        "universitarios"
+      ],
+      "hora_fin": null,
+      "personas": 4,
+      "exclusiva": false,
+      "solo_club": true,
+      "contenidos": [
+        "4 cañones Estrella",
+        "Patatas bravas",
+        "Pincho de tortilla",
+        "Croquetas de jamón"
+      ],
+      "descripcion": "Para compartir entre 4",
+      "dias_semana": [
+        6,
+        7
+      ],
+      "hora_inicio": null,
+      "descuento_pct": 0,
+      "texto_horario": "S-D · fin de semana",
+      "visible_hasta": null,
+      "mensaje_reserva": "Hola, quiero reservar para 4 con el Picoteo para 4",
+      "precio_centimos": 1700
+    },
+    {
+      "id": "cubo-5-botellines",
+      "fin": null,
+      "tipo": "pack",
+      "items": [
+        {
+          "cantidad": 5,
+          "product_id": "cervezas-botellin"
+        }
+      ],
+      "orden": 7,
+      "inicio": null,
+      "nombre": "Cubo 5 Botellines",
+      "franjas": [
+        "fin-de-semana"
+      ],
+      "hora_fin": null,
+      "personas": null,
+      "exclusiva": false,
+      "solo_club": true,
+      "contenidos": [
+        "5 botellines Estrella Galicia"
+      ],
+      "descripcion": null,
+      "dias_semana": [
+        6,
+        7
+      ],
+      "hora_inicio": null,
+      "descuento_pct": 10,
+      "texto_horario": "S-D · fin de semana",
+      "visible_hasta": null,
+      "mensaje_reserva": null,
+      "precio_centimos": 900
+    },
+    {
+      "id": "mesa-universitaria",
+      "fin": null,
+      "tipo": "pack",
+      "items": [],
+      "orden": 8,
+      "inicio": null,
+      "nombre": "Mesa Universitaria",
+      "franjas": [
+        "universitarios"
+      ],
+      "hora_fin": "21:00:00",
+      "personas": null,
+      "exclusiva": false,
+      "solo_club": true,
+      "contenidos": [
+        "10 botellines Estrella"
+      ],
+      "descripcion": "Martes · de 18:00 a 21:00",
+      "dias_semana": [
+        2
+      ],
+      "hora_inicio": "18:00:00",
+      "descuento_pct": 10,
+      "texto_horario": "Martes · 18:00-21:00",
+      "visible_hasta": null,
+      "mensaje_reserva": null,
+      "precio_centimos": 1800
+    },
+    {
+      "id": "aperitivo-inauguracion",
+      "fin": "2026-11-01T00:00:00+01:00",
+      "tipo": "pack",
+      "items": [],
+      "orden": 9,
+      "inicio": "2026-10-31T00:00:00+01:00",
+      "nombre": "Aperitivo de inauguración",
+      "franjas": [
+        "31-octubre"
+      ],
+      "hora_fin": null,
+      "personas": null,
+      "exclusiva": false,
+      "solo_club": true,
+      "contenidos": [
+        "Vermut Izaguirre",
+        "Patatas bravas"
+      ],
+      "descripcion": null,
+      "dias_semana": [
+        6
+      ],
+      "hora_inicio": null,
+      "descuento_pct": 18,
+      "texto_horario": "31 de octubre",
+      "visible_hasta": "2026-11-01T00:00:00+01:00",
+      "mensaje_reserva": null,
+      "precio_centimos": 450
+    },
+    {
+      "id": "chupito-disfrazado",
+      "fin": "2026-11-01T00:00:00+01:00",
+      "tipo": "obsequio",
+      "items": [],
+      "orden": 10,
+      "inicio": "2026-10-31T00:00:00+01:00",
+      "nombre": "Chupito disfrazado",
+      "franjas": [
+        "31-octubre"
+      ],
+      "hora_fin": null,
+      "personas": null,
+      "exclusiva": false,
+      "solo_club": true,
+      "contenidos": [
+        "Chupito de licor de café",
+        "Uno por persona si vienes disfrazado"
+      ],
+      "descripcion": null,
+      "dias_semana": [
+        6
+      ],
+      "hora_inicio": null,
+      "descuento_pct": 50,
+      "texto_horario": "31 de octubre",
+      "visible_hasta": "2026-11-01T00:00:00+01:00",
+      "mensaje_reserva": null,
+      "precio_centimos": 100
+    },
+    {
+      "id": "ronda-4-halloween",
+      "fin": "2026-11-01T00:00:00+01:00",
+      "tipo": "pack",
+      "items": [],
+      "orden": 11,
+      "inicio": "2026-10-31T00:00:00+01:00",
+      "nombre": "Ronda de 4 · Halloween",
+      "franjas": [
+        "31-octubre"
+      ],
+      "hora_fin": null,
+      "personas": null,
+      "exclusiva": false,
+      "solo_club": true,
+      "contenidos": [
+        "4 cañas Estrella",
+        "Patatas bravas",
+        "Pincho de tortilla"
+      ],
+      "descripcion": null,
+      "dias_semana": [
+        6
+      ],
+      "hora_inicio": null,
+      "descuento_pct": 14,
+      "texto_horario": "31 de octubre",
+      "visible_hasta": "2026-11-01T00:00:00+01:00",
+      "mensaje_reserva": null,
+      "precio_centimos": 1200
+    },
+    {
+      "id": "ronda-gratis-sorteo",
+      "fin": "2026-11-01T00:00:00+01:00",
+      "tipo": "sorteo",
+      "items": [],
+      "orden": 12,
+      "inicio": "2026-10-31T00:00:00+01:00",
+      "nombre": "Ronda gratis + sorteo",
+      "franjas": [
+        "31-octubre"
+      ],
+      "hora_fin": null,
+      "personas": null,
+      "exclusiva": false,
+      "solo_club": true,
+      "contenidos": [
+        "Ronda de 4 cañas gratis para la mesa ganadora del sorteo"
+      ],
+      "descripcion": "Participa en el sorteo de inauguración",
+      "dias_semana": [
+        6
+      ],
+      "hora_inicio": null,
+      "descuento_pct": 100,
+      "texto_horario": "31 de octubre",
+      "visible_hasta": "2026-11-01T00:00:00+01:00",
+      "mensaje_reserva": null,
+      "precio_centimos": 0
+    },
+    {
+      "id": "clasico-4-canones",
+      "fin": "2026-10-26T03:00:00+01:00",
+      "tipo": "pack",
+      "items": [],
+      "orden": 13,
+      "inicio": null,
+      "nombre": "4 cañones · El Clásico",
+      "franjas": [
+        "el-clasico"
+      ],
+      "hora_fin": null,
+      "personas": null,
+      "exclusiva": true,
+      "solo_club": true,
+      "contenidos": [
+        "4 cañones Estrella"
+      ],
+      "descripcion": "Ronda para ver el partido",
+      "dias_semana": null,
+      "hora_inicio": null,
+      "descuento_pct": null,
+      "texto_horario": "Hoy · hasta el cierre",
+      "visible_hasta": "2026-10-26T03:00:00+01:00",
+      "mensaje_reserva": null,
+      "precio_centimos": 900
+    },
+    {
+      "id": "clasico-4-tercios",
+      "fin": "2026-10-26T03:00:00+01:00",
+      "tipo": "pack",
+      "items": [],
+      "orden": 14,
+      "inicio": null,
+      "nombre": "4 tercios · El Clásico",
+      "franjas": [
+        "el-clasico"
+      ],
+      "hora_fin": null,
+      "personas": null,
+      "exclusiva": true,
+      "solo_club": true,
+      "contenidos": [
+        "4 tercios Estrella"
+      ],
+      "descripcion": "Ronda para ver el partido",
+      "dias_semana": null,
+      "hora_inicio": null,
+      "descuento_pct": null,
+      "texto_horario": "Hoy · hasta el cierre",
+      "visible_hasta": "2026-10-26T03:00:00+01:00",
+      "mensaje_reserva": null,
+      "precio_centimos": 1000
+    }
+  ],
+  "franjas": [
+    {
+      "id": "el-clasico",
+      "orden": 0,
+      "nombre": "⚽ El Clásico",
+      "publico": "Hoy hay partido: promos solo para socios del club"
+    },
+    {
+      "id": "mananas",
+      "orden": 1,
+      "nombre": "☕ Mañanas",
+      "publico": "Vecinos y trabajadores"
+    },
+    {
+      "id": "tarde",
+      "orden": 2,
+      "nombre": "🍺 Tarde",
+      "publico": "Parejas y compañeros"
+    },
+    {
+      "id": "noche",
+      "orden": 3,
+      "nombre": "🌙 Noche",
+      "publico": "Grupos"
+    },
+    {
+      "id": "fin-de-semana",
+      "orden": 4,
+      "nombre": "🥂 Fin de semana",
+      "publico": "Planes de sábado y domingo"
+    },
+    {
+      "id": "universitarios",
+      "orden": 5,
+      "nombre": "🎓 Universitarios",
+      "publico": "Estudiantes"
+    },
+    {
+      "id": "31-octubre",
+      "orden": 6,
+      "nombre": "🎃 31 de octubre",
+      "publico": "Especial de inauguración"
+    }
+  ],
+  "version": 1,
+  "productos": [
+    {
+      "id": "cafeteria-solo",
+      "orden": 0,
+      "nombre": "Solo",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": "Café de especialidad, 100% origen colombiano",
+      "recomendado": false,
+      "categoria_id": "cafeteria",
+      "precio_centimos": 190
+    },
+    {
+      "id": "cervezas-cana",
+      "orden": 0,
+      "nombre": "Caña",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": "Estrella, 25cl",
+      "recomendado": false,
+      "categoria_id": "cervezas",
+      "precio_centimos": 200
+    },
+    {
+      "id": "copas-seagram-s",
+      "orden": 0,
+      "nombre": "Seagram's",
+      "disponible": true,
+      "seccion_id": "copas-ginebras",
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "copas",
+      "precio_centimos": 700
+    },
+    {
+      "id": "montaditos-lomo-y-queso",
+      "orden": 0,
+      "nombre": "Lomo y queso",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "montaditos",
+      "precio_centimos": 200
+    },
+    {
+      "id": "pinchos-patatas",
+      "orden": 0,
+      "nombre": "Patatas",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": "Bravas / alioli",
+      "recomendado": false,
+      "categoria_id": "pinchos",
+      "precio_centimos": 300
+    },
+    {
+      "id": "refrescos-coca-cola",
+      "orden": 0,
+      "nombre": "Coca-Cola",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "refrescos",
+      "precio_centimos": 250
+    },
+    {
+      "id": "vinos-godello",
+      "orden": 0,
+      "nombre": "Godello",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": "Blanco",
+      "recomendado": false,
+      "categoria_id": "vinos",
+      "precio_centimos": 350
+    },
+    {
+      "id": "cafeteria-con-leche",
+      "orden": 1,
+      "nombre": "Con leche",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": "Café de especialidad, 100% origen colombiano",
+      "recomendado": false,
+      "categoria_id": "cafeteria",
+      "precio_centimos": 300
+    },
+    {
+      "id": "cervezas-cana-1906",
+      "orden": 1,
+      "nombre": "Caña 1906",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "cervezas",
+      "precio_centimos": 300
+    },
+    {
+      "id": "copas-beefeater",
+      "orden": 1,
+      "nombre": "Beefeater",
+      "disponible": true,
+      "seccion_id": "copas-ginebras",
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "copas",
+      "precio_centimos": 700
+    },
+    {
+      "id": "montaditos-bacon-y-queso",
+      "orden": 1,
+      "nombre": "Bacon y queso",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "montaditos",
+      "precio_centimos": 200
+    },
+    {
+      "id": "pinchos-jeta",
+      "orden": 1,
+      "nombre": "Jeta",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "pinchos",
+      "precio_centimos": 200
+    },
+    {
+      "id": "refrescos-coca-cola-zero",
+      "orden": 1,
+      "nombre": "Coca-Cola Zero",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "refrescos",
+      "precio_centimos": 250
+    },
+    {
+      "id": "vinos-verdejo",
+      "orden": 1,
+      "nombre": "Verdejo",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": "Blanco",
+      "recomendado": false,
+      "categoria_id": "vinos",
+      "precio_centimos": 300
+    },
+    {
+      "id": "cafeteria-cortado",
+      "orden": 2,
+      "nombre": "Cortado",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": "Espresso con leche",
+      "recomendado": false,
+      "categoria_id": "cafeteria",
+      "precio_centimos": 190
+    },
+    {
+      "id": "cervezas-canon",
+      "orden": 2,
+      "nombre": "Cañón",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": "Estrella, 31cl",
+      "recomendado": false,
+      "categoria_id": "cervezas",
+      "precio_centimos": 200
+    },
+    {
+      "id": "copas-bombay",
+      "orden": 2,
+      "nombre": "Bombay",
+      "disponible": true,
+      "seccion_id": "copas-ginebras",
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "copas",
+      "precio_centimos": 700
+    },
+    {
+      "id": "montaditos-lomo-y-pimiento",
+      "orden": 2,
+      "nombre": "Lomo y pimiento",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "montaditos",
+      "precio_centimos": 200
+    },
+    {
+      "id": "pinchos-tortilla-de-patatas",
+      "orden": 2,
+      "nombre": "Tortilla de patatas",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "pinchos",
+      "precio_centimos": 300
+    },
+    {
+      "id": "refrescos-coca-cola-zero-zero",
+      "orden": 2,
+      "nombre": "Coca-Cola Zero Zero",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "refrescos",
+      "precio_centimos": 250
+    },
+    {
+      "id": "vinos-ribera",
+      "orden": 2,
+      "nombre": "Ribera",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": "Tinto",
+      "recomendado": false,
+      "categoria_id": "vinos",
+      "precio_centimos": 300
+    },
+    {
+      "id": "cafeteria-irish-coffee",
+      "orden": 3,
+      "nombre": "Irish Coffee",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": "Café con nata",
+      "recomendado": true,
+      "categoria_id": "cafeteria",
+      "precio_centimos": 350
+    },
+    {
+      "id": "cervezas-canon-1906",
+      "orden": 3,
+      "nombre": "Cañón 1906",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "cervezas",
+      "precio_centimos": 300
+    },
+    {
+      "id": "copas-puerto-de-indias",
+      "orden": 3,
+      "nombre": "Puerto de Indias",
+      "disponible": true,
+      "seccion_id": "copas-ginebras",
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "copas",
+      "precio_centimos": 700
+    },
+    {
+      "id": "montaditos-pan-unidad",
+      "orden": 3,
+      "nombre": "Pan unidad",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "montaditos",
+      "precio_centimos": 50
+    },
+    {
+      "id": "pinchos-mini-burguer",
+      "orden": 3,
+      "nombre": "Mini burguer",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "pinchos",
+      "precio_centimos": 200
+    },
+    {
+      "id": "refrescos-fanta-naranja",
+      "orden": 3,
+      "nombre": "Fanta Naranja",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "refrescos",
+      "precio_centimos": 250
+    },
+    {
+      "id": "vinos-toro",
+      "orden": 3,
+      "nombre": "Toro",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": "Tinto",
+      "recomendado": false,
+      "categoria_id": "vinos",
+      "precio_centimos": 350
+    },
+    {
+      "id": "cervezas-botellin",
+      "orden": 4,
+      "nombre": "Botellín",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": "Estrella, 25cl",
+      "recomendado": false,
+      "categoria_id": "cervezas",
+      "precio_centimos": 200
+    },
+    {
+      "id": "copas-tanqueray",
+      "orden": 4,
+      "nombre": "Tanqueray",
+      "disponible": true,
+      "seccion_id": "copas-ginebras",
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "copas",
+      "precio_centimos": 700
+    },
+    {
+      "id": "pinchos-perritos",
+      "orden": 4,
+      "nombre": "Perritos",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "pinchos",
+      "precio_centimos": 250
+    },
+    {
+      "id": "refrescos-fanta-limon",
+      "orden": 4,
+      "nombre": "Fanta Limón",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "refrescos",
+      "precio_centimos": 250
+    },
+    {
+      "id": "vinos-rioja",
+      "orden": 4,
+      "nombre": "Rioja",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": "Tinto",
+      "recomendado": false,
+      "categoria_id": "vinos",
+      "precio_centimos": 300
+    },
+    {
+      "id": "cervezas-botellin-estrella-sin-gluten",
+      "orden": 5,
+      "nombre": "Botellín Estrella sin gluten",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "cervezas",
+      "precio_centimos": 250
+    },
+    {
+      "id": "copas-larios",
+      "orden": 5,
+      "nombre": "Larios",
+      "disponible": true,
+      "seccion_id": "copas-ginebras",
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "copas",
+      "precio_centimos": 700
+    },
+    {
+      "id": "pinchos-croquetas-de-jamon",
+      "orden": 5,
+      "nombre": "Croquetas de jamón",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": "1 unidad",
+      "recomendado": false,
+      "categoria_id": "pinchos",
+      "precio_centimos": 300
+    },
+    {
+      "id": "refrescos-fuze-limon",
+      "orden": 5,
+      "nombre": "Fuze Limón",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "refrescos",
+      "precio_centimos": 250
+    },
+    {
+      "id": "vinos-tinto-de-verano",
+      "orden": 5,
+      "nombre": "Tinto de verano",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "vinos",
+      "precio_centimos": 350
+    },
+    {
+      "id": "cervezas-tercio",
+      "orden": 6,
+      "nombre": "Tercio",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": "Estrella — también sin alcohol y sin gluten",
+      "recomendado": false,
+      "categoria_id": "cervezas",
+      "precio_centimos": 250
+    },
+    {
+      "id": "copas-hendrick-s",
+      "orden": 6,
+      "nombre": "Hendrick's",
+      "disponible": true,
+      "seccion_id": "copas-ginebras",
+      "descripcion": null,
+      "recomendado": true,
+      "categoria_id": "copas",
+      "precio_centimos": 800
+    },
+    {
+      "id": "refrescos-tonica",
+      "orden": 6,
+      "nombre": "Tónica",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "refrescos",
+      "precio_centimos": 250
+    },
+    {
+      "id": "vinos-vermut-izaguirre",
+      "orden": 6,
+      "nombre": "Vermut Izaguirre",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": "Blanco o Rosso",
+      "recomendado": false,
+      "categoria_id": "vinos",
+      "precio_centimos": 250
+    },
+    {
+      "id": "cervezas-premium-ipa",
+      "orden": 7,
+      "nombre": "Premium IPA",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": "Baskeland",
+      "recomendado": true,
+      "categoria_id": "cervezas",
+      "precio_centimos": 350
+    },
+    {
+      "id": "copas-barcelo",
+      "orden": 7,
+      "nombre": "Barceló",
+      "disponible": true,
+      "seccion_id": "copas-rones",
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "copas",
+      "precio_centimos": 700
+    },
+    {
+      "id": "refrescos-aquarius",
+      "orden": 7,
+      "nombre": "Aquarius",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "refrescos",
+      "precio_centimos": 250
+    },
+    {
+      "id": "cervezas-radler",
+      "orden": 8,
+      "nombre": "Radler",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": "Blemon",
+      "recomendado": false,
+      "categoria_id": "cervezas",
+      "precio_centimos": 300
+    },
+    {
+      "id": "copas-brugal",
+      "orden": 8,
+      "nombre": "Brugal",
+      "disponible": true,
+      "seccion_id": "copas-rones",
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "copas",
+      "precio_centimos": 700
+    },
+    {
+      "id": "refrescos-aquarius-naranja",
+      "orden": 8,
+      "nombre": "Aquarius Naranja",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "refrescos",
+      "precio_centimos": 250
+    },
+    {
+      "id": "copas-cacique",
+      "orden": 9,
+      "nombre": "Cacique",
+      "disponible": true,
+      "seccion_id": "copas-rones",
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "copas",
+      "precio_centimos": 700
+    },
+    {
+      "id": "refrescos-agua",
+      "orden": 9,
+      "nombre": "Agua",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "refrescos",
+      "precio_centimos": 250
+    },
+    {
+      "id": "copas-bacardi-carta-blanca",
+      "orden": 10,
+      "nombre": "Bacardi Carta Blanca",
+      "disponible": true,
+      "seccion_id": "copas-rones",
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "copas",
+      "precio_centimos": 700
+    },
+    {
+      "id": "refrescos-zumo",
+      "orden": 10,
+      "nombre": "Zumo",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": "Piña, naranja o melocotón",
+      "recomendado": false,
+      "categoria_id": "refrescos",
+      "precio_centimos": 200
+    },
+    {
+      "id": "copas-arehucas",
+      "orden": 11,
+      "nombre": "Arehucas",
+      "disponible": true,
+      "seccion_id": "copas-rones",
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "copas",
+      "precio_centimos": 700
+    },
+    {
+      "id": "copas-capitan-morgan",
+      "orden": 12,
+      "nombre": "Capitán Morgan",
+      "disponible": true,
+      "seccion_id": "copas-rones",
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "copas",
+      "precio_centimos": 700
+    },
+    {
+      "id": "copas-white-label",
+      "orden": 13,
+      "nombre": "White Label",
+      "disponible": true,
+      "seccion_id": "copas-whisky",
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "copas",
+      "precio_centimos": 700
+    },
+    {
+      "id": "copas-red-label",
+      "orden": 14,
+      "nombre": "Red Label",
+      "disponible": true,
+      "seccion_id": "copas-whisky",
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "copas",
+      "precio_centimos": 700
+    },
+    {
+      "id": "copas-dyc",
+      "orden": 15,
+      "nombre": "DYC",
+      "disponible": true,
+      "seccion_id": "copas-whisky",
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "copas",
+      "precio_centimos": 700
+    },
+    {
+      "id": "copas-ballantine-s",
+      "orden": 16,
+      "nombre": "Ballantine's",
+      "disponible": true,
+      "seccion_id": "copas-whisky",
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "copas",
+      "precio_centimos": 700
+    },
+    {
+      "id": "copas-cutty-sark",
+      "orden": 17,
+      "nombre": "Cutty Sark",
+      "disponible": true,
+      "seccion_id": "copas-whisky",
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "copas",
+      "precio_centimos": 700
+    },
+    {
+      "id": "copas-jb",
+      "orden": 18,
+      "nombre": "JB",
+      "disponible": true,
+      "seccion_id": "copas-whisky",
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "copas",
+      "precio_centimos": 700
+    },
+    {
+      "id": "copas-dyc-8-anos",
+      "orden": 19,
+      "nombre": "DYC 8 años",
+      "disponible": true,
+      "seccion_id": "copas-whisky",
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "copas",
+      "precio_centimos": 800
+    },
+    {
+      "id": "copas-black-label",
+      "orden": 20,
+      "nombre": "Black Label",
+      "disponible": true,
+      "seccion_id": "copas-whisky",
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "copas",
+      "precio_centimos": 900
+    },
+    {
+      "id": "copas-gentleman-jack",
+      "orden": 21,
+      "nombre": "Gentleman Jack",
+      "disponible": true,
+      "seccion_id": "copas-whisky",
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "copas",
+      "precio_centimos": 900
+    },
+    {
+      "id": "copas-glenfiddich",
+      "orden": 22,
+      "nombre": "Glenfiddich",
+      "disponible": true,
+      "seccion_id": "copas-whisky",
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "copas",
+      "precio_centimos": 1100
+    },
+    {
+      "id": "copas-bailey-s",
+      "orden": 23,
+      "nombre": "Bailey's",
+      "disponible": true,
+      "seccion_id": "copas-otros",
+      "descripcion": "Solo / con hielo",
+      "recomendado": false,
+      "categoria_id": "copas",
+      "precio_centimos": 350
+    },
+    {
+      "id": "copas-chupito-licor-de-cafe",
+      "orden": 24,
+      "nombre": "Chupito licor de café",
+      "disponible": true,
+      "seccion_id": "copas-otros",
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "copas",
+      "precio_centimos": 200
+    },
+    {
+      "id": "copas-licor-de-hierbas",
+      "orden": 25,
+      "nombre": "Licor de hierbas",
+      "disponible": true,
+      "seccion_id": "copas-otros",
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "copas",
+      "precio_centimos": 200
+    }
+  ],
+  "secciones": [
+    {
+      "id": "copas-ginebras",
+      "orden": 0,
+      "nombre": "Ginebras",
+      "subtitulo": "solas o con tónica/refresco",
+      "categoria_id": "copas"
+    },
+    {
+      "id": "copas-rones",
+      "orden": 1,
+      "nombre": "Rones",
+      "subtitulo": "solos o con tónica/refresco",
+      "categoria_id": "copas"
+    },
+    {
+      "id": "copas-whisky",
+      "orden": 2,
+      "nombre": "Whisky",
+      "subtitulo": "solo o con tónica/refresco",
+      "categoria_id": "copas"
+    },
+    {
+      "id": "copas-otros",
+      "orden": 3,
+      "nombre": "Otros",
+      "subtitulo": null,
+      "categoria_id": "copas"
+    }
+  ],
+  "categorias": [
+    {
+      "id": "cafeteria",
+      "orden": 0,
+      "nombre": "Cafetería"
+    },
+    {
+      "id": "pinchos",
+      "orden": 1,
+      "nombre": "Pinchos"
+    },
+    {
+      "id": "montaditos",
+      "orden": 2,
+      "nombre": "Montaditos"
+    },
+    {
+      "id": "cervezas",
+      "orden": 3,
+      "nombre": "Cervezas"
+    },
+    {
+      "id": "copas",
+      "orden": 4,
+      "nombre": "Copas"
+    },
+    {
+      "id": "vinos",
+      "orden": 5,
+      "nombre": "Vinos"
+    },
+    {
+      "id": "refrescos",
+      "orden": 6,
+      "nombre": "Refrescos"
+    }
+  ],
+  "generado_at": "2026-10-28T11:19:48.427+01:00"
+}

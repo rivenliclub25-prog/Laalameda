@@ -120,13 +120,14 @@ Por último, añade un apartado aparte, para hacerlo más adelante, sobre cómo 
 
 ---
 
-# Estado actual (actualizado 2026-10-23)
+# Estado actual (actualizado 2026-10-28)
 
 **Proyecto de Supabase en uso: `hinebaxynlpjisteuaus`.** Es el de `.env` y el de los GitHub Secrets, y el de la web publicada (comprobado el 2026-10-23). El otro proyecto (`eisuyvozingpasbqvrdx`) no se usa: tenerlo mezclado con el bueno dio `401 Invalid API key`.
 
 Ramas:
 - **`main`: la web publicada en GitHub Pages.** **Publicada el 2026-10-25** con los tickets (T1–T4) y El Clásico (commit `677c11a`). Se comprobó que la web real carga la versión nueva y usa el proyecto `hinebaxynlpjisteuaus`. Desde ese día el push desde la terminal de Claude funciona.
 - **`tickets`: rama de trabajo de los tickets (ver `TICKETS.md`).** Las ampliaciones de tickets se siguen haciendo aquí. Al empezar cada fase hay que mezclar `main` en `tickets`, porque el script de precios hace push a `main`.
+- **`pos`: rama de trabajo del POS (ver `POS.md`).** Creada el 2026-10-28 desde `main` (`35d85f0`). **No se publica en `main` antes del 2026-11-02** (inauguración y Halloween el sábado 31).
 - **Tras publicar:** las 13 promos originales están **apagadas** (los socios ven «Disponible próximamente») hasta que el bar las encienda en **Panel → Promos**. Las de El Clásico se encienden con `supabase/promos-clasico.sql`.
 - `club-clientes` y `admin-dashboard`: ramas históricas, ya incluidas en `main`. No tienen push.
 - `main` también recibe los commits automáticos del script de precios (`Actualizar precios.bat` → `scripts/publish-prices.ps1`), que exige estar en `main` y hace push él mismo. Antes de trabajar, ejecuta `git pull`.
@@ -166,6 +167,29 @@ Ramas:
   - Redirect URLs: `https://rivenliclub25-prog.github.io/Laalameda/**` y `http://localhost:5173/**`.
 - `README.md` documenta cómo configurar el club (`.env`, Secrets y orden de los SQL).
 - **Pendiente de confirmar:** repetir en la web publicada el flujo completo (registro, confirmación, login, perfil, recuperación, cierre de sesión, borrado, panel y promos).
+
+## POS: carta y promos en Supabase (rama `pos`, especificación en `POS.md`)
+- **P0 (decisiones) cerrada** el 2026-10-28. Plan de P1 aprobado (sección 8 de `POS.md`), dividido en P1a y P1b.
+- **P1a: hecha en la rama `pos`, pendiente de que el usuario ejecute `supabase/catalogo.sql` y la pruebe.**
+  - **`supabase/catalogo.sql`:**
+    - Tablas `menu_categories`, `menu_sections`, `products`, `promo_segments`, `promotion_segments` y `promotion_items`, y una tabla de control `catalogo_migraciones`.
+    - `promotions` ampliada (`publicada`, `tipo`, `precio_centimos`, `descuento_pct`, textos, `visible_hasta`, `exclusiva`, `orden`, `updated_by`…). No toca las columnas de los tickets.
+    - `updated_by` automático y RLS: sin sesión y los socios solo ven lo publicado, visible y activo; los admins lo ven y cambian todo.
+    - Se sustituye la política «Todos ven las promos» de `tickets.sql`, y `promos_estado()` ya no devuelve promos sin publicar a quien no es admin.
+    - Función pública `catalogo()`: todo en un JSON.
+    - **La migración de datos se hace una sola vez** (marca `p1a-carta-y-promos`): volver a ejecutar el archivo nunca pisa lo cambiado en el panel.
+  - **Tipos migrados:** todas las promos son `pack`, salvo «Ronda gratis + sorteo» (`sorteo`) y «Chupito disfrazado» (`obsequio`, que conserva su precio de 1 €).
+  - **Verificación:**
+    - 26 pruebas de SQL en PGlite: permisos, dos ejecuciones seguidas y tickets.
+    - Comparación automática: lo que pinta la web desde `catalogo()` es **idéntico** a lo de `src/data` (carta, precios, separadores, promos, franjas, «En promo», y visibilidad y «Promos de hoy» en 344 momentos).
+  - **Web:** `src/lib/catalog.ts` (`useCatalog()`, una sola petición compartida) alimenta `MenuSection`, `PromotionsSection` y `ClubPage`. Los horarios se calculan en hora de Madrid con los mismos campos que `promo_activa()`.
+  - **Copia de respaldo:**
+    - Si el navegador tiene una copia, se pinta al instante sin aviso y se sustituye cuando responde Supabase.
+    - Si Supabase falla, se usa la más reciente entre la del navegador y `public/catalogo.json`, con un aviso, y se reintenta cada 60 s.
+    - `scripts/catalog-snapshot.mjs` (`npm run catalog-snapshot`) regenera la copia; se ejecuta en `deploy.yml` antes del build y nunca hace fallar la publicación.
+    - El primer `public/catalogo.json` se generó desde PGlite. **Hay que regenerarlo desde Supabase** cuando se ejecute `catalogo.sql`.
+  - **Sin tocar:** `src/data/`, los scripts del Excel y los tickets (se limpiarán en la fase L).
+- **P1b (edición desde el panel):** pendiente, tras probar P1a.
 
 ## Tickets del club (rama `tickets`, especificación en `TICKETS.md`)
 - **T1 — base de datos: hecha. Falta ejecutar `supabase/tickets.sql` en Supabase.**
@@ -310,5 +334,5 @@ Ramas:
   - Que el mensaje de WhatsApp use el nombre del perfil y no el del registro.
 - Guía completa de Supabase paso a paso (puntos 1–9 de arriba) + apartado de Google.
 - Probar la fase 3 entera si no se ha hecho (guardar perfil, cerrar sesión, borrar cuenta).
-- **SMTP propio (Resend/Brevo), urgente ahora que la web está publicada.** El correo por defecto de Supabase solo envía a los miembros del equipo y tiene un límite de pocos correos por hora, así que los clientes reales no recibirán el correo de confirmación hasta configurarlo. Alternativa temporal: desactivar "Confirm email" en Supabase.
+- ~~SMTP propio~~ **Resuelto** (según `POS.md`, 2026-10-28): Supabase ya envía el correo de confirmación a los clientes.
 - Completar los datos de la política de privacidad.

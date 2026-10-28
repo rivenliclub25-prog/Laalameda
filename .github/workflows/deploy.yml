@@ -34,6 +34,13 @@ jobs:
         uses: actions/configure-pages@v5
       - name: Install dependencies
         run: npm ci
+      # Copia de respaldo de la carta y las promos (public/catalogo.json) para cuando Supabase no
+      # responda (POS.md, D11). Si no puede renovarla, deja la anterior: nunca hace fallar la publicación.
+      - name: Generar copia de la carta
+        run: npm run catalog-snapshot
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
       - name: Build
         run: npm run build -- --base="${{ steps.pages.outputs.base_path }}"
         env:
