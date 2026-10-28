@@ -8,7 +8,7 @@ Este documento es la especificación viva de la **fase POS** de la web de La Ala
 - Al decidir algo se anota la decisión y la fecha. Si cambia la propuesta, se actualizan las secciones afectadas y se apunta en el **Historial** (al final).
 - No se programa ninguna fase hasta que estén 🟢 las decisiones de las que depende (ver «Fases»).
 
-Última actualización: 2026-10-28 · Estado: **P3 hecha, pendiente de prueba** (falta ejecutar `pos-mesas.sql`; ver «Estado de P3» en la sección 8).
+Última actualización: 2026-10-28 · Estado: **P3 cerrada (probada). Siguiente: P4 (pedido del socio desde la mesa)**, pendiente de aprobar su plan.
 
 ---
 
@@ -429,7 +429,7 @@ No se borra nada ahora. Cuando la carta y las promos lean de Supabase y estén p
 - **Cierre (2026-10-28):** `pos.sql` ejecutado en Supabase y TPV probado por el usuario.
 - **Ventas de prueba:** se están haciendo ventas de prueba en la base de datos real. Antes de la puesta en marcha (P7) se dará un SQL de limpieza de un solo uso: borra ventas, cuentas, líneas y eventos de prueba y reinicia la numeración (la primera venta real será la nº 1), sin tocar carta, promos, socios ni tickets.
 
-### Estado de P3 — cuentas de mesa (2026-10-28): hecha, pendiente de prueba
+### Estado de P3 — cuentas de mesa (2026-10-28): ✅ cerrada
 
 - **Plan aprobado con las recomendaciones:**
   - Las líneas que añade el camarero van sin socio (D4).
@@ -451,7 +451,7 @@ No se borra nada ahora. Cuando la carta y las promos lean de Supabase y estén p
     - **Ventas** ampliada: **neto = cobrado − devuelto** por método; origen con el nombre de la mesa; líneas con notas y anuladas; devoluciones; registro de eventos; botón **Devolver**.
   - Componentes compartidos en `src/components/pos/`: `ProductPicker`, `VentaHecha` y `MesasPanel`.
 - **Verificación:** 31 pruebas de SQL en PGlite (ciclo completo, doble envío, dos camareros a la vez, cambio de mesa, cancelación, devoluciones parciales y su tope, inmutabilidad, **neto = ventas − devoluciones** y **todo en `pos_events`**), más las 24 de P2 sin cambios, y typecheck, lint y build.
-- **Pendiente para cerrar P3:** ejecutar `pos-mesas.sql` en Supabase y la prueba del usuario.
+- **Cierre (2026-10-28):** `pos-mesas.sql` ejecutado en Supabase y probado por el usuario: todo correcto.
 
 ### Respuestas al plan (2026-10-28)
 
@@ -486,4 +486,5 @@ No se borra nada ahora. Cuando la carta y las promos lean de Supabase y estén p
 - **2026-10-28** — P1b cerrada tras la prueba del usuario. Arreglo: el fondo no se desliza con menús o ventanas abiertos. **P1 completa.**
 - **2026-10-28** — P2 (venta en barra) aprobada con las recomendaciones e implementada en `pos`.
 - **2026-10-28** — P2 cerrada tras la prueba del usuario. Anotado: SQL de limpieza de ventas de prueba antes de P7.
-- **2026-10-28** — P3 (cuentas de mesa) aprobada con las recomendaciones e implementada en `pos`; pendiente de ejecutar `pos-mesas.sql` y probar.
+- **2026-10-28** — P3 (cuentas de mesa) aprobada con las recomendaciones e implementada en `pos`.
+- **2026-10-28** — P3 cerrada tras la prueba del usuario.
