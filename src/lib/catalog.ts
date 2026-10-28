@@ -380,7 +380,8 @@ async function load() {
   const [browser, build] = [readBrowserCopy(), await fetchBuildCopy()];
   const newest = [browser, build]
     .filter((c): c is RawCatalog => c !== null)
-    .sort((a, b) => b.generado_at.localeCompare(a.generado_at))[0];
+    // Como fechas, no como texto: una copia puede venir en UTC ("+00:00") y otra con otro desfase.
+    .sort((a, b) => Date.parse(b.generado_at) - Date.parse(a.generado_at))[0];
   if (newest) setState({ catalog: toCatalog(newest), fromBackup: true });
   if (isSupabaseConfigured) retryTimer = window.setTimeout(load, RETRY_MS);
 }

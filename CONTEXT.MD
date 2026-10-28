@@ -170,7 +170,7 @@ Ramas:
 
 ## POS: carta y promos en Supabase (rama `pos`, especificación en `POS.md`)
 - **P0 (decisiones) cerrada** el 2026-10-28. Plan de P1 aprobado (sección 8 de `POS.md`), dividido en P1a y P1b.
-- **P1a: hecha en la rama `pos`, pendiente de que el usuario ejecute `supabase/catalogo.sql` y la pruebe.**
+- **P1a: ✅ cerrada (2026-10-28).** `catalogo.sql` ejecutado en Supabase, `public/catalogo.json` regenerado desde Supabase y prueba del usuario correcta (se ve igual; la copia de respaldo funciona).
   - **`supabase/catalogo.sql`:**
     - Tablas `menu_categories`, `menu_sections`, `products`, `promo_segments`, `promotion_segments` y `promotion_items`, y una tabla de control `catalogo_migraciones`.
     - `promotions` ampliada (`publicada`, `tipo`, `precio_centimos`, `descuento_pct`, textos, `visible_hasta`, `exclusiva`, `orden`, `updated_by`…). No toca las columnas de los tickets.
@@ -187,9 +187,8 @@ Ramas:
     - Si el navegador tiene una copia, se pinta al instante sin aviso y se sustituye cuando responde Supabase.
     - Si Supabase falla, se usa la más reciente entre la del navegador y `public/catalogo.json`, con un aviso, y se reintenta cada 60 s.
     - `scripts/catalog-snapshot.mjs` (`npm run catalog-snapshot`) regenera la copia; se ejecuta en `deploy.yml` antes del build y nunca hace fallar la publicación.
-    - El primer `public/catalogo.json` se generó desde PGlite. **Hay que regenerarlo desde Supabase** cuando se ejecute `catalogo.sql`.
   - **Sin tocar:** `src/data/`, los scripts del Excel y los tickets (se limpiarán en la fase L).
-- **P1b (edición desde el panel):** pendiente, tras probar P1a.
+- **P1b (edición desde el panel):** siguiente fase; plan de archivos pendiente de aprobar.
 
 ## Tickets del club (rama `tickets`, especificación en `TICKETS.md`)
 - **T1 — base de datos: hecha. Falta ejecutar `supabase/tickets.sql` en Supabase.**

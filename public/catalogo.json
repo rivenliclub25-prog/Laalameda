@@ -299,11 +299,11 @@
     },
     {
       "id": "aperitivo-inauguracion",
-      "fin": "2026-11-01T00:00:00+01:00",
+      "fin": "2026-10-31T23:00:00+00:00",
       "tipo": "pack",
       "items": [],
       "orden": 9,
-      "inicio": "2026-10-31T00:00:00+01:00",
+      "inicio": "2026-10-30T23:00:00+00:00",
       "nombre": "Aperitivo de inauguración",
       "franjas": [
         "31-octubre"
@@ -323,17 +323,17 @@
       "hora_inicio": null,
       "descuento_pct": 18,
       "texto_horario": "31 de octubre",
-      "visible_hasta": "2026-11-01T00:00:00+01:00",
+      "visible_hasta": "2026-10-31T23:00:00+00:00",
       "mensaje_reserva": null,
       "precio_centimos": 450
     },
     {
       "id": "chupito-disfrazado",
-      "fin": "2026-11-01T00:00:00+01:00",
+      "fin": "2026-10-31T23:00:00+00:00",
       "tipo": "obsequio",
       "items": [],
       "orden": 10,
-      "inicio": "2026-10-31T00:00:00+01:00",
+      "inicio": "2026-10-30T23:00:00+00:00",
       "nombre": "Chupito disfrazado",
       "franjas": [
         "31-octubre"
@@ -353,17 +353,17 @@
       "hora_inicio": null,
       "descuento_pct": 50,
       "texto_horario": "31 de octubre",
-      "visible_hasta": "2026-11-01T00:00:00+01:00",
+      "visible_hasta": "2026-10-31T23:00:00+00:00",
       "mensaje_reserva": null,
       "precio_centimos": 100
     },
     {
       "id": "ronda-4-halloween",
-      "fin": "2026-11-01T00:00:00+01:00",
+      "fin": "2026-10-31T23:00:00+00:00",
       "tipo": "pack",
       "items": [],
       "orden": 11,
-      "inicio": "2026-10-31T00:00:00+01:00",
+      "inicio": "2026-10-30T23:00:00+00:00",
       "nombre": "Ronda de 4 · Halloween",
       "franjas": [
         "31-octubre"
@@ -384,17 +384,17 @@
       "hora_inicio": null,
       "descuento_pct": 14,
       "texto_horario": "31 de octubre",
-      "visible_hasta": "2026-11-01T00:00:00+01:00",
+      "visible_hasta": "2026-10-31T23:00:00+00:00",
       "mensaje_reserva": null,
       "precio_centimos": 1200
     },
     {
       "id": "ronda-gratis-sorteo",
-      "fin": "2026-11-01T00:00:00+01:00",
+      "fin": "2026-10-31T23:00:00+00:00",
       "tipo": "sorteo",
       "items": [],
       "orden": 12,
-      "inicio": "2026-10-31T00:00:00+01:00",
+      "inicio": "2026-10-30T23:00:00+00:00",
       "nombre": "Ronda gratis + sorteo",
       "franjas": [
         "31-octubre"
@@ -413,13 +413,13 @@
       "hora_inicio": null,
       "descuento_pct": 100,
       "texto_horario": "31 de octubre",
-      "visible_hasta": "2026-11-01T00:00:00+01:00",
+      "visible_hasta": "2026-10-31T23:00:00+00:00",
       "mensaje_reserva": null,
       "precio_centimos": 0
     },
     {
       "id": "clasico-4-canones",
-      "fin": "2026-10-26T03:00:00+01:00",
+      "fin": "2026-10-26T02:00:00+00:00",
       "tipo": "pack",
       "items": [],
       "orden": 13,
@@ -440,13 +440,13 @@
       "hora_inicio": null,
       "descuento_pct": null,
       "texto_horario": "Hoy · hasta el cierre",
-      "visible_hasta": "2026-10-26T03:00:00+01:00",
+      "visible_hasta": "2026-10-26T02:00:00+00:00",
       "mensaje_reserva": null,
       "precio_centimos": 900
     },
     {
       "id": "clasico-4-tercios",
-      "fin": "2026-10-26T03:00:00+01:00",
+      "fin": "2026-10-26T02:00:00+00:00",
       "tipo": "pack",
       "items": [],
       "orden": 14,
@@ -467,7 +467,7 @@
       "hora_inicio": null,
       "descuento_pct": null,
       "texto_horario": "Hoy · hasta el cierre",
-      "visible_hasta": "2026-10-26T03:00:00+01:00",
+      "visible_hasta": "2026-10-26T02:00:00+00:00",
       "mensaje_reserva": null,
       "precio_centimos": 1000
     }
@@ -1323,5 +1323,5 @@
       "nombre": "Refrescos"
     }
   ],
-  "generado_at": "2026-10-28T11:19:48.427+01:00"
+  "generado_at": "2026-10-28T10:49:06.029694+00:00"
 }
