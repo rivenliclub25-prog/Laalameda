@@ -120,16 +120,27 @@ Por último, añade un apartado aparte, para hacerlo más adelante, sobre cómo 
 
 ---
 
-# Estado actual (actualizado 2026-10-23)
+# Estado actual (actualizado 2026-10-28)
 
 **Proyecto de Supabase en uso: `hinebaxynlpjisteuaus`.** Es el de `.env` y el de los GitHub Secrets, y el de la web publicada (comprobado el 2026-10-23). El otro proyecto (`eisuyvozingpasbqvrdx`) no se usa: tenerlo mezclado con el bueno dio `401 Invalid API key`.
 
 Ramas:
 - **`main`: la web publicada en GitHub Pages.** **Publicada el 2026-10-25** con los tickets (T1–T4) y El Clásico (commit `677c11a`). Se comprobó que la web real carga la versión nueva y usa el proyecto `hinebaxynlpjisteuaus`. Desde ese día el push desde la terminal de Claude funciona.
 - **`tickets`: rama de trabajo de los tickets (ver `TICKETS.md`).** Las ampliaciones de tickets se siguen haciendo aquí. Al empezar cada fase hay que mezclar `main` en `tickets`, porque el script de precios hace push a `main`.
+- **`pos`: rama de trabajo del POS (ver `POS.md` en esa rama).** Creada el 2026-10-28 desde `main`. **En pausa:** P1–P6a cerradas y P6b hecha, pendiente de probar. No se publica en `main` antes del 2026-11-02 (inauguración y Halloween el sábado 31); la fecha exacta está sin decidir. Su `CONTEXT.MD` tiene el detalle del POS.
+- **`google-auth`: inicio de sesión con Google (OAuth).** Creada el 2026-10-28 desde `main` (`35d85f0`), no desde `pos`, porque **esta sí se publicará en `main`** cuando esté probada, sin esperar al POS. Después habrá que mezclar `main` en `pos`. Ver «Inicio de sesión con Google» más abajo.
 - **Tras publicar:** las 13 promos originales están **apagadas** (los socios ven «Disponible próximamente») hasta que el bar las encienda en **Panel → Promos**. Las de El Clásico se encienden con `supabase/promos-clasico.sql`.
 - `club-clientes` y `admin-dashboard`: ramas históricas, ya incluidas en `main`. No tienen push.
 - `main` también recibe los commits automáticos del script de precios (`Actualizar precios.bat` → `scripts/publish-prices.ps1`), que exige estar en `main` y hace push él mismo. Antes de trabajar, ejecuta `git pull`.
+
+## Inicio de sesión con Google (rama `google-auth`): en curso
+
+- **Punto de partida:** el botón «Continuar con Google» ya existe en `#/club` (marcado «Próximamente», `googleEnabled = false` en `src/lib/auth.ts`) y `signInWithGoogle()` ya llama a `signInWithOAuth`. `handle_new_user` ya toma el nombre de Google (`full_name` / `name`).
+- **Pendiente de aprobar el plan** (2026-10-28). Puntos a resolver:
+  - Configuración manual del usuario: credenciales OAuth en Google Cloud Console (URI de redirección `https://hinebaxynlpjisteuaus.supabase.co/auth/v1/callback`) y proveedor Google en Supabase. **El Client Secret solo va en el panel de Supabase**, nunca en el código, `.env` ni GitHub.
+  - Quien entra con Google no marca la casilla de privacidad ni los consentimientos: hace falta un paso para aceptarlos.
+  - Volver a donde estaba el socio (promo, canjear…) después de pasar por Google.
+- **Al terminar:** probar en local y en el móvil, y publicar en `main` (con confirmación del usuario).
 
 ## Club de clientes: hecho y probado
 - **Fase 1 — estructura y auth** (commit `e325b3d`): cliente en `src/lib/supabase.ts`, `AuthProvider`, `ProtectedRoute`, router propio, `supabase/schema.sql`, `.env.example`.
