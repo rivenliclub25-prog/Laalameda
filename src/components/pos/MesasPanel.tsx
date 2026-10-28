@@ -5,6 +5,7 @@ import { Modal } from '@/components/club/Modal';
 import { ProductPicker } from '@/components/pos/ProductPicker';
 import { VentaHecha } from '@/components/pos/VentaHecha';
 import { playFeedback } from '@/lib/feedback';
+import { subscribeChanges } from '@/lib/realtime';
 import type { MenuItem, MenuTab } from '@/lib/catalog';
 import {
   METODOS,
@@ -19,6 +20,9 @@ import {
   formatEuros,
   newRequestId,
   servirLineas,
+  aceptarRonda,
+  rechazarRonda,
+  rondasPendientes,
   totalCuenta,
   type CuentaMesa,
   type LineaCuenta,
@@ -49,6 +53,10 @@ export function MesasPanel({ tabs, catalogLoading, soundOn }: { tabs: MenuTab[];
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  const soundRef = useRef(soundOn);
+  soundRef.current = soundOn;
+  // Rondas pendientes ya conocidas: si aparece una nueva, suena el aviso (no en la primera carga).
+  const knownRondas = useRef<Set<string> | null>(null);
 
   const load = useCallback(async () => {
     const [m, c] = await Promise.all([fetchMesas(), fetchCuentasAbiertas()]);
@@ -57,11 +65,26 @@ export function MesasPanel({ tabs, catalogLoading, soundOn }: { tabs: MenuTab[];
     setError(m.error ?? c.error);
     setLoading(false);
     setNow(Date.now());
+
+    const pendientes = new Set(c.cuentas.flatMap((cu) => rondasPendientes(cu).map((r) => r.ronda)));
+    const nuevas = knownRondas.current ? [...pendientes].filter((r) => !knownRondas.current!.has(r)) : [];
+    if (nuevas.length > 0) {
+      playFeedback('ok', soundRef.current);
+      navigator.vibrate?.([120, 60, 120, 60, 120]);
+    }
+    knownRondas.current = pendientes;
   }, []);
 
-  // Se refresca cada 10 s (lo que hagan otros camareros) y al volver a la pestaña.
+  // Tiempo real (rondas de los socios, cambios de otros camareros). Una ronda llega como varias
+  // líneas: se agrupan en una sola recarga. Respaldo: cada 10 s y al volver a la pestaña.
   useEffect(() => {
+    let timer: number | undefined;
+    const scheduleLoad = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(load, 300);
+    };
     load();
+    const unsubscribe = subscribeChanges('pos-mesas', [{ table: 'orders' }, { table: 'order_items' }], scheduleLoad);
     const interval = window.setInterval(() => {
       if (document.visibilityState === 'visible') load();
     }, POLL_MS);
@@ -70,6 +93,8 @@ export function MesasPanel({ tabs, catalogLoading, soundOn }: { tabs: MenuTab[];
     };
     document.addEventListener('visibilitychange', onVisible);
     return () => {
+      unsubscribe();
+      window.clearTimeout(timer);
       window.clearInterval(interval);
       document.removeEventListener('visibilitychange', onVisible);
     };
@@ -126,16 +151,23 @@ export function MesasPanel({ tabs, catalogLoading, soundOn }: { tabs: MenuTab[];
         <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {visibles.map((m) => {
             const c = cuentaPorMesa.get(m.id);
-            const porServir = c?.order_items.filter((l) => l.estado === 'aceptada' || l.estado === 'pendiente').length ?? 0;
+            const porServir = c?.order_items.filter((l) => l.estado === 'aceptada').length ?? 0;
+            const nuevas = c ? rondasPendientes(c).length : 0;
             return (
               <li key={m.id}>
                 <button
                   type="button"
                   onClick={() => setSelectedId(m.id)}
-                  className={`flex min-h-[112px] w-full flex-col justify-between rounded-r-md border p-3 text-left shadow-sm transition-all active:scale-[0.98] ${focusRing} ${
+                  className={`relative flex min-h-[112px] w-full flex-col justify-between rounded-r-md border p-3 text-left shadow-sm transition-all active:scale-[0.98] ${focusRing} ${
                     c ? 'border-vino bg-vino text-white' : 'border-piedra/50 bg-white text-carbon hover:border-vino'
-                  }`}
+                  } ${nuevas > 0 ? 'ring-4 ring-piedra ring-offset-2 ring-offset-marfil' : ''}`}
+                  aria-label={nuevas > 0 ? `${m.nombre}: ${nuevas === 1 ? 'una ronda nueva' : `${nuevas} rondas nuevas`}` : undefined}
                 >
+                  {nuevas > 0 && (
+                    <span className="absolute -right-2 -top-2 animate-pulse rounded-full bg-piedra px-2.5 py-1 text-xs font-bold text-carbon shadow">
+                      {nuevas === 1 ? 'Nueva ronda' : `${nuevas} rondas`}
+                    </span>
+                  )}
                   <span className="font-display text-xl font-semibold leading-tight">{m.nombre}</span>
                   {c ? (
                     <span className="mt-2 text-sm">
@@ -193,9 +225,12 @@ function CuentaView({
   const [cancelando, setCancelando] = useState(false);
   const [moviendo, setMoviendo] = useState(false);
   const [done, setDone] = useState<{ venta: VentaResultado; clientTotal: number } | null>(null);
+  const [rechazando, setRechazando] = useState<string | null>(null);
   const busyRef = useRef(false);
 
-  const lineas = cuenta?.order_items ?? [];
+  // Las líneas pendientes (rondas de socios sin aceptar) van aparte, arriba.
+  const rondas = cuenta ? rondasPendientes(cuenta) : [];
+  const lineas = (cuenta?.order_items ?? []).filter((l) => l.estado !== 'pendiente');
   const total = cuenta ? totalCuenta(cuenta) : 0;
   const porServir = lineas.filter((l) => l.estado === 'aceptada');
   const haySevidas = lineas.some((l) => l.estado === 'servida');
@@ -259,8 +294,50 @@ function CuentaView({
           <span className="font-display text-3xl font-bold text-vino tabular-nums">{formatEuros(total)}</span>
         </header>
 
+        {/* Rondas pedidas por socios desde la mesa, pendientes de aceptar */}
+        {rondas.length > 0 && cuenta && (
+          <div className="space-y-3 border-b border-piedra/60 bg-piedra-suave/50 px-4 py-3">
+            {rondas.map((r) => (
+              <div key={r.ronda} className="rounded-r-md border-2 border-piedra bg-white p-3">
+                <p className="text-sm font-semibold text-carbon">
+                  Ronda de {r.nombre ?? 'un socio'} · hace {minutosDesde(r.at, now)}
+                </p>
+                <ul className="mt-1.5 space-y-0.5 text-sm">
+                  {r.lineas.map((l) => (
+                    <li key={l.id} className="flex justify-between gap-3">
+                      <span>
+                        {l.cantidad} × {l.nombre}
+                        {l.notas && <span className="ml-1 italic text-carbon/60">«{l.notas}»</span>}
+                      </span>
+                      <span className="tabular-nums text-carbon/70">{formatEuros(l.precio_unitario_centimos * l.cantidad)}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-3 flex gap-2">
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={async () => {
+                      const ok = await run(() => aceptarRonda(cuenta.id, r.ronda));
+                      if (ok) playFeedback('ok', soundOn);
+                    }}
+                    className={`btn min-h-12 flex-1 bg-[#2f6b3f] text-white hover:bg-[#25573a] ${focusRing}`}
+                  >
+                    <Check size={18} aria-hidden="true" /> Aceptar
+                  </button>
+                  <button type="button" disabled={busy} onClick={() => setRechazando(r.ronda)} className={`btn-outline-vino min-h-12 flex-1 ${focusRing}`}>
+                    <XCircle size={18} aria-hidden="true" /> Rechazar
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
         {lineas.length === 0 ? (
-          <p className="px-4 py-8 text-center text-sm text-carbon/55">{cuenta ? 'La cuenta está vacía.' : 'Mesa libre. Añade consumiciones para abrir su cuenta.'}</p>
+          <p className="px-4 py-8 text-center text-sm text-carbon/55">
+            {cuenta ? (rondas.length > 0 ? 'Acepta la ronda para pasarla a la cuenta.' : 'La cuenta está vacía.') : 'Mesa libre. Añade consumiciones para abrir su cuenta.'}
+          </p>
         ) : (
           <ul className="divide-y divide-carbon/10">
             {lineas.map((l) => (
@@ -270,6 +347,7 @@ function CuentaView({
                     {l.cantidad} × {l.nombre}
                   </p>
                   {l.notas && <p className="text-xs italic text-carbon/60">«{l.notas}»</p>}
+                  {l.pedido_por_nombre && <p className="text-xs text-carbon/50">Pedido por {l.pedido_por_nombre} desde la mesa</p>}
                 </div>
                 <span className={`inline-flex rounded-full border px-2 py-0.5 text-[0.68rem] font-semibold ${ESTADO_LINEA[l.estado].className}`}>
                   {ESTADO_LINEA[l.estado].label}
@@ -313,6 +391,11 @@ function CuentaView({
       {cuenta && activas.length > 0 && (
         <div className="mt-4 rounded-r-lg border border-piedra/50 bg-white p-4 shadow-sm">
           <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-carbon/60">Cobrar · cómo paga</h3>
+          {rondas.length > 0 && (
+            <div className="mb-3">
+              <Notice kind="info">Hay rondas sin aceptar: acéptalas o recházalas antes de cobrar.</Notice>
+            </div>
+          )}
           <div className="grid grid-cols-3 gap-2">
             {(Object.keys(METODOS) as Metodo[]).map((m) => (
               <button key={m} type="button" aria-pressed={metodo === m} onClick={() => setMetodo(m)} disabled={busy} className={`min-h-12 rounded-r-sm border text-sm font-semibold transition-colors ${focusRing} ${metodo === m ? 'border-vino bg-vino text-white' : 'border-carbon/25 bg-white text-carbon/75 hover:border-vino'}`}>
@@ -373,6 +456,20 @@ function CuentaView({
           onConfirm={async (motivo) => {
             const ok = await run(() => anularLinea(anulando.id, motivo));
             if (ok) setAnulando(null);
+          }}
+        />
+      )}
+
+      {rechazando && cuenta && (
+        <MotivoModal
+          title="Rechazar la ronda"
+          texto="El socio verá su pedido como rechazado. No se cobra."
+          sugerencias={['Fuera de horario', 'Producto no disponible', 'Mesa equivocada', 'Pedido de prueba']}
+          confirmLabel="Rechazar ronda"
+          onClose={() => setRechazando(null)}
+          onConfirm={async (motivo) => {
+            const ok = await run(() => rechazarRonda(cuenta.id, rechazando, motivo));
+            if (ok) setRechazando(null);
           }}
         />
       )}

@@ -8,7 +8,7 @@ Este documento es la especificación viva de la **fase POS** de la web de La Ala
 - Al decidir algo se anota la decisión y la fecha. Si cambia la propuesta, se actualizan las secciones afectadas y se apunta en el **Historial** (al final).
 - No se programa ninguna fase hasta que estén 🟢 las decisiones de las que depende (ver «Fases»).
 
-Última actualización: 2026-10-28 · Estado: **P3 cerrada (probada). Siguiente: P4 (pedido del socio desde la mesa)**, pendiente de aprobar su plan.
+Última actualización: 2026-10-28 · Estado: **P4 programada (pedido del socio desde la mesa), pendiente de que el usuario ejecute `pos-pedidos.sql` y la pruebe.**
 
 ---
 
@@ -453,6 +453,25 @@ No se borra nada ahora. Cuando la carta y las promos lean de Supabase y estén p
 - **Verificación:** 31 pruebas de SQL en PGlite (ciclo completo, doble envío, dos camareros a la vez, cambio de mesa, cancelación, devoluciones parciales y su tope, inmutabilidad, **neto = ventas − devoluciones** y **todo en `pos_events`**), más las 24 de P2 sin cambios, y typecheck, lint y build.
 - **Cierre (2026-10-28):** `pos-mesas.sql` ejecutado en Supabase y probado por el usuario: todo correcto.
 
+### Estado de P4 — pedido del socio desde la mesa (2026-10-28): 🟡 programada, falta probar
+
+- **Plan aprobado con las recomendaciones:**
+  - El socio solo ve sus propias líneas (ni las del camarero ni las de otros socios de la mesa).
+  - Límites: **2 rondas pendientes por socio** y **20 unidades por ronda**.
+  - Solo productos de la carta. Las promos con ticket llegan en P5; mientras, un enlace «Ver promos del club».
+  - Sin interruptor para pedir fuera de horario: el camarero rechaza la ronda con motivo.
+- **`supabase/pos-pedidos.sql`:**
+  - `order_items.ronda` (id de la ronda) y `order_items.pedido_por_nombre` (nombre del socio para el camarero).
+  - RLS: el socio lee sus líneas y las cuentas donde tiene líneas. `orders` y `order_items` entran en Realtime.
+  - `mesa_info(token)` (pública): nombre y si la mesa está activa.
+  - `socio_pedir_ronda` (solo socios): abre la cuenta si hace falta, precio desde la BD, idempotente; las líneas quedan **pendientes**.
+  - `pos_aceptar_ronda` y `pos_rechazar_ronda` (con motivo). No se puede cobrar con rondas pendientes.
+- **Web:**
+  - **`#/mesa?m=<token>`** (lo abre el QR de la mesa): carta por categorías con + y −, carrito guardado en la pestaña (sobrevive a iniciar sesión), confirmación «se paga al camarero al final» y **«Mis pedidos en esta mesa»** con el estado en directo (esperando, aceptada, servida, rechazada).
+  - Sin sesión: aviso y botón a `#/club?modo=login&volver=mesa&m=…`, que vuelve a la mesa al entrar.
+  - **TPV → Mesas:** las mesas con rondas nuevas se marcan con «Nueva ronda» y suena/vibra; en la cuenta, Aceptar o Rechazar cada ronda, con el nombre del socio. Se actualiza en tiempo real (`src/lib/realtime.ts`), con repaso cada 10 s.
+- **Verificación:** 26 pruebas de SQL en PGlite (un no socio no puede pedir, un socio no ve líneas ajenas aunque estén en su mesa, límites, doble envío, aceptar/rechazar, cobro bloqueado con rondas pendientes) y typecheck, lint y build. **Falta:** que el usuario compruebe en Supabase que la ronda llega al TPV en menos de 5 s.
+
 ### Respuestas al plan (2026-10-28)
 
 1. P1 se divide en **P1a y P1b**, con pausa para probar entre ellas.
@@ -488,3 +507,4 @@ No se borra nada ahora. Cuando la carta y las promos lean de Supabase y estén p
 - **2026-10-28** — P2 cerrada tras la prueba del usuario. Anotado: SQL de limpieza de ventas de prueba antes de P7.
 - **2026-10-28** — P3 (cuentas de mesa) aprobada con las recomendaciones e implementada en `pos`.
 - **2026-10-28** — P3 cerrada tras la prueba del usuario.
+- **2026-10-28** — P4 programada (pedido del socio desde la mesa), a la espera de prueba.

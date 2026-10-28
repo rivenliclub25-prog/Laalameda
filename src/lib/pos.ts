@@ -162,6 +162,9 @@ export interface LineaCuenta {
   notas: string | null;
   estado: EstadoLinea;
   created_at: string;
+  /** Rondas pedidas por un socio desde la mesa (P4). */
+  ronda: string | null;
+  pedido_por_nombre: string | null;
 }
 
 export interface CuentaMesa {
@@ -192,7 +195,7 @@ export async function fetchMesas(): Promise<{ mesas: Mesa[]; error: string | nul
 }
 
 const CUENTA_COLS =
-  'id, mesa_id, estado, created_at, order_items(id, product_id, nombre, precio_unitario_centimos, cantidad, notas, estado, created_at)';
+  'id, mesa_id, estado, created_at, order_items(id, product_id, nombre, precio_unitario_centimos, cantidad, notas, estado, created_at, ronda, pedido_por_nombre)';
 
 export async function fetchCuentasAbiertas(): Promise<{ cuentas: CuentaMesa[]; error: string | null }> {
   const { data, error } = await supabase.from('orders').select(CUENTA_COLS).eq('origen', 'mesa').eq('estado', 'abierta');
@@ -229,6 +232,25 @@ export const cancelarCuenta = (orderId: string, motivo: string) =>
 
 export const cambiarMesa = (orderId: string, mesaId: string) =>
   rpc<null>('pos_cambiar_mesa', { p_order_id: orderId, p_mesa_id: mesaId });
+
+// --- Rondas de los socios desde la mesa (P4) ---
+
+export const aceptarRonda = (orderId: string, ronda: string) => rpc<number>('pos_aceptar_ronda', { p_order_id: orderId, p_ronda: ronda });
+
+export const rechazarRonda = (orderId: string, ronda: string, motivo: string) =>
+  rpc<number>('pos_rechazar_ronda', { p_order_id: orderId, p_ronda: ronda, p_motivo: motivo });
+
+/** Rondas pendientes de una cuenta, agrupadas (orden de llegada). */
+export function rondasPendientes(cuenta: CuentaMesa): { ronda: string; nombre: string | null; at: string; lineas: LineaCuenta[] }[] {
+  const map = new Map<string, LineaCuenta[]>();
+  for (const l of cuenta.order_items) {
+    if (l.estado !== 'pendiente' || !l.ronda) continue;
+    map.set(l.ronda, [...(map.get(l.ronda) ?? []), l]);
+  }
+  return [...map.entries()]
+    .map(([ronda, lineas]) => ({ ronda, nombre: lineas[0].pedido_por_nombre, at: lineas[0].created_at, lineas }))
+    .sort((a, b) => a.at.localeCompare(b.at));
+}
 
 // --- Admin: mesas y devoluciones ---
 

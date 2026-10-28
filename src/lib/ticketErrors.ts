@@ -45,6 +45,9 @@ const messages: Record<string, string> = {
   NOTAS_DEMASIADO_LARGAS: 'La nota es demasiado larga (máximo 200 caracteres).',
   VENTA_NO_EXISTE: 'Esa venta no existe.',
   IMPORTE_SUPERA_VENTA: 'No se puede devolver más de lo que queda por devolver.',
+  // Pedido desde la mesa (pos-pedidos.sql)
+  RONDAS_PENDIENTES_MAX: 'Ya tienes 2 rondas esperando al camarero. Cuando las acepte, podrás pedir más.',
+  RONDA_DEMASIADO_GRANDE: 'Una ronda puede tener como máximo 20 unidades. Divide el pedido en dos.',
 };
 
 const fallback = 'Algo ha salido mal. Inténtalo de nuevo en unos minutos.';

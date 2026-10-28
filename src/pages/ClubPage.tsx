@@ -22,7 +22,8 @@ export function ClubPage() {
   const [notice, dismissNotice] = useAuthNotice();
   // "#/club?modo=login&promo=<id>": viene del botón "Obtener ticket" de una promo.
   // "#/club?modo=login&volver=canjear&c=<código>": un camarero que escaneó un QR sin haber iniciado sesión.
-  const [{ initialMode, promoId, volverCanjear, codigo }] = useState(() => {
+  // "#/club?modo=login&volver=mesa&m=<token>": un cliente que quiere pedir desde el QR de su mesa.
+  const [{ initialMode, promoId, volverCanjear, codigo, mesaToken }] = useState(() => {
     const params = getHashParams();
     return {
       initialMode: (params.get('modo') === 'login' ? 'login' : 'registro') as Mode,
@@ -30,6 +31,8 @@ export function ClubPage() {
       promoId: /^[a-z0-9-]+$/.test(params.get('promo') ?? '') ? params.get('promo') : null,
       volverCanjear: params.get('volver') === 'canjear',
       codigo: parseScannedCode(params.get('c') ?? ''),
+      mesaToken:
+        params.get('volver') === 'mesa' && /^[A-Za-z0-9_-]{8,64}$/.test(params.get('m') ?? '') ? params.get('m') : null,
     };
   });
   const { catalog } = useCatalog();
@@ -40,9 +43,10 @@ export function ClubPage() {
   useEffect(() => {
     if (!session) return;
     if (volverCanjear) navigate('/canjear', { replace: true, params: codigo ? { c: codigo } : undefined });
+    else if (mesaToken) navigate('/mesa', { replace: true, params: { m: mesaToken } });
     else if (promoId) window.location.replace(`#promo-${promoId}`);
     else navigate('/perfil', { replace: true });
-  }, [session, promoId, volverCanjear, codigo]);
+  }, [session, promoId, volverCanjear, codigo, mesaToken]);
 
   const changeMode = (next: Mode) => {
     setMode(next);
@@ -103,6 +107,12 @@ export function ClubPage() {
           {notice && (
             <div className="mb-5">
               <Notice kind={notice.kind}>{notice.text}</Notice>
+            </div>
+          )}
+
+          {mesaToken && !notice && (
+            <div className="mb-5">
+              <Notice kind="info">Inicia sesión o hazte socio para enviar tu pedido. Lo que has elegido se guarda.</Notice>
             </div>
           )}
 
