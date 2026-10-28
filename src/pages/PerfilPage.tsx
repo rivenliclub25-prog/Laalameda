@@ -11,15 +11,25 @@ import {
   Trash2,
 } from 'lucide-react';
 import { PageShell } from '@/components/club/PageShell';
-import { Checkbox, ClubCard, Notice, SubmitButton, TextField, focusRing } from '@/components/club/FormControls';
+import { Checkbox, ClubCard, Notice, PhoneField, SubmitButton, TextField, focusRing } from '@/components/club/FormControls';
 import { DeleteAccountModal } from '@/components/club/DeleteAccountModal';
 import { useAuth, useAuthNotice } from '@/auth/AuthContext';
 import { signOut } from '@/lib/auth';
-import { fetchProfile, normalizePhone, updateProfile, type EditableProfile, type Profile } from '@/lib/profile';
+import {
+  OTRO_PREFIJO,
+  PREFIJOS,
+  buildPhone,
+  fetchProfile,
+  splitPhone,
+  updateProfile,
+  type EditableProfile,
+  type Profile,
+} from '@/lib/profile';
 import { navigate, routeHref } from '@/lib/router';
 
 interface FormState {
   nombre: string;
+  telefonoPrefijo: string;
   telefono: string;
   fechaNacimiento: string;
   aceptaEmail: boolean;
@@ -29,7 +39,8 @@ interface FormState {
 function toForm(profile: Profile): FormState {
   return {
     nombre: profile.nombre ?? '',
-    telefono: profile.telefono ?? '',
+    telefonoPrefijo: splitPhone(profile.telefono).prefijo,
+    telefono: splitPhone(profile.telefono).numero,
     fechaNacimiento: profile.fecha_nacimiento ?? '',
     aceptaEmail: profile.acepta_email,
     aceptaWhatsapp: profile.acepta_whatsapp,
@@ -91,12 +102,16 @@ export function PerfilPage() {
     e.preventDefault();
     if (!form || !userId) return;
 
-    const telefono = normalizePhone(form.telefono);
+    const telefono = buildPhone(form.telefonoPrefijo, form.telefono);
     const nextErrors = {
       nombre: form.nombre.trim().length < 2 ? 'Dinos cómo te llamas.' : undefined,
       telefono:
         telefono === undefined
-          ? 'Ese teléfono no parece válido. Ejemplo: 612 345 678 o +33 6 12 34 56 78.'
+          ? form.telefonoPrefijo === '+34'
+            ? 'Ese teléfono no parece válido: son 9 cifras, por ejemplo 612 345 678.'
+            : form.telefonoPrefijo === OTRO_PREFIJO
+              ? 'Escribe el número completo con el prefijo de tu país, por ejemplo +41 79 123 45 67.'
+              : 'Ese teléfono no parece válido. Revisa el número (sin el prefijo del país).'
           : form.aceptaWhatsapp && !telefono
             ? 'Para recibir WhatsApp necesitamos tu teléfono.'
             : undefined,
@@ -226,16 +241,16 @@ export function PerfilPage() {
                   error={errors.nombre}
                   required
                 />
-                <TextField
+                <PhoneField
                   label="Teléfono (opcional)"
-                  type="tel"
-                  inputMode="tel"
-                  autoComplete="tel"
-                  placeholder="612 345 678"
-                  value={form.telefono}
-                  onChange={(e) => update('telefono', e.target.value)}
+                  prefijos={PREFIJOS}
+                  otroValue={OTRO_PREFIJO}
+                  prefijo={form.telefonoPrefijo}
+                  numero={form.telefono}
+                  onPrefijo={(value) => update('telefonoPrefijo', value)}
+                  onNumero={(value) => update('telefono', value)}
                   error={errors.telefono}
-                  hint="Si no es un número español, añade el prefijo del país (por ejemplo +33)."
+                  hint="Elige primero el país y después escribe tu número."
                 />
                 <TextField
                   label="Fecha de cumpleaños (opcional)"

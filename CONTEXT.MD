@@ -143,6 +143,8 @@ Ramas:
   - `src/lib/auth.ts`: `googleEnabled = true`, `signInWithGoogle()` con `prompt: select_account` y una marca en la pestaña para traducir los errores de Google (p. ej. «Has cancelado el acceso con Google»); `aceptarPrivacidad()`.
   - `AuthProvider`/`AuthContext`: `privacidadPendiente` y `refreshPerfil()`. `ProtectedRoute` muestra `UltimoPaso` (`src/components/club/UltimoPaso.tsx`) mientras la cuenta no haya aceptado la privacidad; ahí también puede borrar la cuenta si no acepta.
   - `#/club`: el botón ya no dice «Próximamente» y explica que sirve para entrar y registrarse, y que con el mismo email se entra en la misma cuenta.
+- **Probado por el usuario (2026-10-28):** Google funciona correctamente.
+- **Añadido antes de publicar (petición del usuario):** en `#/perfil`, el teléfono se pide en dos partes: **país (prefijo)** y número (`PhoneField` en `FormControls.tsx`; España por defecto; «Otro país…» para escribirlo completo). Se sigue guardando en formato internacional (`+34612345678`), así que no cambia la base de datos. `splitPhone`, `buildPhone` y `formatPhone` en `src/lib/profile.ts` (sustituyen a `normalizePhone`). El panel de socios muestra el teléfono agrupado (`+34 612 345 678`).
 - **Al terminar:** probar en local y en el móvil, y publicar en `main` (con confirmación del usuario).
 
 ## Club de clientes: hecho y probado

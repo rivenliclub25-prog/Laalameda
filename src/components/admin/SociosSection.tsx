@@ -15,6 +15,7 @@ import {
   X,
 } from 'lucide-react';
 import { Notice, Switch, focusRing } from '@/components/club/FormControls';
+import { formatPhone } from '@/lib/profile';
 import {
   computeStats,
   defaultFilters,
@@ -372,7 +373,7 @@ function UserTable({ users, ...toggle }: { users: AdminUser[] } & CamareroToggle
                 <NameCell user={user} />
                 <div className="mt-0.5 break-all text-xs text-carbon/65">{user.email}</div>
               </td>
-              <td className="whitespace-nowrap px-4 py-3 align-top text-carbon/80">{user.telefono || '—'}</td>
+              <td className="whitespace-nowrap px-4 py-3 align-top text-carbon/80">{formatPhone(user.telefono) || '—'}</td>
               <td className="px-4 py-3 align-top text-carbon/80">
                 <BirthdayCell user={user} />
               </td>
@@ -413,7 +414,7 @@ function UserCards({ users, ...toggle }: { users: AdminUser[] } & CamareroToggle
           <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
             <div>
               <dt className="text-xs font-semibold text-carbon/55">Teléfono</dt>
-              <dd className="text-carbon/85">{user.telefono || '—'}</dd>
+              <dd className="text-carbon/85">{formatPhone(user.telefono) || '—'}</dd>
             </div>
             <div>
               <dt className="text-xs font-semibold text-carbon/55">Cumpleaños</dt>
