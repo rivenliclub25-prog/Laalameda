@@ -128,4 +128,11 @@
   .print-only { display: block !important; }
   body { background: white !important; }
   @page { margin: 1.5cm; }
+
+  /* Hoja de QR de mesas (panel → Mesas): solo se imprime esa hoja. */
+  html.qr-printing body { position: static !important; top: auto !important; }
+  html.qr-printing body * { visibility: hidden; }
+  html.qr-printing .qr-print-area,
+  html.qr-printing .qr-print-area * { visibility: visible; }
+  html.qr-printing .qr-print-area { position: absolute; inset: 0 auto auto 0; width: 100%; overflow: visible; background: white; }
 }

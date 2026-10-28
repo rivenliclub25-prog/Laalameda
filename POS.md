@@ -8,7 +8,7 @@ Este documento es la especificación viva de la **fase POS** de la web de La Ala
 - Al decidir algo se anota la decisión y la fecha. Si cambia la propuesta, se actualizan las secciones afectadas y se apunta en el **Historial** (al final).
 - No se programa ninguna fase hasta que estén 🟢 las decisiones de las que depende (ver «Fases»).
 
-Última actualización: 2026-10-28 · Estado: **P2 cerrada (probada). Siguiente: P3 (cuentas de mesa)**, pendiente de aprobar su plan.
+Última actualización: 2026-10-28 · Estado: **P3 hecha, pendiente de prueba** (falta ejecutar `pos-mesas.sql`; ver «Estado de P3» en la sección 8).
 
 ---
 
@@ -429,6 +429,30 @@ No se borra nada ahora. Cuando la carta y las promos lean de Supabase y estén p
 - **Cierre (2026-10-28):** `pos.sql` ejecutado en Supabase y TPV probado por el usuario.
 - **Ventas de prueba:** se están haciendo ventas de prueba en la base de datos real. Antes de la puesta en marcha (P7) se dará un SQL de limpieza de un solo uso: borra ventas, cuentas, líneas y eventos de prueba y reinicia la numeración (la primera venta real será la nº 1), sin tocar carta, promos, socios ni tickets.
 
+### Estado de P3 — cuentas de mesa (2026-10-28): hecha, pendiente de prueba
+
+- **Plan aprobado con las recomendaciones:**
+  - Las líneas que añade el camarero van sin socio (D4).
+  - Se puede anular lo servido, con motivo.
+  - Una cuenta solo se cancela si no queda nada servido.
+  - Se puede cambiar de mesa; juntar mesas queda para más adelante.
+  - Las devoluciones pueden ser parciales, varias hasta el total.
+  - Dividir la cuenta sigue pospuesto (P-1).
+- **`supabase/pos-mesas.sql`:**
+  - Tabla `mesas` con un `token` aleatorio de 16 caracteres para el QR (`#/mesa?m=…`, P4).
+  - `orders.mesa_id`, con una regla de mesa según el origen y **una sola cuenta abierta por mesa** (índice único parcial).
+  - `sale_refunds` (inmutable) y `pos_solicitudes` (protección contra duplicados). `pos_events` admite `mesa_cambiada`.
+  - **RPC del camarero:** `pos_abrir_mesa`, `pos_anadir_lineas` (con notas, precio desde la BD, idempotente), `pos_servir_lineas`, `pos_anular_linea`, `pos_cobrar_cuenta` (sin anuladas; si ya está cobrada devuelve la venta), `pos_cancelar_cuenta` y `pos_cambiar_mesa`.
+  - **RPC del admin:** `admin_devolver_venta` (nunca más de lo cobrado) y `admin_regenerar_qr_mesa`.
+- **Web:**
+  - **TPV con pestañas Mesas y Barra.** En Mesas: cuadrícula de mesas (libre u ocupada, total, tiempo, por servir) y la cuenta de cada mesa: añadir con notas, servir, servir todo, anular con motivo, cobrar, cambiar de mesa y cancelar. Se refresca cada 10 s.
+  - **Panel:**
+    - Pestaña **Mesas**: crear, renombrar, ordenar, desactivar, ver e imprimir el QR (hoja para recortar) y «Nuevo QR».
+    - **Ventas** ampliada: **neto = cobrado − devuelto** por método; origen con el nombre de la mesa; líneas con notas y anuladas; devoluciones; registro de eventos; botón **Devolver**.
+  - Componentes compartidos en `src/components/pos/`: `ProductPicker`, `VentaHecha` y `MesasPanel`.
+- **Verificación:** 31 pruebas de SQL en PGlite (ciclo completo, doble envío, dos camareros a la vez, cambio de mesa, cancelación, devoluciones parciales y su tope, inmutabilidad, **neto = ventas − devoluciones** y **todo en `pos_events`**), más las 24 de P2 sin cambios, y typecheck, lint y build.
+- **Pendiente para cerrar P3:** ejecutar `pos-mesas.sql` en Supabase y la prueba del usuario.
+
 ### Respuestas al plan (2026-10-28)
 
 1. P1 se divide en **P1a y P1b**, con pausa para probar entre ellas.
@@ -462,3 +486,4 @@ No se borra nada ahora. Cuando la carta y las promos lean de Supabase y estén p
 - **2026-10-28** — P1b cerrada tras la prueba del usuario. Arreglo: el fondo no se desliza con menús o ventanas abiertos. **P1 completa.**
 - **2026-10-28** — P2 (venta en barra) aprobada con las recomendaciones e implementada en `pos`.
 - **2026-10-28** — P2 cerrada tras la prueba del usuario. Anotado: SQL de limpieza de ventas de prueba antes de P7.
+- **2026-10-28** — P3 (cuentas de mesa) aprobada con las recomendaciones e implementada en `pos`; pendiente de ejecutar `pos-mesas.sql` y probar.

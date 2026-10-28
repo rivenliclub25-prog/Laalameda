@@ -1,22 +1,24 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
-import { BarChart3, BookOpen, Megaphone, Receipt, Ticket as TicketIcon, Users } from 'lucide-react';
+import { BarChart3, BookOpen, LayoutGrid, Megaphone, Receipt, Ticket as TicketIcon, Users } from 'lucide-react';
 import { PageShell } from '@/components/club/PageShell';
 import { focusRing } from '@/components/club/FormControls';
 import { SociosSection } from '@/components/admin/SociosSection';
 import { PromosSection } from '@/components/admin/PromosSection';
 import { CartaSection } from '@/components/admin/CartaSection';
 import { VentasSection } from '@/components/admin/VentasSection';
+import { MesasSection } from '@/components/admin/MesasSection';
 import { TicketsSection } from '@/components/admin/TicketsSection';
 import { StatsSection } from '@/components/admin/StatsSection';
 import { fetchAdminUsers, type AdminUser } from '@/lib/admin';
 import { getHashParams } from '@/lib/router';
 
-type Seccion = 'socios' | 'carta' | 'promos' | 'tickets' | 'ventas' | 'estadisticas';
+type Seccion = 'socios' | 'carta' | 'promos' | 'mesas' | 'tickets' | 'ventas' | 'estadisticas';
 
 const TABS: { id: Seccion; label: string; icon: typeof Users }[] = [
   { id: 'socios', label: 'Socios', icon: Users },
   { id: 'carta', label: 'Carta', icon: BookOpen },
   { id: 'promos', label: 'Promos', icon: Megaphone },
+  { id: 'mesas', label: 'Mesas', icon: LayoutGrid },
   { id: 'tickets', label: 'Tickets', icon: TicketIcon },
   { id: 'ventas', label: 'Ventas', icon: Receipt },
   { id: 'estadisticas', label: 'Estadísticas', icon: BarChart3 },
@@ -34,6 +36,7 @@ export function AdminPage() {
     socios: null,
     carta: null,
     promos: null,
+    mesas: null,
     tickets: null,
     ventas: null,
     estadisticas: null,
@@ -134,6 +137,7 @@ export function AdminPage() {
           )}
           {seccion === 'carta' && <CartaSection />}
           {seccion === 'promos' && <PromosSection />}
+          {seccion === 'mesas' && <MesasSection />}
           {seccion === 'tickets' && <TicketsSection users={users} />}
           {seccion === 'ventas' && <VentasSection users={users} />}
           {seccion === 'estadisticas' && <StatsSection />}

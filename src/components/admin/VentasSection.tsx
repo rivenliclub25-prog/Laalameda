@@ -1,9 +1,23 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ChevronDown, Loader2, RefreshCw } from 'lucide-react';
-import { Notice, focusRing } from '@/components/club/FormControls';
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { ChevronDown, Loader2, RefreshCw, Undo2 } from 'lucide-react';
+import { Notice, SubmitButton, TextField, focusRing } from '@/components/club/FormControls';
+import { Modal } from '@/components/club/Modal';
 import { fetchAppSettings, jornadaInicio } from '@/lib/adminTickets';
+import { centsToInput } from '@/lib/adminCatalog';
+import { parseEurosToCents } from '@/lib/tickets';
 import type { AdminUser } from '@/lib/admin';
-import { METODOS, fetchVentas, formatEuros, resumenVentas, type Metodo, type Venta } from '@/lib/pos';
+import {
+  METODOS,
+  devolverVenta,
+  devueltoVenta,
+  fetchEventosCuenta,
+  fetchVentas,
+  formatEuros,
+  resumenVentas,
+  type Metodo,
+  type PosEvento,
+  type Venta,
+} from '@/lib/pos';
 
 type Preset = 'hoy' | '7' | '30' | 'custom';
 
@@ -14,12 +28,42 @@ const PRESETS: { id: Preset; label: string }[] = [
   { id: 'custom', label: 'Fechas…' },
 ];
 
+const EVENTOS: Record<string, string> = {
+  abierta: 'Cuenta abierta',
+  linea_anadida: 'Añadido',
+  linea_aceptada: 'Aceptado',
+  linea_servida: 'Servido',
+  linea_anulada: 'Anulado',
+  pagada: 'Cobrada',
+  cancelada: 'Cancelada',
+  devuelta: 'Devolución',
+  mesa_cambiada: 'Cambio de mesa',
+};
+
 function localDate(d: Date) {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-/** Pestaña "Ventas" del panel: totales por método para cuadrar la caja y lista de ventas con sus líneas. */
+function origenTexto(v: Venta) {
+  return v.orders?.origen === 'mesa' ? `Mesa · ${v.orders.mesas?.nombre ?? '—'}` : 'Barra';
+}
+
+function detalleEvento(e: PosEvento): string {
+  const d = e.detalle ?? {};
+  const partes: string[] = [];
+  if (typeof d.producto === 'string') partes.push(`${typeof d.cantidad === 'number' ? `${d.cantidad} × ` : ''}${d.producto}`);
+  if (typeof d.notas === 'string' && d.notas) partes.push(`«${d.notas}»`);
+  if (typeof d.motivo === 'string') partes.push(`Motivo: ${d.motivo}`);
+  if (typeof d.importe_centimos === 'number') partes.push(formatEuros(d.importe_centimos));
+  if (typeof d.total_centimos === 'number') partes.push(formatEuros(d.total_centimos));
+  if (typeof d.metodo === 'string' && d.metodo in METODOS) partes.push(METODOS[d.metodo as Metodo]);
+  if (typeof d.de === 'string' && typeof d.a === 'string') partes.push(`${d.de} → ${d.a}`);
+  if (typeof d.mesa === 'string') partes.push(d.mesa);
+  return partes.join(' · ');
+}
+
+/** Pestaña "Ventas": neto por método para cuadrar la caja, ventas con líneas, registro y devoluciones. */
 export function VentasSection({ users }: { users: AdminUser[] }) {
   const [preset, setPreset] = useState<Preset>('hoy');
   const [desde, setDesde] = useState(() => localDate(new Date()));
@@ -29,6 +73,8 @@ export function VentasSection({ users }: { users: AdminUser[] }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [abierta, setAbierta] = useState<string | null>(null);
+  const [eventos, setEventos] = useState<Record<string, PosEvento[]>>({});
+  const [devolviendo, setDevolviendo] = useState<Venta | null>(null);
 
   const nombre = useMemo(() => {
     const map = new Map(users.map((u) => [u.id, u.nombre || u.email]));
@@ -41,9 +87,10 @@ export function VentasSection({ users }: { users: AdminUser[] }) {
 
   const range = useMemo((): { from: Date; to: Date } | null => {
     const now = new Date();
-    if (preset === 'hoy') return horaCierre ? { from: jornadaInicio(horaCierre, now), to: new Date(now.getTime() + 60_000) } : null;
-    if (preset === '7') return { from: new Date(now.getTime() - 7 * 86_400_000), to: new Date(now.getTime() + 60_000) };
-    if (preset === '30') return { from: new Date(now.getTime() - 30 * 86_400_000), to: new Date(now.getTime() + 60_000) };
+    const end = new Date(now.getTime() + 60_000);
+    if (preset === 'hoy') return horaCierre ? { from: jornadaInicio(horaCierre, now), to: end } : null;
+    if (preset === '7') return { from: new Date(now.getTime() - 7 * 86_400_000), to: end };
+    if (preset === '30') return { from: new Date(now.getTime() - 30 * 86_400_000), to: end };
     if (!desde || !hasta) return null;
     const from = new Date(`${desde}T00:00`);
     const to = new Date(`${hasta}T00:00`);
@@ -64,6 +111,15 @@ export function VentasSection({ users }: { users: AdminUser[] }) {
   useEffect(() => {
     load();
   }, [load]);
+
+  const toggle = async (v: Venta) => {
+    const open = abierta === v.id ? null : v.id;
+    setAbierta(open);
+    if (open && !eventos[v.order_id]) {
+      const r = await fetchEventosCuenta(v.order_id);
+      setEventos((prev) => ({ ...prev, [v.order_id]: r.eventos }));
+    }
+  };
 
   const resumen = useMemo(() => resumenVentas(ventas), [ventas]);
 
@@ -119,12 +175,25 @@ export function VentasSection({ users }: { users: AdminUser[] }) {
         </div>
       ) : (
         <>
-          {/* Para cuadrar la caja */}
+          {/* Para cuadrar la caja: neto = cobrado − devuelto (las cuentas canceladas no generan venta) */}
           <section aria-label="Resumen" className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <Tile label="Total cobrado" value={formatEuros(resumen.total)} hint={`${resumen.n} ventas · media ${formatEuros(resumen.medio)}`} strong />
-            {(Object.keys(METODOS) as Metodo[]).map((m) => (
-              <Tile key={m} label={METODOS[m]} value={formatEuros(resumen.porMetodo[m].total)} hint={`${resumen.porMetodo[m].n} ventas`} />
-            ))}
+            <Tile
+              label="Neto"
+              value={formatEuros(resumen.neto)}
+              hint={`${resumen.n} ventas · cobrado ${formatEuros(resumen.total)}${resumen.devuelto ? ` · devuelto ${formatEuros(resumen.devuelto)}` : ''}`}
+              strong
+            />
+            {(Object.keys(METODOS) as Metodo[]).map((m) => {
+              const pm = resumen.porMetodo[m];
+              return (
+                <Tile
+                  key={m}
+                  label={METODOS[m]}
+                  value={formatEuros(pm.neto)}
+                  hint={`${pm.n} ventas${pm.devuelto ? ` · devuelto ${formatEuros(pm.devuelto)}` : ''}`}
+                />
+              );
+            })}
           </section>
 
           {ventas.length === 0 ? (
@@ -136,39 +205,87 @@ export function VentasSection({ users }: { users: AdminUser[] }) {
             <ul className="mt-6 divide-y divide-carbon/10 rounded-r-lg border border-piedra/50 bg-white shadow-sm">
               {ventas.map((v) => {
                 const open = abierta === v.id;
+                const devuelto = devueltoVenta(v);
+                const restante = v.total_centimos - devuelto;
                 const lineas = v.orders?.order_items ?? [];
                 return (
                   <li key={v.id}>
                     <button
                       type="button"
-                      onClick={() => setAbierta(open ? null : v.id)}
+                      onClick={() => toggle(v)}
                       aria-expanded={open}
-                      className={`grid w-full grid-cols-[1fr_auto] items-center gap-x-4 gap-y-1 px-4 py-3 text-left text-sm hover:bg-marfil sm:grid-cols-[110px_1fr_110px_110px_24px] ${focusRing}`}
+                      className={`grid w-full grid-cols-[1fr_auto] items-center gap-x-4 gap-y-1 px-4 py-3 text-left text-sm hover:bg-marfil sm:grid-cols-[110px_1fr_100px_120px_24px] ${focusRing}`}
                     >
                       <span className="tabular-nums text-carbon/70">
                         {new Date(v.cobrado_at).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                       </span>
                       <span className="hidden min-w-0 truncate text-carbon/70 sm:block">
-                        nº {v.numero} · {v.orders?.origen === 'mesa' ? 'Mesa' : 'Barra'} · {nombre(v.cobrado_por)}
+                        nº {v.numero} · {origenTexto(v)} · {nombre(v.cobrado_por)}
                       </span>
                       <span className="hidden text-carbon/70 sm:block">{METODOS[v.metodo]}</span>
-                      <span className="text-right font-semibold tabular-nums">{formatEuros(v.total_centimos)}</span>
+                      <span className="text-right tabular-nums">
+                        <span className={`font-semibold ${devuelto ? 'text-carbon/50 line-through' : ''}`}>{formatEuros(v.total_centimos)}</span>
+                        {devuelto > 0 && <span className="block text-xs font-semibold text-vino">neto {formatEuros(restante)}</span>}
+                      </span>
                       <ChevronDown size={16} className={`hidden text-carbon/50 transition-transform sm:block ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
                       <span className="col-span-2 text-xs text-carbon/55 sm:hidden">
-                        nº {v.numero} · {METODOS[v.metodo]} · {nombre(v.cobrado_por)}
+                        nº {v.numero} · {origenTexto(v)} · {METODOS[v.metodo]} · {nombre(v.cobrado_por)}
                       </span>
                     </button>
                     {open && (
-                      <ul className="border-t border-carbon/10 bg-marfil/60 px-4 py-2 text-sm">
-                        {lineas.map((l, i) => (
-                          <li key={i} className="flex justify-between gap-3 py-1">
-                            <span>
-                              {l.cantidad} × {l.nombre} <span className="text-carbon/50">({formatEuros(l.precio_unitario_centimos)})</span>
-                            </span>
-                            <span className="tabular-nums">{formatEuros(l.cantidad * l.precio_unitario_centimos)}</span>
-                          </li>
-                        ))}
-                      </ul>
+                      <div className="space-y-4 border-t border-carbon/10 bg-marfil/60 px-4 py-3 text-sm">
+                        <ul>
+                          {lineas.map((l, i) => (
+                            <li key={i} className={`flex justify-between gap-3 py-1 ${l.estado === 'anulada' ? 'text-carbon/45 line-through' : ''}`}>
+                              <span>
+                                {l.cantidad} × {l.nombre} <span className="text-carbon/50">({formatEuros(l.precio_unitario_centimos)})</span>
+                                {l.notas && <span className="ml-1 italic text-carbon/55">«{l.notas}»</span>}
+                                {l.estado === 'anulada' && <span className="ml-1 no-underline">· anulada</span>}
+                              </span>
+                              <span className="tabular-nums">{formatEuros(l.cantidad * l.precio_unitario_centimos)}</span>
+                            </li>
+                          ))}
+                        </ul>
+
+                        {(v.sale_refunds ?? []).length > 0 && (
+                          <div>
+                            <h4 className="text-xs font-semibold uppercase tracking-wider text-carbon/60">Devoluciones</h4>
+                            <ul className="mt-1">
+                              {v.sale_refunds.map((r) => (
+                                <li key={r.id} className="flex justify-between gap-3 py-0.5 text-vino">
+                                  <span>
+                                    {new Date(r.at).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} · {r.motivo} · {nombre(r.por)}
+                                  </span>
+                                  <span className="tabular-nums">−{formatEuros(r.importe_centimos)}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        <div>
+                          <h4 className="text-xs font-semibold uppercase tracking-wider text-carbon/60">Registro</h4>
+                          {!eventos[v.order_id] ? (
+                            <p className="mt-1 text-xs text-carbon/55" role="status">Cargando…</p>
+                          ) : (
+                            <ol className="mt-1 space-y-0.5 border-l-2 border-piedra/60 pl-3 text-xs text-carbon/70">
+                              {eventos[v.order_id].map((e) => (
+                                <li key={e.id}>
+                                  <span className="tabular-nums">{new Date(e.at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</span>{' '}
+                                  <strong className="text-carbon">{EVENTOS[e.tipo] ?? e.tipo}</strong>
+                                  {detalleEvento(e) ? ` · ${detalleEvento(e)}` : ''} · {nombre(e.actor)}
+                                </li>
+                              ))}
+                            </ol>
+                          )}
+                        </div>
+
+                        {restante > 0 && (
+                          <button type="button" onClick={() => setDevolviendo(v)} className={`btn-outline-vino ${focusRing}`}>
+                            <Undo2 size={16} aria-hidden="true" /> Devolver
+                          </button>
+                        )}
+                      </div>
                     )}
                   </li>
                 );
@@ -177,7 +294,60 @@ export function VentasSection({ users }: { users: AdminUser[] }) {
           )}
         </>
       )}
+
+      {devolviendo && (
+        <DevolverModal
+          venta={devolviendo}
+          onClose={() => setDevolviendo(null)}
+          onDone={async () => {
+            setDevolviendo(null);
+            setEventos((prev) => {
+              const next = { ...prev };
+              delete next[devolviendo.order_id];
+              return next;
+            });
+            await load();
+          }}
+        />
+      )}
     </>
+  );
+}
+
+function DevolverModal({ venta, onClose, onDone }: { venta: Venta; onClose: () => void; onDone: () => void }) {
+  const restante = venta.total_centimos - devueltoVenta(venta);
+  const [importe, setImporte] = useState(centsToInput(restante));
+  const [motivo, setMotivo] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    const cents = parseEurosToCents(importe);
+    if (!cents || cents <= 0) return setError('Escribe el importe a devolver, por ejemplo 2,50.');
+    if (cents > restante) return setError(`No se puede devolver más de ${formatEuros(restante)}.`);
+    if (!motivo.trim()) return setError('Escribe el motivo.');
+    setSaving(true);
+    setError(null);
+    const r = await devolverVenta(venta.id, cents, motivo.trim());
+    setSaving(false);
+    if (r.data) onDone();
+    else setError(r.error);
+  };
+
+  return (
+    <Modal open title={`Devolver · venta nº ${venta.numero}`} onClose={onClose} busy={saving} maxWidth="460px">
+      <form onSubmit={handleSubmit} noValidate className="space-y-4">
+        <p className="text-sm text-carbon/75">
+          Cobrado {formatEuros(venta.total_centimos)} ({METODOS[venta.metodo]}). Queda por devolver <strong>{formatEuros(restante)}</strong>. La
+          devolución resta del neto y queda registrada; no se puede deshacer.
+        </p>
+        <TextField label="Importe a devolver (€)" value={importe} onChange={(e) => setImporte(e.target.value)} inputMode="decimal" required />
+        <TextField label="Motivo" value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Ej.: caña en mal estado" required />
+        {error && <Notice kind="error">{error}</Notice>}
+        <SubmitButton loading={saving} loadingText="Devolviendo…">Devolver</SubmitButton>
+      </form>
+    </Modal>
   );
 }
 

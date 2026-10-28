@@ -31,6 +31,20 @@ const messages: Record<string, string> = {
   PRODUCTO_AGOTADO: 'Hay un producto agotado',
   PRODUCTO_SIN_PRECIO: 'Un producto no tiene precio en la carta',
   VENTA_INMUTABLE: 'Las ventas cobradas no se pueden modificar.',
+  // POS: mesas (pos-mesas.sql)
+  MESA_NO_EXISTE: 'Esa mesa no existe.',
+  MESA_INACTIVA: 'Esa mesa está desactivada.',
+  MESA_OCUPADA: 'Esa mesa ya tiene una cuenta abierta.',
+  CUENTA_NO_EXISTE: 'Esa cuenta no existe.',
+  CUENTA_CERRADA: 'Esa cuenta ya está cerrada (cobrada o cancelada). Actualiza la pantalla.',
+  CUENTA_VACIA: 'La cuenta no tiene nada que cobrar.',
+  CUENTA_CON_SERVIDAS: 'Hay consumiciones servidas: anúlalas con su motivo o cobra la cuenta.',
+  PEDIDOS_PENDIENTES: 'Hay pedidos pendientes de aceptar.',
+  LINEA_NO_EXISTE: 'Esa línea ya no existe.',
+  LINEA_YA_ANULADA: 'Esa línea ya estaba anulada.',
+  NOTAS_DEMASIADO_LARGAS: 'La nota es demasiado larga (máximo 200 caracteres).',
+  VENTA_NO_EXISTE: 'Esa venta no existe.',
+  IMPORTE_SUPERA_VENTA: 'No se puede devolver más de lo que queda por devolver.',
 };
 
 const fallback = 'Algo ha salido mal. Inténtalo de nuevo en unos minutos.';
