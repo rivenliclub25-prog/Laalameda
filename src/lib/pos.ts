@@ -1,6 +1,8 @@
 import { supabase } from '@/lib/supabase';
 import { translateTicketError } from '@/lib/ticketErrors';
 import { publicBaseUrl } from '@/data/site';
+import type { Promotion } from '@/lib/catalog';
+import type { PromoState } from '@/lib/tickets';
 
 /** Métodos de pago (POS.md, D12). */
 export const METODOS = {
@@ -10,17 +12,44 @@ export const METODOS = {
 } as const;
 export type Metodo = keyof typeof METODOS;
 
-/** Respuesta de pos_venta_barra() (ver supabase/pos.sql). */
+export type TipoLinea = 'producto' | 'pack' | 'obsequio' | 'sorteo';
+
+/** Tipos de promo (POS.md, D9). */
+export const TIPOS_PROMO: Record<Exclude<TipoLinea, 'producto'>, string> = {
+  pack: 'Pack',
+  obsequio: 'Obsequio',
+  sorteo: 'Sorteo',
+};
+
+/**
+ * Lo que se envía a la base de datos: un producto o una promo. Nunca el precio (lo pone la base de
+ * datos). Las promos de club llevan el código del ticket del socio (solo desde el TPV).
+ */
+export type ItemPedido =
+  | { product_id: number; cantidad: number; notas?: string | null }
+  | { promo_id: string; cantidad: number; ticket_codigo?: string; notas?: string | null };
+
+/** Respuesta de pos_venta_barra() y pos_cobrar_cuenta() (ver supabase/pos-promos.sql). */
 export interface VentaResultado {
   sale_id: string;
   numero: number;
   bruto_centimos: number;
+  descuentos_centimos?: number;
   total_centimos: number;
   metodo: Metodo;
   cobrado_at: string;
   /** true si ese mismo cobro ya se había registrado (doble toque o reintento). */
   repetida: boolean;
-  lineas: { product_id: number; nombre: string; cantidad: number; precio_unitario_centimos: number }[];
+  lineas: {
+    product_id: number | null;
+    promo_id?: string | null;
+    tipo_linea?: TipoLinea;
+    nombre: string;
+    cantidad: number;
+    precio_unitario_centimos: number;
+    descuento_centimos?: number | null;
+    ticket_codigo?: string | null;
+  }[];
 }
 
 /** "12,50 €" */
@@ -45,7 +74,7 @@ export function newRequestId(): string {
  * base de datos. Si el mismo requestId llega dos veces, devuelve la venta ya registrada.
  */
 export async function ventaBarra(
-  items: { product_id: number; cantidad: number }[],
+  items: ItemPedido[],
   metodo: Metodo,
   requestId: string
 ): Promise<{ venta: VentaResultado | null; error: string | null }> {
@@ -68,6 +97,9 @@ export interface VentaLinea {
   precio_unitario_centimos: number;
   estado: string;
   notas: string | null;
+  tipo_linea: TipoLinea;
+  ticket_codigo: string | null;
+  descuento_centimos: number | null;
 }
 
 export interface Venta {
@@ -87,7 +119,7 @@ export interface Venta {
 
 const VENTA_COLS =
   'id, numero, order_id, bruto_centimos, descuentos_centimos, total_centimos, metodo, cobrado_por, cobrado_at, jornada, ' +
-  'orders(origen, mesas(nombre), order_items(nombre, cantidad, precio_unitario_centimos, estado, notas)), ' +
+  'orders(origen, mesas(nombre), order_items(nombre, cantidad, precio_unitario_centimos, estado, notas, tipo_linea, ticket_codigo, descuento_centimos)), ' +
   'sale_refunds(id, importe_centimos, motivo, por, at)';
 
 /** Últimas ventas (para el TPV). */
@@ -126,9 +158,11 @@ export function resumenVentas(ventas: Venta[]) {
   };
   let total = 0;
   let devuelto = 0;
+  let descuentos = 0;
   for (const v of ventas) {
     const d = devueltoVenta(v);
     total += v.total_centimos;
+    descuentos += v.descuentos_centimos;
     devuelto += d;
     const m = porMetodo[v.metodo];
     m.n += 1;
@@ -136,7 +170,7 @@ export function resumenVentas(ventas: Venta[]) {
     m.devuelto += d;
     m.neto += v.total_centimos - d;
   }
-  return { n: ventas.length, total, devuelto, neto: total - devuelto, porMetodo, medio: ventas.length ? Math.round(total / ventas.length) : 0 };
+  return { n: ventas.length, total, devuelto, neto: total - devuelto, descuentos, porMetodo, medio: ventas.length ? Math.round(total / ventas.length) : 0 };
 }
 
 // ---------------------------------------------------------------------
@@ -156,6 +190,10 @@ export type EstadoLinea = 'pendiente' | 'aceptada' | 'servida' | 'anulada';
 export interface LineaCuenta {
   id: string;
   product_id: number | null;
+  promo_id: string | null;
+  tipo_linea: TipoLinea;
+  ticket_codigo: string | null;
+  descuento_centimos: number | null;
   nombre: string;
   precio_unitario_centimos: number;
   cantidad: number;
@@ -195,7 +233,7 @@ export async function fetchMesas(): Promise<{ mesas: Mesa[]; error: string | nul
 }
 
 const CUENTA_COLS =
-  'id, mesa_id, estado, created_at, order_items(id, product_id, nombre, precio_unitario_centimos, cantidad, notas, estado, created_at, ronda, pedido_por_nombre)';
+  'id, mesa_id, estado, created_at, order_items(id, product_id, promo_id, tipo_linea, ticket_codigo, descuento_centimos, nombre, precio_unitario_centimos, cantidad, notas, estado, created_at, ronda, pedido_por_nombre)';
 
 export async function fetchCuentasAbiertas(): Promise<{ cuentas: CuentaMesa[]; error: string | null }> {
   const { data, error } = await supabase.from('orders').select(CUENTA_COLS).eq('origen', 'mesa').eq('estado', 'abierta');
@@ -209,11 +247,7 @@ export async function fetchCuentasAbiertas(): Promise<{ cuentas: CuentaMesa[]; e
 
 export const abrirMesa = (mesaId: string) => rpc<string>('pos_abrir_mesa', { p_mesa_id: mesaId });
 
-export const anadirLineas = (
-  orderId: string,
-  items: { product_id: number; cantidad: number; notas?: string | null }[],
-  requestId: string
-) =>
+export const anadirLineas = (orderId: string, items: ItemPedido[], requestId: string) =>
   rpc<{ repetida: boolean; lineas: number }>('pos_anadir_lineas', {
     p_order_id: orderId,
     p_items: items,
@@ -250,6 +284,38 @@ export function rondasPendientes(cuenta: CuentaMesa): { ronda: string; nombre: s
   return [...map.entries()]
     .map(([ronda, lineas]) => ({ ronda, nombre: lineas[0].pedido_por_nombre, at: lineas[0].created_at, lineas }))
     .sort((a, b) => a.at.localeCompare(b.at));
+}
+
+// --- Promos en las ventas (P5) ---
+
+/** Una promo tal como la ve el TPV. */
+export interface PromoVenta {
+  id: string;
+  nombre: string;
+  tipo: Exclude<TipoLinea, 'producto'>;
+  /** undefined: sin precio en el panel (no se puede vender). */
+  priceCents: number | undefined;
+  soloClub: boolean;
+  /** Encendida en el panel. */
+  activa: boolean;
+  /** Dentro de su horario (en el TPV solo es un aviso). */
+  enHorario: boolean;
+}
+
+/** Promos de la carta con su estado (promos_estado). Sin estado conocido, la base de datos decide. */
+export function promosParaVender(promotions: Promotion[], states: Map<string, PromoState> | null): PromoVenta[] {
+  return promotions.map((p) => {
+    const st = states?.get(p.id);
+    return {
+      id: p.id,
+      nombre: p.title,
+      tipo: p.type,
+      priceCents: p.priceCents,
+      soloClub: st?.solo_club ?? p.soloClub,
+      activa: st?.activa ?? true,
+      enHorario: st?.disponible_ahora ?? true,
+    };
+  });
 }
 
 // --- Admin: mesas y devoluciones ---

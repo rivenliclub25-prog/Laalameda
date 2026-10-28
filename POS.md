@@ -8,7 +8,7 @@ Este documento es la especificación viva de la **fase POS** de la web de La Ala
 - Al decidir algo se anota la decisión y la fecha. Si cambia la propuesta, se actualizan las secciones afectadas y se apunta en el **Historial** (al final).
 - No se programa ninguna fase hasta que estén 🟢 las decisiones de las que depende (ver «Fases»).
 
-Última actualización: 2026-10-28 · Estado: **P4 cerrada (probada). P5 (promos y tickets en las ventas) aprobada y en curso.**
+Última actualización: 2026-10-28 · Estado: **P5 programada (promos y tickets en las ventas), pendiente de que el usuario ejecute `pos-promos.sql` y la pruebe.**
 
 ---
 
@@ -473,6 +473,29 @@ No se borra nada ahora. Cuando la carta y las promos lean de Supabase y estén p
 - **Verificación:** 26 pruebas de SQL en PGlite (un no socio no puede pedir, un socio no ve líneas ajenas aunque estén en su mesa, límites, doble envío, aceptar/rechazar, cobro bloqueado con rondas pendientes) y typecheck, lint y build. 
 - **Cierre (2026-10-28):** `pos-pedidos.sql` ejecutado en Supabase y probado por el usuario: todo correcto.
 
+### Estado de P5 — promos y tickets en las ventas (2026-10-28): 🟡 programada, falta probar
+
+- **Plan aprobado con las recomendaciones:**
+  - Una promo sin precio no se puede vender.
+  - Las promos de club van de una en una (una línea, un ticket). Las demás admiten cantidad.
+  - Horario: en el TPV es solo un aviso; desde la mesa se exige.
+  - Anular una línea con ticket: el ticket vuelve a disponible si no ha caducado (si no, queda anulado).
+  - Un ticket reservado por una ronda pendiente no se puede canjear en otro sitio (`TICKET_EN_PEDIDO`).
+  - Devolver dinero no toca el ticket.
+- **`supabase/pos-promos.sql`:**
+  - `tickets.order_item_id` (línea donde se usó o está reservado), clave foránea en `tickets.sale_id` y `order_items.ticket_codigo`.
+  - Índice único: un ticket solo puede estar en una línea viva.
+  - Funciones internas: `_promo_descuento_unidad` (contenido a precio de carta − precio de la promo), `_ticket_motivo` y `_canjear_ticket` (el canje único compartido), `_pos_liberar_ticket`, `_pos_linea_promo` y `_pos_crear_venta`.
+  - Reescritas con `create or replace` y los mismos parámetros: `lookup_ticket`, `redeem_ticket`, `admin_reopen_ticket` (no reabre un ticket usado en el TPV: `TICKET_EN_VENTA`), `_pos_venta_json`, `pos_venta_barra`, `pos_anadir_lineas`, `pos_anular_linea`, `pos_cobrar_cuenta`, `pos_cancelar_cuenta`, `socio_pedir_ronda`, `pos_aceptar_ronda` y `pos_rechazar_ronda`.
+  - Al cobrar: bruto = total + descuentos, y los tickets quedan enlazados a la venta.
+- **Web:**
+  - TPV (Barra y Mesas): pestaña **Promos** con tipo, precio, «Club · ticket» y aviso «Fuera de horario». Las de club abren el lector del ticket (`TicketPromoModal`, que reutiliza el lector de `#/canjear`, ahora en `src/components/pos/TicketScanner.tsx`).
+  - Las líneas de promo muestran su tipo, el código del ticket y el ahorro.
+  - `#/mesa`: sección **Promos del club** (sustituye al enlace). Las de club usan el ticket del socio (o se le crea al enviar). Muestra «Fuera de horario» y «Ya está en tu pedido pendiente».
+  - Panel → Ventas: ahorro en promos en el resumen y en cada venta. Panel → Tickets: nº de la venta donde se usó cada ticket.
+- **Desviación del plan:** «ya usada» no se muestra por adelantado en la mesa (la web no conoce el límite de cada promo). Si el socio ya la ha usado, al enviar la ronda sale el aviso del límite.
+- **Verificación:** 57 pruebas de SQL en PGlite (mismo ticket nunca dos veces: en dos ventas, dos veces en la misma venta, TPV y `#/canjear`, mesa reservada; límites desde el TPV y desde la mesa; horario; aceptar, rechazar, anular y cancelar con tickets; descuento calculado; bruto − descuentos = total; total = líneas vivas). Las suites anteriores (34 de tickets, 24 de P2, 31 de P3 y 26 de P4) siguen pasando con `pos-promos.sql` cargado. Typecheck, lint y build.
+
 ### Respuestas al plan (2026-10-28)
 
 1. P1 se divide en **P1a y P1b**, con pausa para probar entre ellas.
@@ -510,3 +533,4 @@ No se borra nada ahora. Cuando la carta y las promos lean de Supabase y estén p
 - **2026-10-28** — P3 cerrada tras la prueba del usuario.
 - **2026-10-28** — P4 programada (pedido del socio desde la mesa), a la espera de prueba.
 - **2026-10-28** — P4 cerrada tras la prueba del usuario. Plan de P5 aprobado con las recomendaciones.
+- **2026-10-28** — P5 programada (promos y tickets en las ventas), a la espera de prueba.

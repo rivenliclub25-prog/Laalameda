@@ -110,6 +110,8 @@ export interface Promotion {
   id: string;
   title: string;
   type: RawPromo['tipo'];
+  /** Promo del club: hace falta un ticket del socio. */
+  soloClub: boolean;
   segmentIds: string[];
   description?: string;
   contents: string[];
@@ -196,6 +198,7 @@ export function toCatalog(raw: RawCatalog): Catalog {
     id: p.id,
     title: p.nombre,
     type: p.tipo,
+    soloClub: p.solo_club,
     segmentIds: p.franjas
       .filter((id) => segmentOrder.has(id))
       .sort((a, b) => (segmentOrder.get(a) ?? 0) - (segmentOrder.get(b) ?? 0)),

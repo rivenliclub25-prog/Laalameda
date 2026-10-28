@@ -1,21 +1,27 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronUp, Loader2, Minus, Plus, RefreshCw, ShoppingBag, Trash2, Volume2, VolumeX, X } from 'lucide-react';
+import { ChevronUp, Loader2, Minus, Plus, RefreshCw, ShoppingBag, Ticket, Trash2, Volume2, VolumeX, X } from 'lucide-react';
 import { PageShell } from '@/components/club/PageShell';
 import { Notice, focusRing } from '@/components/club/FormControls';
 import { ProductPicker } from '@/components/pos/ProductPicker';
 import { MesasPanel } from '@/components/pos/MesasPanel';
 import { VentaHecha } from '@/components/pos/VentaHecha';
+import { TicketPromoModal, type TicketElegido } from '@/components/pos/TicketPromoModal';
 import { useCatalog, type MenuItem, type MenuTab } from '@/lib/catalog';
 import { loadSoundEnabled, playFeedback, saveSoundEnabled } from '@/lib/feedback';
 import { useScrollLock } from '@/lib/useScrollLock';
 import { getHashParams } from '@/lib/router';
+import { usePromoStates } from '@/lib/tickets';
 import {
   METODOS,
+  TIPOS_PROMO,
   fetchUltimasVentas,
   formatEuros,
   newRequestId,
+  promosParaVender,
   ventaBarra,
+  type ItemPedido,
   type Metodo,
+  type PromoVenta,
   type Venta,
   type VentaResultado,
 } from '@/lib/pos';
@@ -23,16 +29,30 @@ import {
 type Modo = 'mesas' | 'barra';
 
 interface CartLine {
-  id: number; // código del producto
+  /** Producto: "p:15". Promo: "promo:<id>", o "promo:<id>:<ticket>" si es de club. */
+  key: string;
+  kind: 'producto' | 'promo';
+  /** Código del producto o id de la promo. */
+  id: string;
   name: string;
   priceCents: number;
   qty: number;
+  tipo?: PromoVenta['tipo'];
+  ticket?: TicketElegido;
+}
+
+function toItem(l: CartLine): ItemPedido {
+  return l.kind === 'producto'
+    ? { product_id: Number(l.id), cantidad: l.qty }
+    : { promo_id: l.id, cantidad: l.qty, ...(l.ticket ? { ticket_codigo: l.ticket.codigo } : {}) };
 }
 
 /** TPV (#/pos): pestañas Mesas (cuentas de mesa) y Barra (venta rápida). Solo camareros. */
 export function PosPage() {
   const { catalog, fromBackup } = useCatalog();
   const tabs = useMemo(() => catalog?.menuTabs ?? [], [catalog]);
+  const { states } = usePromoStates();
+  const promos = useMemo(() => promosParaVender(catalog?.promotions ?? [], states), [catalog, states]);
   const [modo, setModo] = useState<Modo>(() => (getHashParams().get('modo') === 'barra' ? 'barra' : 'mesas'));
   const [soundOn, setSoundOn] = useState(loadSoundEnabled);
 
@@ -93,9 +113,9 @@ export function PosPage() {
         )}
 
         {modo === 'mesas' ? (
-          <MesasPanel tabs={tabs} catalogLoading={!catalog} soundOn={soundOn} />
+          <MesasPanel tabs={tabs} promos={promos} catalogLoading={!catalog} soundOn={soundOn} />
         ) : (
-          <BarraPanel tabs={tabs} catalogLoading={!catalog} soundOn={soundOn} />
+          <BarraPanel tabs={tabs} promos={promos} catalogLoading={!catalog} soundOn={soundOn} />
         )}
       </div>
     </PageShell>
@@ -106,8 +126,19 @@ export function PosPage() {
 // Barra: venta rápida ya pagada (P2)
 // ---------------------------------------------------------------------
 
-function BarraPanel({ tabs, catalogLoading, soundOn }: { tabs: MenuTab[]; catalogLoading: boolean; soundOn: boolean }) {
+function BarraPanel({
+  tabs,
+  promos,
+  catalogLoading,
+  soundOn,
+}: {
+  tabs: MenuTab[];
+  promos: PromoVenta[];
+  catalogLoading: boolean;
+  soundOn: boolean;
+}) {
   const [cart, setCart] = useState<CartLine[]>([]);
+  const [pidiendoTicket, setPidiendoTicket] = useState<PromoVenta | null>(null);
   const [metodo, setMetodo] = useState<Metodo | null>(null);
   const [requestId, setRequestId] = useState(newRequestId);
   const [charging, setCharging] = useState(false);
@@ -131,21 +162,46 @@ function BarraPanel({ tabs, catalogLoading, soundOn }: { tabs: MenuTab[]; catalo
 
   const total = cart.reduce((sum, l) => sum + l.priceCents * l.qty, 0);
   const units = cart.reduce((sum, l) => sum + l.qty, 0);
-  const qtyById = useMemo(() => new Map(cart.map((l) => [String(l.id), l.qty])), [cart]);
+  const qtyById = useMemo(() => new Map(cart.filter((l) => l.kind === 'producto').map((l) => [l.id, l.qty])), [cart]);
+  const promoQty = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const l of cart) if (l.kind === 'promo') map.set(l.id, (map.get(l.id) ?? 0) + l.qty);
+    return map;
+  }, [cart]);
 
-  const add = (item: MenuItem) => {
-    if (!item.id || item.priceCents === undefined || item.available === false) return;
-    const id = Number(item.id);
+  const addLine = (line: Omit<CartLine, 'qty'>) => {
     setError(null);
     setCart((prev) => {
-      const line = prev.find((l) => l.id === id);
-      if (line) return prev.map((l) => (l.id === id ? { ...l, qty: Math.min(99, l.qty + 1) } : l));
-      return [...prev, { id, name: item.name ?? '', priceCents: item.priceCents!, qty: 1 }];
+      const found = prev.find((l) => l.key === line.key);
+      if (found) return prev.map((l) => (l.key === line.key ? { ...l, qty: Math.min(99, l.qty + 1) } : l));
+      return [...prev, { ...line, qty: 1 }];
     });
   };
 
-  const changeQty = (id: number, delta: number) =>
-    setCart((prev) => prev.flatMap((l) => (l.id !== id ? [l] : l.qty + delta <= 0 ? [] : [{ ...l, qty: Math.min(99, l.qty + delta) }])));
+  const add = (item: MenuItem) => {
+    if (!item.id || item.priceCents === undefined || item.available === false) return;
+    addLine({ key: `p:${item.id}`, kind: 'producto', id: item.id, name: item.name ?? '', priceCents: item.priceCents });
+  };
+
+  // Las promos del club piden antes el ticket del socio; las demás se añaden sin más.
+  const addPromo = (p: PromoVenta) => {
+    if (p.priceCents === undefined || !p.activa) return;
+    if (p.soloClub) setPidiendoTicket(p);
+    else addLine({ key: `promo:${p.id}`, kind: 'promo', id: p.id, name: p.nombre, priceCents: p.priceCents, tipo: p.tipo });
+  };
+
+  const addPromoConTicket = (p: PromoVenta, ticket: TicketElegido) => {
+    setPidiendoTicket(null);
+    addLine({ key: `promo:${p.id}:${ticket.codigo}`, kind: 'promo', id: p.id, name: p.nombre, priceCents: p.priceCents ?? 0, tipo: p.tipo, ticket });
+  };
+
+  // Una promo con ticket va de una en una: solo se puede quitar.
+  const changeQty = (key: string, delta: number) =>
+    setCart((prev) =>
+      prev.flatMap((l) =>
+        l.key !== key ? [l] : l.qty + delta <= 0 ? [] : l.ticket ? [l] : [{ ...l, qty: Math.min(99, l.qty + delta) }]
+      )
+    );
 
   const clear = () => {
     setCart([]);
@@ -161,11 +217,7 @@ function BarraPanel({ tabs, catalogLoading, soundOn }: { tabs: MenuTab[]; catalo
     setError(null);
     const clientTotal = total;
     // Se reutiliza el mismo requestId hasta que el cobro sale bien: un reintento nunca cobra dos veces.
-    const { venta, error: err } = await ventaBarra(
-      cart.map((l) => ({ product_id: l.id, cantidad: l.qty })),
-      metodo,
-      requestId
-    );
+    const { venta, error: err } = await ventaBarra(cart.map(toItem), metodo, requestId);
     chargingRef.current = false;
     setCharging(false);
     if (!venta) {
@@ -200,7 +252,16 @@ function BarraPanel({ tabs, catalogLoading, soundOn }: { tabs: MenuTab[]; catalo
     <div className="pb-24 lg:pb-0">
       <div className="grid gap-6 lg:grid-cols-[1fr_360px] lg:items-start">
         <section aria-label="Productos">
-          <ProductPicker tabs={tabs} loading={catalogLoading} qtyById={qtyById} onAdd={add} idPrefix="barra" />
+          <ProductPicker
+            tabs={tabs}
+            loading={catalogLoading}
+            qtyById={qtyById}
+            onAdd={add}
+            idPrefix="barra"
+            promos={promos}
+            onAddPromo={addPromo}
+            promoQty={promoQty}
+          />
           <UltimasVentas ventas={ultimas} onRefresh={loadUltimas} />
         </section>
         <aside className="hidden lg:sticky lg:top-24 lg:block" aria-label="Pedido">
@@ -238,6 +299,16 @@ function BarraPanel({ tabs, catalogLoading, soundOn }: { tabs: MenuTab[]; catalo
         </div>
       )}
 
+      {pidiendoTicket && (
+        <TicketPromoModal
+          promo={pidiendoTicket}
+          usados={cart.flatMap((l) => (l.ticket ? [l.ticket.codigo] : []))}
+          soundOn={soundOn}
+          onClose={() => setPidiendoTicket(null)}
+          onConfirm={(ticket) => addPromoConTicket(pidiendoTicket, ticket)}
+        />
+      )}
+
       {done && <VentaHecha venta={done.venta} clientTotal={done.clientTotal} titulo="Barra" onClose={closeDone} />}
     </div>
   );
@@ -259,7 +330,7 @@ function CartPanel({
   metodo: Metodo | null;
   charging: boolean;
   error: string | null;
-  onQty: (id: number, delta: number) => void;
+  onQty: (key: string, delta: number) => void;
   onMetodo: (m: Metodo) => void;
   onCharge: () => void;
   onClear: () => void;
@@ -280,17 +351,25 @@ function CartPanel({
       ) : (
         <ul className="mt-3 divide-y divide-carbon/10" aria-live="polite">
           {cart.map((l) => (
-            <li key={l.id} className="flex items-center gap-2 py-2.5">
+            <li key={l.key} className="flex items-center gap-2 py-2.5">
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-semibold text-carbon">{l.name}</p>
-                <p className="text-xs text-carbon/55">{formatEuros(l.priceCents)} · #{l.id}</p>
+                <p className="text-xs text-carbon/55">
+                  {formatEuros(l.priceCents)} · {l.kind === 'producto' ? `#${l.id}` : TIPOS_PROMO[l.tipo ?? 'pack']}
+                </p>
+                {l.ticket && (
+                  <p className="inline-flex items-center gap-1 text-xs font-semibold text-vino">
+                    <Ticket size={12} aria-hidden="true" /> {l.ticket.codigo}
+                    {l.ticket.socio ? ` · ${l.ticket.socio}` : ''}
+                  </p>
+                )}
               </div>
               <div className="flex items-center gap-1">
-                <button type="button" onClick={() => onQty(l.id, -1)} disabled={charging} aria-label={`Quitar uno de ${l.name}`} className={`flex h-10 w-10 items-center justify-center rounded-full border border-carbon/20 ${focusRing}`}>
+                <button type="button" onClick={() => onQty(l.key, -1)} disabled={charging} aria-label={`Quitar uno de ${l.name}`} className={`flex h-10 w-10 items-center justify-center rounded-full border border-carbon/20 ${focusRing}`}>
                   <Minus size={16} />
                 </button>
                 <span className="w-7 text-center font-bold tabular-nums">{l.qty}</span>
-                <button type="button" onClick={() => onQty(l.id, 1)} disabled={charging} aria-label={`Añadir uno de ${l.name}`} className={`flex h-10 w-10 items-center justify-center rounded-full border border-carbon/20 ${focusRing}`}>
+                <button type="button" onClick={() => onQty(l.key, 1)} disabled={charging || !!l.ticket} aria-label={`Añadir uno de ${l.name}`} className={`flex h-10 w-10 items-center justify-center rounded-full border border-carbon/20 ${focusRing}`}>
                   <Plus size={16} />
                 </button>
               </div>

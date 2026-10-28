@@ -205,6 +205,7 @@ export function TicketsSection({ users }: { users: AdminUser[] }) {
                             <div className="text-xs text-carbon/55">
                               {personName(t.canjeado_por) ?? ''}
                               {t.importe_descuento_centimos !== null ? ` · ${euros(t.importe_descuento_centimos)}` : ''}
+                              {t.sales ? ` · venta nº ${t.sales.numero}` : ''}
                             </div>
                           </>
                         ) : (
@@ -369,6 +370,12 @@ function TicketDetail({
               <dt className="text-xs font-semibold text-carbon/55">Importe</dt>
               <dd>{euros(ticket.importe_descuento_centimos) ?? '—'}</dd>
             </div>
+            {ticket.sales && (
+              <div>
+                <dt className="text-xs font-semibold text-carbon/55">Venta</dt>
+                <dd>nº {ticket.sales.numero}</dd>
+              </div>
+            )}
           </>
         )}
         {ticket.motivo_anulacion && (

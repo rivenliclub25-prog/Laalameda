@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
-import { ArrowLeft, ArrowRightLeft, Ban, Check, CheckCheck, Loader2, Minus, Plus, RefreshCw, Trash2, XCircle } from 'lucide-react';
+import { ArrowLeft, ArrowRightLeft, Ban, Check, CheckCheck, Loader2, Minus, Plus, RefreshCw, Ticket, Trash2, XCircle } from 'lucide-react';
 import { Notice, SubmitButton, focusRing } from '@/components/club/FormControls';
 import { Modal } from '@/components/club/Modal';
 import { ProductPicker } from '@/components/pos/ProductPicker';
 import { VentaHecha } from '@/components/pos/VentaHecha';
+import { TicketPromoModal, type TicketElegido } from '@/components/pos/TicketPromoModal';
 import { playFeedback } from '@/lib/feedback';
 import { subscribeChanges } from '@/lib/realtime';
 import type { MenuItem, MenuTab } from '@/lib/catalog';
 import {
   METODOS,
+  TIPOS_PROMO,
   abrirMesa,
   anadirLineas,
   anularLinea,
@@ -25,9 +27,11 @@ import {
   rondasPendientes,
   totalCuenta,
   type CuentaMesa,
+  type ItemPedido,
   type LineaCuenta,
   type Mesa,
   type Metodo,
+  type PromoVenta,
   type VentaResultado,
 } from '@/lib/pos';
 
@@ -38,6 +42,23 @@ function minutosDesde(iso: string, now: number) {
   return min < 60 ? `${min} min` : `${Math.floor(min / 60)} h ${min % 60} min`;
 }
 
+/** Tipo de promo y ticket de una línea ("Pack · ticket ALA-7K3P · ahorro 2,00 €"). */
+function DetallePromo({ l }: { l: LineaCuenta }) {
+  if (l.tipo_linea === 'producto') return null;
+  return (
+    <span className="flex flex-wrap items-center gap-x-1.5 text-xs font-semibold text-vino">
+      <span>{TIPOS_PROMO[l.tipo_linea]}</span>
+      {l.ticket_codigo && (
+        <span className="inline-flex items-center gap-1">
+          · <Ticket size={12} aria-hidden="true" /> {l.ticket_codigo}
+        </span>
+      )}
+      {!l.ticket_codigo && l.estado === 'pendiente' && l.promo_id && <span>· con el ticket del socio</span>}
+      {l.descuento_centimos ? <span className="font-normal text-carbon/60">· ahorra {formatEuros(l.descuento_centimos)}</span> : null}
+    </span>
+  );
+}
+
 const ESTADO_LINEA: Record<LineaCuenta['estado'], { label: string; className: string }> = {
   pendiente: { label: 'Pendiente', className: 'border-piedra bg-piedra/15 text-carbon' },
   aceptada: { label: 'Por servir', className: 'border-vino/40 bg-vino/10 text-vino' },
@@ -46,7 +67,17 @@ const ESTADO_LINEA: Record<LineaCuenta['estado'], { label: string; className: st
 };
 
 /** Mesas del TPV: cuadrícula de mesas y la cuenta de la mesa elegida. */
-export function MesasPanel({ tabs, catalogLoading, soundOn }: { tabs: MenuTab[]; catalogLoading: boolean; soundOn: boolean }) {
+export function MesasPanel({
+  tabs,
+  promos,
+  catalogLoading,
+  soundOn,
+}: {
+  tabs: MenuTab[];
+  promos: PromoVenta[];
+  catalogLoading: boolean;
+  soundOn: boolean;
+}) {
   const [mesas, setMesas] = useState<Mesa[]>([]);
   const [cuentas, setCuentas] = useState<CuentaMesa[]>([]);
   const [loading, setLoading] = useState(true);
@@ -111,6 +142,7 @@ export function MesasPanel({ tabs, catalogLoading, soundOn }: { tabs: MenuTab[];
         cuenta={cuentaPorMesa.get(selected.id) ?? null}
         mesasLibres={mesas.filter((m) => m.activa && !cuentaPorMesa.has(m.id))}
         tabs={tabs}
+        promos={promos}
         catalogLoading={catalogLoading}
         soundOn={soundOn}
         now={now}
@@ -199,6 +231,7 @@ function CuentaView({
   cuenta,
   mesasLibres,
   tabs,
+  promos,
   catalogLoading,
   soundOn,
   now,
@@ -210,6 +243,7 @@ function CuentaView({
   cuenta: CuentaMesa | null;
   mesasLibres: Mesa[];
   tabs: MenuTab[];
+  promos: PromoVenta[];
   catalogLoading: boolean;
   soundOn: boolean;
   now: number;
@@ -308,6 +342,7 @@ function CuentaView({
                       <span>
                         {l.cantidad} × {l.nombre}
                         {l.notas && <span className="ml-1 italic text-carbon/60">«{l.notas}»</span>}
+                        <DetallePromo l={l} />
                       </span>
                       <span className="tabular-nums text-carbon/70">{formatEuros(l.precio_unitario_centimos * l.cantidad)}</span>
                     </li>
@@ -347,6 +382,7 @@ function CuentaView({
                     {l.cantidad} × {l.nombre}
                   </p>
                   {l.notas && <p className="text-xs italic text-carbon/60">«{l.notas}»</p>}
+                  <DetallePromo l={l} />
                   {l.pedido_por_nombre && <p className="text-xs text-carbon/50">Pedido por {l.pedido_por_nombre} desde la mesa</p>}
                 </div>
                 <span className={`inline-flex rounded-full border px-2 py-0.5 text-[0.68rem] font-semibold ${ESTADO_LINEA[l.estado].className}`}>
@@ -424,6 +460,8 @@ function CuentaView({
       {adding && (
         <AddLinesModal
           tabs={tabs}
+          promos={promos}
+          soundOn={soundOn}
           catalogLoading={catalogLoading}
           mesaNombre={mesa.nombre}
           onClose={() => setAdding(false)}
@@ -449,7 +487,7 @@ function CuentaView({
       {anulando && (
         <MotivoModal
           title={`Anular: ${anulando.cantidad} × ${anulando.nombre}`}
-          texto={anulando.estado === 'servida' ? 'Ya está servida: quedará registrado el motivo (p. ej. invitación).' : 'Deja de contar en la cuenta.'}
+          texto={`${anulando.estado === 'servida' ? 'Ya está servida: quedará registrado el motivo (p. ej. invitación).' : 'Deja de contar en la cuenta.'}${anulando.ticket_codigo ? ' El ticket del socio vuelve a quedar disponible (si no ha caducado).' : ''}`}
           sugerencias={['Invitación', 'Error al pedir', 'Derramado', 'Devuelto por el cliente']}
           confirmLabel="Anular línea"
           onClose={() => setAnulando(null)}
@@ -527,72 +565,136 @@ function CuentaView({
 // ---------------------------------------------------------------------
 
 interface Borrador {
-  id: number;
+  kind: 'producto' | 'promo';
+  /** Código del producto o id de la promo. */
+  id: string;
   name: string;
   priceCents: number;
   qty: number;
   notas: string;
+  tipo?: PromoVenta['tipo'];
+  ticket?: TicketElegido;
+}
+
+function borradorToItem(d: Borrador): ItemPedido {
+  const notas = d.notas.trim() || null;
+  return d.kind === 'producto'
+    ? { product_id: Number(d.id), cantidad: d.qty, notas }
+    : { promo_id: d.id, cantidad: d.qty, notas, ...(d.ticket ? { ticket_codigo: d.ticket.codigo } : {}) };
 }
 
 function AddLinesModal({
   tabs,
+  promos,
+  soundOn,
   catalogLoading,
   mesaNombre,
   onClose,
   onConfirm,
 }: {
   tabs: MenuTab[];
+  promos: PromoVenta[];
+  soundOn: boolean;
   catalogLoading: boolean;
   mesaNombre: string;
   onClose: () => void;
-  onConfirm: (items: { product_id: number; cantidad: number; notas: string | null }[], requestId: string) => Promise<boolean>;
+  onConfirm: (items: ItemPedido[], requestId: string) => Promise<boolean>;
 }) {
   const [draft, setDraft] = useState<Borrador[]>([]);
+  const [pidiendoTicket, setPidiendoTicket] = useState<PromoVenta | null>(null);
   const [saving, setSaving] = useState(false);
   // El mismo id hasta que se añade: si se reintenta tras un fallo de red, no se duplica.
   const [requestId] = useState(newRequestId);
-  const qtyById = useMemo(() => new Map(draft.map((d) => [String(d.id), d.qty])), [draft]);
+  const sumBy = (kind: Borrador['kind']) => {
+    const map = new Map<string, number>();
+    for (const d of draft) if (d.kind === kind) map.set(d.id, (map.get(d.id) ?? 0) + d.qty);
+    return map;
+  };
+  const qtyById = sumBy('producto');
+  const promoQty = sumBy('promo');
   const total = draft.reduce((s, d) => s + d.priceCents * d.qty, 0);
+
+  const addLine = (line: Omit<Borrador, 'qty' | 'notas'>) =>
+    setDraft((prev) => {
+      const found = !line.ticket && prev.find((d) => d.kind === line.kind && d.id === line.id && d.notas === '' && !d.ticket);
+      if (found) return prev.map((d) => (d === found ? { ...d, qty: Math.min(99, d.qty + 1) } : d));
+      return [...prev, { ...line, qty: 1, notas: '' }];
+    });
 
   const add = (item: MenuItem) => {
     if (!item.id || item.priceCents === undefined || item.available === false) return;
-    const id = Number(item.id);
-    setDraft((prev) => {
-      const line = prev.find((d) => d.id === id && d.notas === '');
-      if (line) return prev.map((d) => (d === line ? { ...d, qty: Math.min(99, d.qty + 1) } : d));
-      return [...prev, { id, name: item.name ?? '', priceCents: item.priceCents!, qty: 1, notas: '' }];
-    });
+    addLine({ kind: 'producto', id: item.id, name: item.name ?? '', priceCents: item.priceCents });
+  };
+
+  // Las promos del club piden antes el ticket del socio; las demás se añaden sin más.
+  const addPromo = (p: PromoVenta) => {
+    if (p.priceCents === undefined || !p.activa) return;
+    if (p.soloClub) setPidiendoTicket(p);
+    else addLine({ kind: 'promo', id: p.id, name: p.nombre, priceCents: p.priceCents, tipo: p.tipo });
   };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (draft.length === 0) return;
     setSaving(true);
-    const ok = await onConfirm(
-      draft.map((d) => ({ product_id: d.id, cantidad: d.qty, notas: d.notas.trim() || null })),
-      requestId
-    );
+    const ok = await onConfirm(draft.map(borradorToItem), requestId);
     setSaving(false);
     if (!ok) return;
   };
 
   return (
-    <Modal open title={`Añadir a ${mesaNombre}`} onClose={onClose} busy={saving} maxWidth="760px">
-      <ProductPicker tabs={tabs} loading={catalogLoading} qtyById={qtyById} onAdd={add} idPrefix="mesa-add" />
+    <Modal open title={`Añadir a ${mesaNombre}`} onClose={onClose} busy={saving || !!pidiendoTicket} maxWidth="760px">
+      <ProductPicker
+        tabs={tabs}
+        loading={catalogLoading}
+        qtyById={qtyById}
+        onAdd={add}
+        idPrefix="mesa-add"
+        promos={promos}
+        onAddPromo={addPromo}
+        promoQty={promoQty}
+      />
+      {pidiendoTicket && (
+        <TicketPromoModal
+          promo={pidiendoTicket}
+          usados={draft.flatMap((d) => (d.ticket ? [d.ticket.codigo] : []))}
+          soundOn={soundOn}
+          onClose={() => setPidiendoTicket(null)}
+          onConfirm={(ticket) => {
+            const p = pidiendoTicket;
+            setPidiendoTicket(null);
+            addLine({ kind: 'promo', id: p.id, name: p.nombre, priceCents: p.priceCents ?? 0, tipo: p.tipo, ticket });
+          }}
+        />
+      )}
       <form onSubmit={handleSubmit} className="mt-5 border-t border-carbon/10 pt-4">
         {draft.length === 0 ? (
           <p className="text-sm text-carbon/55">Toca productos para añadirlos.</p>
         ) : (
           <ul className="space-y-2">
             {draft.map((d, i) => (
-              <li key={`${d.id}-${i}`} className="rounded-r-sm bg-marfil px-3 py-2">
+              <li key={`${d.kind}-${d.id}-${d.ticket?.codigo ?? i}`} className="rounded-r-sm bg-marfil px-3 py-2">
                 <div className="flex items-center gap-2">
-                  <span className="min-w-0 flex-1 truncate text-sm font-semibold">{d.name}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-semibold">{d.name}</span>
+                    {d.kind === 'promo' && (
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-vino">
+                        {TIPOS_PROMO[d.tipo ?? 'pack']}
+                        {d.ticket && (
+                          <>
+                            {' · '}
+                            <Ticket size={12} aria-hidden="true" /> {d.ticket.codigo}
+                            {d.ticket.socio ? ` · ${d.ticket.socio}` : ''}
+                          </>
+                        )}
+                      </span>
+                    )}
+                  </span>
                   <button type="button" onClick={() => setDraft((p) => p.flatMap((x, j) => (j !== i ? [x] : x.qty <= 1 ? [] : [{ ...x, qty: x.qty - 1 }])))} aria-label={`Quitar uno de ${d.name}`} className={`flex h-9 w-9 items-center justify-center rounded-full border border-carbon/20 bg-white ${focusRing}`}>
                     {d.qty <= 1 ? <Trash2 size={15} /> : <Minus size={15} />}
                   </button>
                   <span className="w-6 text-center font-bold tabular-nums">{d.qty}</span>
-                  <button type="button" onClick={() => setDraft((p) => p.map((x, j) => (j === i ? { ...x, qty: Math.min(99, x.qty + 1) } : x)))} aria-label={`Añadir uno de ${d.name}`} className={`flex h-9 w-9 items-center justify-center rounded-full border border-carbon/20 bg-white ${focusRing}`}>
+                  <button type="button" disabled={!!d.ticket} onClick={() => setDraft((p) => p.map((x, j) => (j === i ? { ...x, qty: Math.min(99, x.qty + 1) } : x)))} aria-label={`Añadir uno de ${d.name}`} className={`flex h-9 w-9 items-center justify-center rounded-full border border-carbon/20 bg-white ${focusRing}`}>
                     <Plus size={15} />
                   </button>
                 </div>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
-import { ChevronDown, Loader2, RefreshCw, Undo2 } from 'lucide-react';
+import { ChevronDown, Loader2, RefreshCw, Ticket, Undo2 } from 'lucide-react';
 import { Notice, SubmitButton, TextField, focusRing } from '@/components/club/FormControls';
 import { Modal } from '@/components/club/Modal';
 import { fetchAppSettings, jornadaInicio } from '@/lib/adminTickets';
@@ -8,6 +8,7 @@ import { parseEurosToCents } from '@/lib/tickets';
 import type { AdminUser } from '@/lib/admin';
 import {
   METODOS,
+  TIPOS_PROMO,
   devolverVenta,
   devueltoVenta,
   fetchEventosCuenta,
@@ -180,7 +181,7 @@ export function VentasSection({ users }: { users: AdminUser[] }) {
             <Tile
               label="Neto"
               value={formatEuros(resumen.neto)}
-              hint={`${resumen.n} ventas · cobrado ${formatEuros(resumen.total)}${resumen.devuelto ? ` · devuelto ${formatEuros(resumen.devuelto)}` : ''}`}
+              hint={`${resumen.n} ventas · cobrado ${formatEuros(resumen.total)}${resumen.devuelto ? ` · devuelto ${formatEuros(resumen.devuelto)}` : ''}${resumen.descuentos ? ` · ahorro en promos ${formatEuros(resumen.descuentos)}` : ''}`}
               strong
             />
             {(Object.keys(METODOS) as Metodo[]).map((m) => {
@@ -234,6 +235,11 @@ export function VentasSection({ users }: { users: AdminUser[] }) {
                     </button>
                     {open && (
                       <div className="space-y-4 border-t border-carbon/10 bg-marfil/60 px-4 py-3 text-sm">
+                        {v.descuentos_centimos > 0 && (
+                          <p className="text-xs text-carbon/60">
+                            Sin promos habría sido {formatEuros(v.bruto_centimos)}: ahorro de {formatEuros(v.descuentos_centimos)}.
+                          </p>
+                        )}
                         <ul>
                           {lineas.map((l, i) => (
                             <li key={i} className={`flex justify-between gap-3 py-1 ${l.estado === 'anulada' ? 'text-carbon/45 line-through' : ''}`}>
@@ -241,6 +247,18 @@ export function VentasSection({ users }: { users: AdminUser[] }) {
                                 {l.cantidad} × {l.nombre} <span className="text-carbon/50">({formatEuros(l.precio_unitario_centimos)})</span>
                                 {l.notas && <span className="ml-1 italic text-carbon/55">«{l.notas}»</span>}
                                 {l.estado === 'anulada' && <span className="ml-1 no-underline">· anulada</span>}
+                                {l.tipo_linea !== 'producto' && (
+                                  <span className="ml-1.5 inline-flex flex-wrap items-center gap-x-1 text-xs font-semibold text-vino">
+                                    {TIPOS_PROMO[l.tipo_linea]}
+                                    {l.ticket_codigo && (
+                                      <>
+                                        {' · '}
+                                        <Ticket size={12} aria-hidden="true" /> {l.ticket_codigo}
+                                      </>
+                                    )}
+                                    {l.descuento_centimos ? <span className="font-normal text-carbon/60">· ahorra {formatEuros(l.descuento_centimos)}</span> : null}
+                                  </span>
+                                )}
                               </span>
                               <span className="tabular-nums">{formatEuros(l.cantidad * l.precio_unitario_centimos)}</span>
                             </li>

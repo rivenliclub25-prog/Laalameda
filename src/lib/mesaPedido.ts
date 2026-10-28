@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { ticketErrorCode, translateTicketError } from '@/lib/ticketErrors';
+import type { TipoLinea } from '@/lib/pos';
 
 /** Mesa del QR (función pública mesa_info, ver supabase/pos-pedidos.sql). */
 export interface MesaInfo {
@@ -17,7 +18,7 @@ export async function mesaInfo(token: string): Promise<{ mesa: MesaInfo | null; 
 /** Envía una ronda: queda pendiente hasta que la acepte el camarero. */
 export async function pedirRonda(
   token: string,
-  items: { product_id: number; cantidad: number; notas?: string | null }[],
+  items: ({ product_id: number; cantidad: number; notas?: string | null } | { promo_id: string; cantidad: number })[],
   requestId: string
 ): Promise<{ ok: boolean; error: string | null; code: string | null }> {
   const { error } = await supabase.rpc('socio_pedir_ronda', {
@@ -32,6 +33,9 @@ export async function pedirRonda(
 export interface MiPedido {
   id: string;
   nombre: string;
+  promo_id: string | null;
+  tipo_linea: TipoLinea;
+  ticket_codigo: string | null;
   cantidad: number;
   precio_unitario_centimos: number;
   notas: string | null;
@@ -44,7 +48,7 @@ export interface MiPedido {
 export async function fetchMisPedidos(mesaId: string): Promise<{ pedidos: MiPedido[]; error: string | null }> {
   const { data, error } = await supabase
     .from('order_items')
-    .select('id, nombre, cantidad, precio_unitario_centimos, notas, estado, ronda, created_at, orders!inner(mesa_id, estado)')
+    .select('id, nombre, promo_id, tipo_linea, ticket_codigo, cantidad, precio_unitario_centimos, notas, estado, ronda, created_at, orders!inner(mesa_id, estado)')
     .eq('orders.mesa_id', mesaId)
     .eq('orders.estado', 'abierta')
     .order('created_at', { ascending: true });

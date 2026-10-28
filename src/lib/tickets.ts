@@ -21,6 +21,11 @@ export interface Ticket {
   anulado_por: string | null;
   motivo_anulacion: string | null;
   importe_descuento_centimos: number | null;
+  /** Línea del TPV donde se usó (o está reservado, si sigue disponible) y su venta (P5). */
+  order_item_id?: string | null;
+  sale_id?: string | null;
+  /** Solo en el panel: nº de la venta. */
+  sales?: { numero: number } | null;
 }
 
 /** Estado de una promo según promos_estado(). */

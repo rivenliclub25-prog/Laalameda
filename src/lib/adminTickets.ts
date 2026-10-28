@@ -129,7 +129,7 @@ export async function searchTickets({
   estado = 'todos',
   limit = 50,
 }: TicketSearch): Promise<{ tickets: Ticket[]; error: string | null }> {
-  let query = supabase.from('tickets').select('*').order('created_at', { ascending: false }).limit(limit);
+  let query = supabase.from('tickets').select('*, sales(numero)').order('created_at', { ascending: false }).limit(limit);
   if (codigo) query = query.eq('codigo', codigo);
   if (userIds) query = query.in('user_id', userIds);
   if (estado !== 'todos') query = query.eq('estado', estado);

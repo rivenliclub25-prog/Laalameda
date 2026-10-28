@@ -48,7 +48,32 @@ const messages: Record<string, string> = {
   // Pedido desde la mesa (pos-pedidos.sql)
   RONDAS_PENDIENTES_MAX: 'Ya tienes 2 rondas esperando al camarero. Cuando las acepte, podrás pedir más.',
   RONDA_DEMASIADO_GRANDE: 'Una ronda puede tener como máximo 20 unidades. Divide el pedido en dos.',
+  // Promos y tickets en las ventas (pos-promos.sql)
+  PROMO_SIN_PRECIO: 'Esta promo no tiene precio: ponle uno en Panel → Promos antes de venderla.',
+  PROMO_CLUB_DE_UNA_EN_UNA: 'Las promos del club van de una en una: cada una lleva su ticket.',
+  TICKET_OBLIGATORIO: 'Esta promo es del club: escanea o escribe el ticket del socio.',
+  TICKET_OTRA_PROMO: 'Este ticket es de otra promo',
+  TICKET_EN_PEDIDO: 'Este ticket está en un pedido pendiente desde la mesa. Acepta o rechaza esa ronda.',
+  TICKET_EN_VENTA: 'Este ticket se usó en el TPV: anula su línea en la cuenta (vuelve solo a disponible) o, si ya se cobró, haz una devolución.',
 };
+
+/** Errores donde el detalle es la promo o el ticket: se pone delante («Pack Partido»: …). */
+const detailFirst = new Set([
+  'PROMO_INACTIVA',
+  'PROMO_FUERA_DE_HORARIO',
+  'PROMO_SIN_PRECIO',
+  'PROMO_CLUB_DE_UNA_EN_UNA',
+  'LIMITE_USOS',
+  'TICKET_OBLIGATORIO',
+  'TICKET_YA_DISPONIBLE',
+  'TICKET_NO_EXISTE',
+  'TICKET_YA_CANJEADO',
+  'TICKET_CADUCADO',
+  'TICKET_ANULADO',
+  'TICKET_PROPIO',
+  'TICKET_NO_VALIDO',
+  'TICKET_EN_PEDIDO',
+]);
 
 const fallback = 'Algo ha salido mal. Inténtalo de nuevo en unos minutos.';
 
@@ -66,8 +91,9 @@ export function translateTicketError(error: PostgrestError): string {
   console.error('[club] Error de tickets:', error);
   const code = ticketErrorCode(error);
   let text = code ? messages[code] : fallback;
-  // Algunos errores traen el nombre del producto (p. ej. PRODUCTO_AGOTADO → "Patatas").
-  if (code && error.details) text = `${text.replace(/.$/, '')}: ${error.details}.`;
+  // Algunos errores traen el nombre del producto (p. ej. PRODUCTO_AGOTADO → "Patatas"), de la promo o el ticket.
+  if (code && error.details && detailFirst.has(code)) text = `«${error.details}»: ${text}`;
+  else if (code && error.details) text = `${text.replace(/\.$/, '')}: ${error.details}.`;
   else if (code && !text.endsWith('.')) text += '.';
   if (!code && /fetch|network/i.test(error.message)) {
     text = 'No hemos podido conectar. Revisa tu conexión a internet.';

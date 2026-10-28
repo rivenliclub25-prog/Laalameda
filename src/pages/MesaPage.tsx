@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { CheckCircle2, Clock, Gift, Loader2, LogIn, Minus, Plus, Send, X, XCircle } from 'lucide-react';
+import { CheckCircle2, Clock, Gift, Loader2, LogIn, Minus, Plus, Send, Ticket, X, XCircle } from 'lucide-react';
 import { PageShell } from '@/components/club/PageShell';
 import { ClubCard, Notice, focusRing } from '@/components/club/FormControls';
 import { useAuth } from '@/auth/AuthContext';
 import { getHashParams, routeHref } from '@/lib/router';
-import { useCatalog, type MenuItem } from '@/lib/catalog';
-import { formatEuros, newRequestId } from '@/lib/pos';
+import { useCatalog } from '@/lib/catalog';
+import { TIPOS_PROMO, formatEuros, newRequestId, promosParaVender, type PromoVenta } from '@/lib/pos';
+import { usePromoStates } from '@/lib/tickets';
 import { fetchMisPedidos, mesaInfo, pedirRonda, type MesaInfo, type MiPedido } from '@/lib/mesaPedido';
 import { subscribeChanges } from '@/lib/realtime';
 import { useScrollLock } from '@/lib/useScrollLock';
@@ -13,7 +14,19 @@ import { useScrollLock } from '@/lib/useScrollLock';
 /** Mismos límites que socio_pedir_ronda (supabase/pos-pedidos.sql). */
 const MAX_UNIDADES_RONDA = 20;
 
+/** Clave: código del producto ("15") o "promo:<id>". */
 type Carrito = Record<string, number>;
+
+const PROMO_KEY = /^promo:([a-z0-9-]+)$/;
+
+/** Una línea del carrito, ya con su nombre y precio de la carta. */
+interface LineaCarrito {
+  key: string;
+  nombre: string;
+  priceCents: number;
+  cantidad: number;
+  promo?: PromoVenta;
+}
 
 const cartKey = (token: string) => `alameda-mesa-carrito-${token}`;
 
@@ -25,7 +38,7 @@ function loadCart(token: string): Carrito {
     if (!parsed || typeof parsed !== 'object') return {};
     const cart: Carrito = {};
     for (const [id, qty] of Object.entries(parsed as Record<string, unknown>)) {
-      if (/^\d+$/.test(id) && typeof qty === 'number' && qty > 0) cart[id] = Math.min(Math.floor(qty), MAX_UNIDADES_RONDA);
+      if ((/^\d+$/.test(id) || PROMO_KEY.test(id)) && typeof qty === 'number' && qty > 0) cart[id] = Math.min(Math.floor(qty), MAX_UNIDADES_RONDA);
     }
     return cart;
   } catch {
@@ -66,6 +79,7 @@ export function MesaPage() {
   });
   const { session, user, loading: authLoading } = useAuth();
   const { catalog } = useCatalog();
+  const { states } = usePromoStates();
 
   const [mesa, setMesa] = useState<MesaInfo | null>(null);
   const [mesaState, setMesaState] = useState<'cargando' | 'ok' | 'invalida' | 'error'>(token ? 'cargando' : 'invalida');
@@ -138,27 +152,40 @@ export function MesaPage() {
     [catalog]
   );
   const productos = useMemo(() => {
-    const map = new Map<string, MenuItem>();
-    for (const t of tabs) for (const i of t.items) map.set(i.id!, i);
+    const map = new Map<string, { nombre: string; priceCents: number }>();
+    for (const t of tabs) for (const i of t.items) map.set(i.id!, { nombre: i.name!, priceCents: i.priceCents! });
     return map;
   }, [tabs]);
+  // Promos que el socio puede pedir: encendidas y con precio (fuera de horario se ven, pero no se piden).
+  const promos = useMemo(
+    () => promosParaVender(catalog?.promotions ?? [], states).filter((p) => p.activa && p.priceCents !== undefined),
+    [catalog, states]
+  );
+  const promoPorId = useMemo(() => new Map(promos.map((p) => [p.id, p])), [promos]);
   const activeCategory = category ?? tabs[0]?.id ?? null;
   const visibles = tabs.find((t) => t.id === activeCategory)?.items ?? [];
 
-  // Solo cuenta lo que sigue en la carta (un producto retirado desaparece del carrito).
-  const lineas = Object.entries(cart)
-    .map(([id, cantidad]) => ({ item: productos.get(id), id, cantidad }))
-    .filter((l): l is { item: MenuItem; id: string; cantidad: number } => !!l.item);
+  // Solo cuenta lo que sigue en la carta (un producto o promo retirados desaparecen del carrito).
+  const lineas: LineaCarrito[] = Object.entries(cart).flatMap(([key, cantidad]) => {
+    const promoId = key.match(PROMO_KEY)?.[1];
+    if (promoId) {
+      const promo = promoPorId.get(promoId);
+      return promo && promo.enHorario ? [{ key, nombre: promo.nombre, priceCents: promo.priceCents ?? 0, cantidad, promo }] : [];
+    }
+    const p = productos.get(key);
+    return p ? [{ key, nombre: p.nombre, priceCents: p.priceCents, cantidad }] : [];
+  });
   const unidades = lineas.reduce((s, l) => s + l.cantidad, 0);
-  const total = lineas.reduce((s, l) => s + l.cantidad * (l.item.priceCents ?? 0), 0);
+  const total = lineas.reduce((s, l) => s + l.cantidad * l.priceCents, 0);
 
-  const changeQty = (id: string, delta: number) => {
+  /** max: 1 para las promos del club (cada una usa un ticket). */
+  const changeQty = (id: string, delta: number, max = MAX_UNIDADES_RONDA) => {
     setEnviada(false);
     requestIdRef.current = null;
     setCart((prev) => {
       const current = prev[id] ?? 0;
       const totalOthers = Object.entries(prev).reduce((s, [k, q]) => (k === id ? s : s + q), 0);
-      const next = Math.max(0, Math.min(current + delta, MAX_UNIDADES_RONDA - totalOthers));
+      const next = Math.max(0, Math.min(current + delta, max, MAX_UNIDADES_RONDA - totalOthers));
       const copy = { ...prev };
       if (next === 0) delete copy[id];
       else copy[id] = next;
@@ -174,7 +201,7 @@ export function MesaPage() {
     setEnvioError(null);
     const { ok, error } = await pedirRonda(
       token,
-      lineas.map((l) => ({ product_id: Number(l.id), cantidad: l.cantidad })),
+      lineas.map((l) => (l.promo ? { promo_id: l.promo.id, cantidad: l.cantidad } : { product_id: Number(l.key), cantidad: l.cantidad })),
       requestIdRef.current
     );
     setEnviando(false);
@@ -197,6 +224,8 @@ export function MesaPage() {
     }
     return [...groups.entries()].map(([ronda, items]) => ({ ronda, items, estado: estadoDeRonda(items), at: items[0].created_at }));
   }, [pedidos]);
+  // Promos del club que ya están en una ronda pendiente (su ticket está reservado).
+  const promosEnPedido = new Set(pedidos.filter((p) => p.estado === 'pendiente' && p.promo_id).map((p) => p.promo_id!));
   const miTotal = pedidos
     .filter((p) => p.estado !== 'anulada' && p.estado !== 'pendiente')
     .reduce((s, p) => s + p.cantidad * p.precio_unitario_centimos, 0);
@@ -239,9 +268,11 @@ export function MesaPage() {
           <div className="eyebrow text-vino">Pedir desde la mesa</div>
           <h1 className="mt-2 font-display text-[2.2rem] font-semibold leading-tight text-vino">Estás en {mesa!.nombre}</h1>
           <p className="mt-2 text-carbon/75">Elige, envía la ronda y el camarero te la trae. Se paga al camarero al final.</p>
-          <a href="#promos" className={`mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-vino underline-offset-4 hover:underline ${focusRing}`}>
-            <Gift size={16} aria-hidden="true" /> Ver promos del club
-          </a>
+          {promos.length === 0 && (
+            <a href="#promos" className={`mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-vino underline-offset-4 hover:underline ${focusRing}`}>
+              <Gift size={16} aria-hidden="true" /> Ver promos del club
+            </a>
+          )}
         </div>
 
         {!authLoading && !session && (
@@ -283,6 +314,11 @@ export function MesaPage() {
                         <li key={p.id} className={`flex justify-between gap-3 ${p.estado === 'anulada' ? 'text-carbon/45 line-through' : ''}`}>
                           <span>
                             {p.cantidad} × {p.nombre}
+                            {p.ticket_codigo && (
+                              <span className="ml-1.5 inline-flex items-center gap-1 text-xs font-semibold text-vino">
+                                <Ticket size={12} aria-hidden="true" /> {p.ticket_codigo}
+                              </span>
+                            )}
                           </span>
                           <span className="tabular-nums">{formatEuros(p.cantidad * p.precio_unitario_centimos)}</span>
                         </li>
@@ -297,6 +333,72 @@ export function MesaPage() {
                 Lo tuyo hasta ahora: <strong className="tabular-nums text-carbon">{formatEuros(miTotal)}</strong>
               </p>
             )}
+          </section>
+        )}
+
+        {promos.length > 0 && (
+          <section className="mt-8" aria-labelledby="promos-mesa">
+            <h2 id="promos-mesa" className="flex items-center gap-2 font-display text-2xl font-semibold text-vino">
+              <Gift size={20} aria-hidden="true" /> Promos del club
+            </h2>
+            <p className="mt-1 text-sm text-carbon/65">Las del club usan tu ticket: si no lo tienes, se saca solo al enviar la ronda.</p>
+            <ul className="mt-3 divide-y divide-carbon/10 rounded-r-sm border border-piedra bg-piedra-suave/30">
+              {promos.map((p) => {
+                const key = `promo:${p.id}`;
+                const qty = cart[key] ?? 0;
+                const enPedido = p.soloClub && promosEnPedido.has(p.id);
+                const max = p.soloClub ? 1 : MAX_UNIDADES_RONDA;
+                const bloqueada = !p.enHorario || enPedido;
+                return (
+                  <li key={p.id} className="flex items-center gap-3 px-3 py-3">
+                    <div className="min-w-0 flex-1">
+                      <p className={`font-semibold ${bloqueada ? 'text-carbon/50' : 'text-carbon'}`}>{p.nombre}</p>
+                      <p className="mt-0.5 text-xs text-carbon/60">
+                        {TIPOS_PROMO[p.tipo]}
+                        {p.soloClub ? ' · con tu ticket del club' : ''}
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-vino">
+                        {!p.enHorario ? (
+                          <span className="text-carbon/50">Fuera de horario</span>
+                        ) : enPedido ? (
+                          <span className="text-carbon/50">Ya está en tu pedido pendiente</span>
+                        ) : (
+                          formatEuros(p.priceCents ?? 0)
+                        )}
+                      </p>
+                    </div>
+                    {!bloqueada && (
+                      <div className="flex shrink-0 items-center gap-1">
+                        {qty > 0 && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => changeQty(key, -1, max)}
+                              aria-label={`Quitar ${p.nombre}`}
+                              className={`flex h-10 w-10 items-center justify-center rounded-full border border-carbon/25 text-carbon ${focusRing}`}
+                            >
+                              <Minus size={18} aria-hidden="true" />
+                            </button>
+                            <span className="w-6 text-center font-semibold tabular-nums" aria-live="polite">
+                              {qty}
+                            </span>
+                          </>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => changeQty(key, 1, max)}
+                          disabled={qty >= max || unidades >= MAX_UNIDADES_RONDA}
+                          aria-label={`Añadir ${p.nombre}`}
+                          className={`flex h-10 w-10 items-center justify-center rounded-full bg-vino text-marfil disabled:opacity-40 ${focusRing}`}
+                        >
+                          <Plus size={18} aria-hidden="true" />
+                        </button>
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
           </section>
         )}
 
@@ -424,7 +526,7 @@ function ConfirmarRonda({
   onClose,
   onConfirm,
 }: {
-  lineas: { item: MenuItem; id: string; cantidad: number }[];
+  lineas: LineaCarrito[];
   total: number;
   mesa: string;
   enviando: boolean;
@@ -446,11 +548,12 @@ function ConfirmarRonda({
         </div>
         <ul className="mt-4 space-y-1 text-sm">
           {lineas.map((l) => (
-            <li key={l.id} className="flex justify-between gap-3">
+            <li key={l.key} className="flex justify-between gap-3">
               <span>
-                {l.cantidad} × {l.item.name}
+                {l.cantidad} × {l.nombre}
+                {l.promo?.soloClub && <span className="block text-xs text-carbon/60">Se usa tu ticket del club</span>}
               </span>
-              <span className="tabular-nums">{formatEuros(l.cantidad * (l.item.priceCents ?? 0))}</span>
+              <span className="tabular-nums">{formatEuros(l.cantidad * l.priceCents)}</span>
             </li>
           ))}
         </ul>
