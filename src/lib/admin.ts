@@ -1,3 +1,4 @@
+import { saveCsv, toCsv } from '@/lib/csv';
 import { supabase } from '@/lib/supabase';
 import { translateTicketError } from '@/lib/ticketErrors';
 
@@ -123,23 +124,9 @@ export function formatBirthday(fecha: string | null) {
 // Exportar CSV
 // ---------------------------------------------------------------------
 
-/**
- * Escapa un valor para CSV. Se evita además la "inyección de fórmulas":
- * si un texto empieza por =, @, + o - (seguido de algo que no sea un número), Excel podría
- * ejecutarlo como fórmula, así que se antepone una comilla simple.
- */
-function csvCell(value: string | number | boolean | null) {
-  let text = value === null ? '' : typeof value === 'boolean' ? (value ? 'Sí' : 'No') : String(value);
-  if (/^[=@\t\r]/.test(text) || /^[+-][^\d]/.test(text)) text = `'${text}`;
-  return /[";\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
-}
-
 function csvDate(iso: string | null) {
   return iso ? new Date(iso).toLocaleDateString('es-ES') : '';
 }
-
-/** Marca de orden de bytes (BOM) para que Excel reconozca el UTF-8. */
-const BOM = String.fromCharCode(0xfeff);
 
 /** CSV separado por ";" y con BOM UTF-8, para que Excel en español lo abra con columnas y tildes bien. */
 export function buildCsv(users: AdminUser[]) {
@@ -167,7 +154,7 @@ export function buildCsv(users: AdminUser[]) {
     u.role === 'admin' ? 'Admin' : 'Socio',
     u.es_camarero === true,
   ]);
-  return BOM + [header, ...rows].map((row) => row.map(csvCell).join(';')).join('\r\n');
+  return toCsv(header, rows);
 }
 
 export function downloadCsv(users: AdminUser[], filters: AdminFilters) {
@@ -178,11 +165,5 @@ export function downloadCsv(users: AdminUser[], filters: AdminFilters) {
   if (filters.camareros) parts.push('camareros');
   parts.push(new Date().toISOString().slice(0, 10));
 
-  const blob = new Blob([buildCsv(users)], { type: 'text/csv;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `${parts.join('-')}.csv`;
-  link.click();
-  URL.revokeObjectURL(url);
+  saveCsv(`${parts.join('-')}.csv`, buildCsv(users));
 }

@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronUp, Loader2, Minus, Plus, RefreshCw, ShoppingBag, Ticket, Trash2, Volume2, VolumeX, X } from 'lucide-react';
+import { ChevronUp, ClipboardCheck, Loader2, Minus, Plus, RefreshCw, ShoppingBag, Ticket, Trash2, Volume2, VolumeX, X } from 'lucide-react';
 import { PageShell } from '@/components/club/PageShell';
 import { Notice, focusRing } from '@/components/club/FormControls';
 import { ProductPicker } from '@/components/pos/ProductPicker';
 import { MesasPanel } from '@/components/pos/MesasPanel';
 import { VentaHecha } from '@/components/pos/VentaHecha';
+import { CierreJornadaModal } from '@/components/pos/CierreJornada';
 import { TicketPromoModal, type TicketElegido } from '@/components/pos/TicketPromoModal';
 import { useCatalog, type MenuItem, type MenuTab } from '@/lib/catalog';
 import { loadSoundEnabled, playFeedback, saveSoundEnabled } from '@/lib/feedback';
@@ -55,6 +56,7 @@ export function PosPage() {
   const promos = useMemo(() => promosParaVender(catalog?.promotions ?? [], states), [catalog, states]);
   const [modo, setModo] = useState<Modo>(() => (getHashParams().get('modo') === 'barra' ? 'barra' : 'mesas'));
   const [soundOn, setSoundOn] = useState(loadSoundEnabled);
+  const [cerrando, setCerrando] = useState(false);
 
   const elegirModo = (m: Modo) => {
     setModo(m);
@@ -75,16 +77,28 @@ export function PosPage() {
             <div className="eyebrow text-vino">Personal del bar</div>
             <h1 className="mt-2 font-display text-[2.2rem] font-semibold leading-[1.05] text-vino sm:text-[2.6rem]">TPV</h1>
           </div>
-          <button
-            type="button"
-            onClick={toggleSound}
-            aria-pressed={soundOn}
-            className={`mt-1 flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-carbon/20 bg-white text-carbon/70 hover:text-vino ${focusRing}`}
-          >
-            {soundOn ? <Volume2 size={20} aria-hidden="true" /> : <VolumeX size={20} aria-hidden="true" />}
-            <span className="sr-only">{soundOn ? 'Silenciar sonido' : 'Activar sonido'}</span>
-          </button>
+          <div className="mt-1 flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setCerrando(true)}
+              className={`flex h-12 items-center gap-2 rounded-full border border-carbon/20 bg-white px-4 text-sm font-semibold text-carbon/75 hover:border-vino hover:text-vino ${focusRing}`}
+            >
+              <ClipboardCheck size={18} aria-hidden="true" />
+              <span className="hidden sm:inline">Cerrar jornada</span>
+              <span className="sr-only sm:hidden">Cerrar jornada</span>
+            </button>
+            <button
+              type="button"
+              onClick={toggleSound}
+              aria-pressed={soundOn}
+              className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-carbon/20 bg-white text-carbon/70 hover:text-vino ${focusRing}`}
+            >
+              {soundOn ? <Volume2 size={20} aria-hidden="true" /> : <VolumeX size={20} aria-hidden="true" />}
+              <span className="sr-only">{soundOn ? 'Silenciar sonido' : 'Activar sonido'}</span>
+            </button>
+          </div>
         </header>
+        {cerrando && <CierreJornadaModal onClose={() => setCerrando(false)} />}
 
         <div role="tablist" aria-label="Modo del TPV" className="mt-4 grid max-w-[360px] grid-cols-2 rounded-r-sm bg-piedra-suave p-1">
           {(['mesas', 'barra'] as Modo[]).map((m) => (

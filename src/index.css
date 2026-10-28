@@ -135,4 +135,14 @@
   html.qr-printing .qr-print-area,
   html.qr-printing .qr-print-area * { visibility: visible; }
   html.qr-printing .qr-print-area { position: absolute; inset: 0 auto auto 0; width: 100%; overflow: visible; background: white; }
+
+  /* Hoja de un cierre de jornada (TPV y panel → Ventas → Cierres): solo se imprime esa hoja. */
+  html.area-printing body { position: static !important; top: auto !important; }
+  html.area-printing body * { visibility: hidden; }
+  html.area-printing .print-area,
+  html.area-printing .print-area * { visibility: visible; }
+  html.area-printing .print-area { position: absolute; inset: 0 auto auto 0; width: 100%; overflow: visible; background: white; padding: 0; }
+  html.area-printing .print-area .no-print { display: none !important; }
+  /* La hoja va dentro de una ventana (fija y con scroll): sus contenedores no deben recortarla. */
+  html.area-printing *:has(.print-area) { position: static !important; overflow: visible !important; max-height: none !important; transform: none !important; animation: none !important; }
 }

@@ -8,7 +8,7 @@ Este documento es la especificación viva de la **fase POS** de la web de La Ala
 - Al decidir algo se anota la decisión y la fecha. Si cambia la propuesta, se actualizan las secciones afectadas y se apunta en el **Historial** (al final).
 - No se programa ninguna fase hasta que estén 🟢 las decisiones de las que depende (ver «Fases»).
 
-Última actualización: 2026-10-28 · Estado: **P6a (pedir desde la carta eligiendo la mesa) programada, pendiente de que el usuario ejecute `pos-pedir-sin-qr.sql` y la pruebe. Después: P6b (cierre de jornada e informes).**
+Última actualización: 2026-10-28 · Estado: **P6a cerrada (probada). P6b (cierre de jornada e informes) programada, pendiente de que el usuario ejecute `pos-informes.sql` y la pruebe.**
 
 ---
 
@@ -514,7 +514,7 @@ P6 se divide en dos partes, con pausa para probar entre ellas:
   - Informes por producto, promo, camarero (con anulaciones), socio (solo nombre), hora y método. CSV de ventas (una fila por línea), cierres e informes.
   - El SQL de limpieza previo a P7 borrará también los cierres de prueba.
 
-### Estado de P6a — pedir desde la carta (2026-10-28): 🟡 programada, falta probar
+### Estado de P6a — pedir desde la carta (2026-10-28): ✅ cerrada
 
 - **`supabase/pos-pedir-sin-qr.sql`:**
   - `order_items.mesa_a_mano`.
@@ -526,6 +526,22 @@ P6 se divide en dos partes, con pausa para probar entre ellas:
   - `#/mesa?n=<id>`: la misma página de pedir que con el QR, con «¿No es tu mesa? Cambiar».
   - TPV: las rondas pedidas así muestran «Mesa elegida a mano (sin QR): comprueba que … está en …».
 - **Verificación:** 13 pruebas de SQL en PGlite (lista sin token y solo con sesión, pedido marcado a mano, doble envío, mesa desactivada o inventada, el QR sigue sin marca, límites compartidos con y sin QR, función interna cerrada). Las 26 de P4 y las 57 de P5 siguen pasando. Typecheck, lint y build.
+
+- **Cierre (2026-10-28):** `pos-pedir-sin-qr.sql` ejecutado en Supabase y probado por el usuario: todo correcto.
+
+### Estado de P6b — cierre de jornada e informes (2026-10-28): 🟡 programada, falta probar
+
+- **`supabase/pos-informes.sql`:**
+  - Tabla `cierres_jornada` (inmutable; varias versiones por jornada): ventas, cobrado, devuelto, neto, ahorro en promos, efectivo esperado, contado y descuadre, notas y el resumen completo en `resumen`.
+  - `_resumen_caja(desde, hasta)` (interna): ventas de esas jornadas, devoluciones **hechas** en ellas (por el método de su venta) y anulaciones de líneas (no cuenta rechazos de rondas ni cancelaciones).
+  - Camareros y admins: `pos_jornadas_sin_cerrar()` (últimos 14 días sin cierre + la actual), `pos_estado_jornada(j)` (resumen, mesas abiertas, último cierre y cambios desde él) y `pos_cerrar_jornada(j, efectivo, notas)` (`MESAS_ABIERTAS` si queda alguna; nunca una jornada futura).
+  - Solo admins: `admin_informe(desde, hasta)`: caja, por producto, por promo, por camarero (con anulaciones), por socio (solo nombre: quien pidió desde la mesa o el dueño del ticket), por hora, motivos de anulación y `comprobacion` (suma de líneas = cobrado).
+- **Web:**
+  - TPV: botón **Cerrar jornada** (elige la jornada, revisa el cuadre, efectivo contado opcional con el descuadre al momento, notas, imprimir).
+  - Panel → Ventas con pestañas **Ventas · Cierres · Informes**. Ventas: botón **CSV** (una fila por línea). Cierres: lista con versiones, descuadre, hoja imprimible y CSV. Informes: periodos (hoy, ayer, 7 días, mes, fechas), resumen, comprobación «Cuadra», tablas con CSV y barras por hora.
+  - CSV compartido en `src/lib/csv.ts` (el de socios lo usa también). Impresión de una sola zona con `printArea()` y `.print-area` (index.css).
+- **Verificación:** 38 pruebas de SQL en PGlite (cuadre por método, devolución de una venta de ayer contada hoy, mesas abiertas, descuadre, cierres inmutables y solo legibles por el personal, ventas después del cierre y nueva versión, admin no camarero puede cerrar, informe: líneas = cobrado, neto = cobrado − devuelto, por producto/promo/camarero/socio/hora, permisos). Typecheck, lint y build.
+- **Para P7:** el SQL de limpieza de las ventas de prueba debe borrar también `cierres_jornada` (desactivando un momento su trigger de inmutabilidad).
 
 ### Respuestas al plan (2026-10-28)
 
@@ -567,3 +583,4 @@ P6 se divide en dos partes, con pausa para probar entre ellas:
 - **2026-10-28** — P5 programada (promos y tickets en las ventas), a la espera de prueba.
 - **2026-10-28** — P5 cerrada tras la prueba del usuario. Nueva petición: pedir desde la carta eligiendo la mesa (sin escanear el QR).
 - **2026-10-28** — Plan de P6 aprobado (P6a pedir desde la carta + P6b cierre e informes). P6a programada, a la espera de prueba.
+- **2026-10-28** — P6a cerrada tras la prueba del usuario. P6b programada, a la espera de prueba.

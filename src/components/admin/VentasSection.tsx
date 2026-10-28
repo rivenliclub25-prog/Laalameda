@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
-import { ChevronDown, Loader2, RefreshCw, Ticket, Undo2 } from 'lucide-react';
+import { ChevronDown, Download, Loader2, RefreshCw, Ticket, Undo2 } from 'lucide-react';
 import { Notice, SubmitButton, TextField, focusRing } from '@/components/club/FormControls';
 import { Modal } from '@/components/club/Modal';
+import { CierresView } from '@/components/admin/CierresView';
+import { InformesView } from '@/components/admin/InformesView';
+import { downloadVentasCsv } from '@/lib/informes';
 import { fetchAppSettings, jornadaInicio } from '@/lib/adminTickets';
 import { centsToInput } from '@/lib/adminCatalog';
 import { parseEurosToCents } from '@/lib/tickets';
@@ -64,8 +67,44 @@ function detalleEvento(e: PosEvento): string {
   return partes.join(' · ');
 }
 
-/** Pestaña "Ventas": neto por método para cuadrar la caja, ventas con líneas, registro y devoluciones. */
+type Vista = 'ventas' | 'cierres' | 'informes';
+
+const VISTAS: { id: Vista; label: string }[] = [
+  { id: 'ventas', label: 'Ventas' },
+  { id: 'cierres', label: 'Cierres' },
+  { id: 'informes', label: 'Informes' },
+];
+
+/** Pestaña "Ventas" del panel: lista de ventas, cierres de jornada e informes (P6b). */
 export function VentasSection({ users }: { users: AdminUser[] }) {
+  const [vista, setVista] = useState<Vista>('ventas');
+  return (
+    <>
+      <div role="tablist" aria-label="Ventas, cierres e informes" className="mb-5 grid max-w-[420px] grid-cols-3 rounded-r-sm bg-piedra-suave p-1">
+        {VISTAS.map((v) => (
+          <button
+            key={v.id}
+            type="button"
+            role="tab"
+            aria-selected={vista === v.id}
+            onClick={() => setVista(v.id)}
+            className={`rounded-r-sm px-3 py-2 text-sm font-semibold transition-all ${focusRing} ${
+              vista === v.id ? 'bg-vino text-white shadow-sm' : 'text-carbon/70 hover:text-vino'
+            }`}
+          >
+            {v.label}
+          </button>
+        ))}
+      </div>
+      {vista === 'ventas' && <VentasLista users={users} />}
+      {vista === 'cierres' && <CierresView users={users} />}
+      {vista === 'informes' && <InformesView />}
+    </>
+  );
+}
+
+/** Lista de ventas: neto por método, ventas con líneas, registro y devoluciones. */
+function VentasLista({ users }: { users: AdminUser[] }) {
   const [preset, setPreset] = useState<Preset>('hoy');
   const [desde, setDesde] = useState(() => localDate(new Date()));
   const [hasta, setHasta] = useState(() => localDate(new Date()));
@@ -157,9 +196,19 @@ export function VentasSection({ users }: { users: AdminUser[] }) {
             </div>
           )}
         </div>
-        <button type="button" onClick={load} disabled={loading || !range} className={`btn-outline-vino self-start disabled:opacity-60 lg:self-auto ${focusRing}`}>
-          <RefreshCw size={16} className={loading ? 'animate-spin' : ''} aria-hidden="true" /> Actualizar
-        </button>
+        <div className="flex flex-wrap gap-2 self-start lg:self-auto">
+          <button
+            type="button"
+            onClick={() => range && downloadVentasCsv(ventas, nombre, `${localDate(range.from)}_${localDate(range.to)}`)}
+            disabled={loading || ventas.length === 0}
+            className={`btn-outline-vino disabled:opacity-50 ${focusRing}`}
+          >
+            <Download size={16} aria-hidden="true" /> CSV
+          </button>
+          <button type="button" onClick={load} disabled={loading || !range} className={`btn-outline-vino disabled:opacity-60 ${focusRing}`}>
+            <RefreshCw size={16} className={loading ? 'animate-spin' : ''} aria-hidden="true" /> Actualizar
+          </button>
+        </div>
       </div>
 
       {loading ? (

@@ -54,6 +54,11 @@ const messages: Record<string, string> = {
   TICKET_OBLIGATORIO: 'Esta promo es del club: escanea o escribe el ticket del socio.',
   TICKET_OTRA_PROMO: 'Este ticket es de otra promo',
   TICKET_EN_PEDIDO: 'Este ticket está en un pedido pendiente desde la mesa. Acepta o rechaza esa ronda.',
+  // Cierre de jornada e informes (pos-informes.sql)
+  MESAS_ABIERTAS: 'Hay mesas con la cuenta abierta (cóbralas o cancélalas antes de cerrar)',
+  JORNADA_INVALIDA: 'Esa jornada no se puede cerrar todavía.',
+  RANGO_INVALIDO: 'Revisa las fechas: «desde» debe ir antes que «hasta» (máximo 400 días).',
+  CIERRE_INMUTABLE: 'Los cierres de jornada no se pueden modificar.',
   TICKET_EN_VENTA: 'Este ticket se usó en el TPV: anula su línea en la cuenta (vuelve solo a disponible) o, si ya se cobró, haz una devolución.',
 };
 
