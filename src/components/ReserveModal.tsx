@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { X, MessageCircle } from 'lucide-react';
 import { siteConfig } from '@/data/site';
+import { useScrollLock } from '@/lib/useScrollLock';
 
 interface ReserveModalProps {
   open: boolean;
@@ -12,6 +13,7 @@ export function ReserveModal({ open, onClose }: ReserveModalProps) {
   const [date, setDate] = useState('');
   const [people, setPeople] = useState('2');
   const nameRef = useRef<HTMLInputElement>(null);
+  useScrollLock(open);
 
   useEffect(() => {
     if (open) {

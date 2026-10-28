@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { focusRing } from '@/components/club/FormControls';
+import { useScrollLock } from '@/lib/useScrollLock';
 
 interface ModalProps {
   open: boolean;
@@ -19,6 +20,7 @@ interface ModalProps {
  */
 export function Modal({ open, title, onClose, children, busy = false, maxWidth = '520px' }: ModalProps) {
   const titleId = useId();
+  useScrollLock(open);
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

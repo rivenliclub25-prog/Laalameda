@@ -4,6 +4,7 @@ import { navLinks, siteConfig } from '@/data/site';
 import { useAuth } from '@/auth/AuthContext';
 import { signOut } from '@/lib/auth';
 import { navigate, routeHref } from '@/lib/router';
+import { useScrollLock } from '@/lib/useScrollLock';
 
 const focusDark =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-piedra focus-visible:ring-offset-2 focus-visible:ring-offset-carbon';
@@ -115,6 +116,8 @@ function AccountMenu({ links }: { links: AccountLink[] }) {
 
 export function Navbar() {
   const [open, setOpen] = useState(false);
+  // Con el menú móvil abierto, el fondo no se desliza.
+  useScrollLock(open);
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {

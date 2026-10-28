@@ -4,6 +4,7 @@ import { Camera, CameraOff, CheckCircle2, Loader2, ScanLine, Volume2, VolumeX, X
 import { PageShell } from '@/components/club/PageShell';
 import { Notice, focusRing } from '@/components/club/FormControls';
 import { getHashParams } from '@/lib/router';
+import { useScrollLock } from '@/lib/useScrollLock';
 import { loadSoundEnabled, playFeedback, saveSoundEnabled } from '@/lib/feedback';
 import { translateTicketCode } from '@/lib/ticketErrors';
 import {
@@ -341,6 +342,7 @@ function ResultOverlay({
   onRedeem: (importeCentimos: number | null) => void;
 }) {
   const mainButtonRef = useRef<HTMLButtonElement>(null);
+  useScrollLock(phase.kind !== 'idle');
   const [importe, setImporte] = useState('');
   const [importeError, setImporteError] = useState<string | null>(null);
 

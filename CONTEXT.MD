@@ -188,7 +188,9 @@ Ramas:
     - Si Supabase falla, se usa la más reciente entre la del navegador y `public/catalogo.json`, con un aviso, y se reintenta cada 60 s.
     - `scripts/catalog-snapshot.mjs` (`npm run catalog-snapshot`) regenera la copia; se ejecuta en `deploy.yml` antes del build y nunca hace fallar la publicación.
   - **Sin tocar:** `src/data/`, los scripts del Excel y los tickets (se limpiarán en la fase L).
-- **P1b (edición desde el panel): hecha, pendiente de que el usuario ejecute `supabase/catalogo-codigos.sql` y la pruebe.**
+- **P1b (edición desde el panel): ✅ cerrada (2026-10-28).** `catalogo-codigos.sql` ejecutado, copia regenerada con los códigos y panel probado por el usuario.
+  - **Bloqueo del fondo:** `useScrollLock()` (`src/lib/useScrollLock.ts`) impide que el fondo se deslice con el menú móvil o cualquier ventana abierta. Funciona en iPhone y, si se pulsa un enlace a una sección, va a ella al cerrar. **Usarlo en cualquier ventana nueva.**
+- **Siguiente: P2 (venta en barra)**, plan pendiente de aprobar.
   - **Productos con código numérico incremental** (decisión del usuario): `products.id` pasa a ser 1, 2, 3… (identity), y los nuevos reciben el siguiente número. Categorías, franjas y promos siguen con id de texto.
   - **Panel:**
     - Pestaña **Carta**: categorías, separadores y productos (precio en línea, en carta, disponible, recomendado, orden, crear y editar).

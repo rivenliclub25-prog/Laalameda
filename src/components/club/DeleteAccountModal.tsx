@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Loader2, TriangleAlert, X } from 'lucide-react';
 import { Notice, focusRing } from '@/components/club/FormControls';
 import { deleteAccount } from '@/lib/auth';
+import { useScrollLock } from '@/lib/useScrollLock';
 
 interface DeleteAccountModalProps {
   open: boolean;
@@ -14,6 +15,7 @@ export function DeleteAccountModal({ open, onClose, onDeleted }: DeleteAccountMo
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
+  useScrollLock(open);
 
   useEffect(() => {
     if (!open) return;

@@ -72,12 +72,12 @@
       "tipo": "pack",
       "items": [
         {
-          "cantidad": 2,
-          "product_id": "cervezas-cana"
+          "cantidad": 1,
+          "product_id": 5
         },
         {
-          "cantidad": 1,
-          "product_id": "pinchos-patatas"
+          "cantidad": 2,
+          "product_id": 15
         }
       ],
       "orden": 2,
@@ -240,7 +240,7 @@
       "items": [
         {
           "cantidad": 5,
-          "product_id": "cervezas-botellin"
+          "product_id": 19
         }
       ],
       "orden": 7,
@@ -519,7 +519,7 @@
   "version": 1,
   "productos": [
     {
-      "id": "cafeteria-solo",
+      "id": 1,
       "orden": 0,
       "nombre": "Solo",
       "disponible": true,
@@ -530,40 +530,7 @@
       "precio_centimos": 190
     },
     {
-      "id": "cervezas-cana",
-      "orden": 0,
-      "nombre": "Caña",
-      "disponible": true,
-      "seccion_id": null,
-      "descripcion": "Estrella, 25cl",
-      "recomendado": false,
-      "categoria_id": "cervezas",
-      "precio_centimos": 200
-    },
-    {
-      "id": "copas-seagram-s",
-      "orden": 0,
-      "nombre": "Seagram's",
-      "disponible": true,
-      "seccion_id": "copas-ginebras",
-      "descripcion": null,
-      "recomendado": false,
-      "categoria_id": "copas",
-      "precio_centimos": 700
-    },
-    {
-      "id": "montaditos-lomo-y-queso",
-      "orden": 0,
-      "nombre": "Lomo y queso",
-      "disponible": true,
-      "seccion_id": null,
-      "descripcion": null,
-      "recomendado": false,
-      "categoria_id": "montaditos",
-      "precio_centimos": 200
-    },
-    {
-      "id": "pinchos-patatas",
+      "id": 5,
       "orden": 0,
       "nombre": "Patatas",
       "disponible": true,
@@ -574,18 +541,40 @@
       "precio_centimos": 300
     },
     {
-      "id": "refrescos-coca-cola",
+      "id": 11,
       "orden": 0,
-      "nombre": "Coca-Cola",
+      "nombre": "Lomo y queso",
       "disponible": true,
       "seccion_id": null,
       "descripcion": null,
       "recomendado": false,
-      "categoria_id": "refrescos",
-      "precio_centimos": 250
+      "categoria_id": "montaditos",
+      "precio_centimos": 200
     },
     {
-      "id": "vinos-godello",
+      "id": 15,
+      "orden": 0,
+      "nombre": "Caña",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": "Estrella, 25cl",
+      "recomendado": false,
+      "categoria_id": "cervezas",
+      "precio_centimos": 200
+    },
+    {
+      "id": 24,
+      "orden": 0,
+      "nombre": "Seagram's",
+      "disponible": true,
+      "seccion_id": "copas-ginebras",
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "copas",
+      "precio_centimos": 700
+    },
+    {
+      "id": 50,
       "orden": 0,
       "nombre": "Godello",
       "disponible": true,
@@ -596,7 +585,18 @@
       "precio_centimos": 350
     },
     {
-      "id": "cafeteria-con-leche",
+      "id": 57,
+      "orden": 0,
+      "nombre": "Coca-Cola",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "refrescos",
+      "precio_centimos": 250
+    },
+    {
+      "id": 2,
       "orden": 1,
       "nombre": "Con leche",
       "disponible": true,
@@ -607,40 +607,7 @@
       "precio_centimos": 300
     },
     {
-      "id": "cervezas-cana-1906",
-      "orden": 1,
-      "nombre": "Caña 1906",
-      "disponible": true,
-      "seccion_id": null,
-      "descripcion": null,
-      "recomendado": false,
-      "categoria_id": "cervezas",
-      "precio_centimos": 300
-    },
-    {
-      "id": "copas-beefeater",
-      "orden": 1,
-      "nombre": "Beefeater",
-      "disponible": true,
-      "seccion_id": "copas-ginebras",
-      "descripcion": null,
-      "recomendado": false,
-      "categoria_id": "copas",
-      "precio_centimos": 700
-    },
-    {
-      "id": "montaditos-bacon-y-queso",
-      "orden": 1,
-      "nombre": "Bacon y queso",
-      "disponible": true,
-      "seccion_id": null,
-      "descripcion": null,
-      "recomendado": false,
-      "categoria_id": "montaditos",
-      "precio_centimos": 200
-    },
-    {
-      "id": "pinchos-jeta",
+      "id": 6,
       "orden": 1,
       "nombre": "Jeta",
       "disponible": true,
@@ -651,18 +618,40 @@
       "precio_centimos": 200
     },
     {
-      "id": "refrescos-coca-cola-zero",
+      "id": 12,
       "orden": 1,
-      "nombre": "Coca-Cola Zero",
+      "nombre": "Bacon y queso",
       "disponible": true,
       "seccion_id": null,
       "descripcion": null,
       "recomendado": false,
-      "categoria_id": "refrescos",
-      "precio_centimos": 250
+      "categoria_id": "montaditos",
+      "precio_centimos": 200
     },
     {
-      "id": "vinos-verdejo",
+      "id": 16,
+      "orden": 1,
+      "nombre": "Caña 1906",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "cervezas",
+      "precio_centimos": 300
+    },
+    {
+      "id": 25,
+      "orden": 1,
+      "nombre": "Beefeater",
+      "disponible": true,
+      "seccion_id": "copas-ginebras",
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "copas",
+      "precio_centimos": 700
+    },
+    {
+      "id": 51,
       "orden": 1,
       "nombre": "Verdejo",
       "disponible": true,
@@ -673,7 +662,18 @@
       "precio_centimos": 300
     },
     {
-      "id": "cafeteria-cortado",
+      "id": 58,
+      "orden": 1,
+      "nombre": "Coca-Cola Zero",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "refrescos",
+      "precio_centimos": 250
+    },
+    {
+      "id": 3,
       "orden": 2,
       "nombre": "Cortado",
       "disponible": true,
@@ -684,40 +684,7 @@
       "precio_centimos": 190
     },
     {
-      "id": "cervezas-canon",
-      "orden": 2,
-      "nombre": "Cañón",
-      "disponible": true,
-      "seccion_id": null,
-      "descripcion": "Estrella, 31cl",
-      "recomendado": false,
-      "categoria_id": "cervezas",
-      "precio_centimos": 200
-    },
-    {
-      "id": "copas-bombay",
-      "orden": 2,
-      "nombre": "Bombay",
-      "disponible": true,
-      "seccion_id": "copas-ginebras",
-      "descripcion": null,
-      "recomendado": false,
-      "categoria_id": "copas",
-      "precio_centimos": 700
-    },
-    {
-      "id": "montaditos-lomo-y-pimiento",
-      "orden": 2,
-      "nombre": "Lomo y pimiento",
-      "disponible": true,
-      "seccion_id": null,
-      "descripcion": null,
-      "recomendado": false,
-      "categoria_id": "montaditos",
-      "precio_centimos": 200
-    },
-    {
-      "id": "pinchos-tortilla-de-patatas",
+      "id": 7,
       "orden": 2,
       "nombre": "Tortilla de patatas",
       "disponible": true,
@@ -728,18 +695,40 @@
       "precio_centimos": 300
     },
     {
-      "id": "refrescos-coca-cola-zero-zero",
+      "id": 13,
       "orden": 2,
-      "nombre": "Coca-Cola Zero Zero",
+      "nombre": "Lomo y pimiento",
       "disponible": true,
       "seccion_id": null,
       "descripcion": null,
       "recomendado": false,
-      "categoria_id": "refrescos",
-      "precio_centimos": 250
+      "categoria_id": "montaditos",
+      "precio_centimos": 200
     },
     {
-      "id": "vinos-ribera",
+      "id": 17,
+      "orden": 2,
+      "nombre": "Cañón",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": "Estrella, 31cl",
+      "recomendado": false,
+      "categoria_id": "cervezas",
+      "precio_centimos": 200
+    },
+    {
+      "id": 26,
+      "orden": 2,
+      "nombre": "Bombay",
+      "disponible": true,
+      "seccion_id": "copas-ginebras",
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "copas",
+      "precio_centimos": 700
+    },
+    {
+      "id": 52,
       "orden": 2,
       "nombre": "Ribera",
       "disponible": true,
@@ -750,7 +739,18 @@
       "precio_centimos": 300
     },
     {
-      "id": "cafeteria-irish-coffee",
+      "id": 59,
+      "orden": 2,
+      "nombre": "Coca-Cola Zero Zero",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "refrescos",
+      "precio_centimos": 250
+    },
+    {
+      "id": 4,
       "orden": 3,
       "nombre": "Irish Coffee",
       "disponible": true,
@@ -761,40 +761,7 @@
       "precio_centimos": 350
     },
     {
-      "id": "cervezas-canon-1906",
-      "orden": 3,
-      "nombre": "Cañón 1906",
-      "disponible": true,
-      "seccion_id": null,
-      "descripcion": null,
-      "recomendado": false,
-      "categoria_id": "cervezas",
-      "precio_centimos": 300
-    },
-    {
-      "id": "copas-puerto-de-indias",
-      "orden": 3,
-      "nombre": "Puerto de Indias",
-      "disponible": true,
-      "seccion_id": "copas-ginebras",
-      "descripcion": null,
-      "recomendado": false,
-      "categoria_id": "copas",
-      "precio_centimos": 700
-    },
-    {
-      "id": "montaditos-pan-unidad",
-      "orden": 3,
-      "nombre": "Pan unidad",
-      "disponible": true,
-      "seccion_id": null,
-      "descripcion": null,
-      "recomendado": false,
-      "categoria_id": "montaditos",
-      "precio_centimos": 50
-    },
-    {
-      "id": "pinchos-mini-burguer",
+      "id": 8,
       "orden": 3,
       "nombre": "Mini burguer",
       "disponible": true,
@@ -805,18 +772,40 @@
       "precio_centimos": 200
     },
     {
-      "id": "refrescos-fanta-naranja",
+      "id": 14,
       "orden": 3,
-      "nombre": "Fanta Naranja",
+      "nombre": "Pan unidad",
       "disponible": true,
       "seccion_id": null,
       "descripcion": null,
       "recomendado": false,
-      "categoria_id": "refrescos",
-      "precio_centimos": 250
+      "categoria_id": "montaditos",
+      "precio_centimos": 50
     },
     {
-      "id": "vinos-toro",
+      "id": 18,
+      "orden": 3,
+      "nombre": "Cañón 1906",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "cervezas",
+      "precio_centimos": 300
+    },
+    {
+      "id": 27,
+      "orden": 3,
+      "nombre": "Puerto de Indias",
+      "disponible": true,
+      "seccion_id": "copas-ginebras",
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "copas",
+      "precio_centimos": 700
+    },
+    {
+      "id": 53,
       "orden": 3,
       "nombre": "Toro",
       "disponible": true,
@@ -827,29 +816,18 @@
       "precio_centimos": 350
     },
     {
-      "id": "cervezas-botellin",
-      "orden": 4,
-      "nombre": "Botellín",
+      "id": 60,
+      "orden": 3,
+      "nombre": "Fanta Naranja",
       "disponible": true,
       "seccion_id": null,
-      "descripcion": "Estrella, 25cl",
-      "recomendado": false,
-      "categoria_id": "cervezas",
-      "precio_centimos": 200
-    },
-    {
-      "id": "copas-tanqueray",
-      "orden": 4,
-      "nombre": "Tanqueray",
-      "disponible": true,
-      "seccion_id": "copas-ginebras",
       "descripcion": null,
       "recomendado": false,
-      "categoria_id": "copas",
-      "precio_centimos": 700
+      "categoria_id": "refrescos",
+      "precio_centimos": 250
     },
     {
-      "id": "pinchos-perritos",
+      "id": 9,
       "orden": 4,
       "nombre": "Perritos",
       "disponible": true,
@@ -860,18 +838,29 @@
       "precio_centimos": 250
     },
     {
-      "id": "refrescos-fanta-limon",
+      "id": 19,
       "orden": 4,
-      "nombre": "Fanta Limón",
+      "nombre": "Botellín",
       "disponible": true,
       "seccion_id": null,
-      "descripcion": null,
+      "descripcion": "Estrella, 25cl",
       "recomendado": false,
-      "categoria_id": "refrescos",
-      "precio_centimos": 250
+      "categoria_id": "cervezas",
+      "precio_centimos": 200
     },
     {
-      "id": "vinos-rioja",
+      "id": 28,
+      "orden": 4,
+      "nombre": "Tanqueray",
+      "disponible": true,
+      "seccion_id": "copas-ginebras",
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "copas",
+      "precio_centimos": 700
+    },
+    {
+      "id": 54,
       "orden": 4,
       "nombre": "Rioja",
       "disponible": true,
@@ -882,29 +871,18 @@
       "precio_centimos": 300
     },
     {
-      "id": "cervezas-botellin-estrella-sin-gluten",
-      "orden": 5,
-      "nombre": "Botellín Estrella sin gluten",
+      "id": 61,
+      "orden": 4,
+      "nombre": "Fanta Limón",
       "disponible": true,
       "seccion_id": null,
       "descripcion": null,
       "recomendado": false,
-      "categoria_id": "cervezas",
+      "categoria_id": "refrescos",
       "precio_centimos": 250
     },
     {
-      "id": "copas-larios",
-      "orden": 5,
-      "nombre": "Larios",
-      "disponible": true,
-      "seccion_id": "copas-ginebras",
-      "descripcion": null,
-      "recomendado": false,
-      "categoria_id": "copas",
-      "precio_centimos": 700
-    },
-    {
-      "id": "pinchos-croquetas-de-jamon",
+      "id": 10,
       "orden": 5,
       "nombre": "Croquetas de jamón",
       "disponible": true,
@@ -915,18 +893,29 @@
       "precio_centimos": 300
     },
     {
-      "id": "refrescos-fuze-limon",
+      "id": 20,
       "orden": 5,
-      "nombre": "Fuze Limón",
+      "nombre": "Botellín Estrella sin gluten",
       "disponible": true,
       "seccion_id": null,
       "descripcion": null,
       "recomendado": false,
-      "categoria_id": "refrescos",
+      "categoria_id": "cervezas",
       "precio_centimos": 250
     },
     {
-      "id": "vinos-tinto-de-verano",
+      "id": 29,
+      "orden": 5,
+      "nombre": "Larios",
+      "disponible": true,
+      "seccion_id": "copas-ginebras",
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "copas",
+      "precio_centimos": 700
+    },
+    {
+      "id": 55,
       "orden": 5,
       "nombre": "Tinto de verano",
       "disponible": true,
@@ -937,7 +926,18 @@
       "precio_centimos": 350
     },
     {
-      "id": "cervezas-tercio",
+      "id": 62,
+      "orden": 5,
+      "nombre": "Fuze Limón",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "refrescos",
+      "precio_centimos": 250
+    },
+    {
+      "id": 21,
       "orden": 6,
       "nombre": "Tercio",
       "disponible": true,
@@ -948,7 +948,7 @@
       "precio_centimos": 250
     },
     {
-      "id": "copas-hendrick-s",
+      "id": 30,
       "orden": 6,
       "nombre": "Hendrick's",
       "disponible": true,
@@ -959,18 +959,7 @@
       "precio_centimos": 800
     },
     {
-      "id": "refrescos-tonica",
-      "orden": 6,
-      "nombre": "Tónica",
-      "disponible": true,
-      "seccion_id": null,
-      "descripcion": null,
-      "recomendado": false,
-      "categoria_id": "refrescos",
-      "precio_centimos": 250
-    },
-    {
-      "id": "vinos-vermut-izaguirre",
+      "id": 56,
       "orden": 6,
       "nombre": "Vermut Izaguirre",
       "disponible": true,
@@ -981,7 +970,18 @@
       "precio_centimos": 250
     },
     {
-      "id": "cervezas-premium-ipa",
+      "id": 63,
+      "orden": 6,
+      "nombre": "Tónica",
+      "disponible": true,
+      "seccion_id": null,
+      "descripcion": null,
+      "recomendado": false,
+      "categoria_id": "refrescos",
+      "precio_centimos": 250
+    },
+    {
+      "id": 22,
       "orden": 7,
       "nombre": "Premium IPA",
       "disponible": true,
@@ -992,7 +992,7 @@
       "precio_centimos": 350
     },
     {
-      "id": "copas-barcelo",
+      "id": 31,
       "orden": 7,
       "nombre": "Barceló",
       "disponible": true,
@@ -1003,7 +1003,7 @@
       "precio_centimos": 700
     },
     {
-      "id": "refrescos-aquarius",
+      "id": 64,
       "orden": 7,
       "nombre": "Aquarius",
       "disponible": true,
@@ -1014,7 +1014,7 @@
       "precio_centimos": 250
     },
     {
-      "id": "cervezas-radler",
+      "id": 23,
       "orden": 8,
       "nombre": "Radler",
       "disponible": true,
@@ -1025,7 +1025,7 @@
       "precio_centimos": 300
     },
     {
-      "id": "copas-brugal",
+      "id": 32,
       "orden": 8,
       "nombre": "Brugal",
       "disponible": true,
@@ -1036,7 +1036,7 @@
       "precio_centimos": 700
     },
     {
-      "id": "refrescos-aquarius-naranja",
+      "id": 65,
       "orden": 8,
       "nombre": "Aquarius Naranja",
       "disponible": true,
@@ -1047,7 +1047,7 @@
       "precio_centimos": 250
     },
     {
-      "id": "copas-cacique",
+      "id": 33,
       "orden": 9,
       "nombre": "Cacique",
       "disponible": true,
@@ -1058,7 +1058,7 @@
       "precio_centimos": 700
     },
     {
-      "id": "refrescos-agua",
+      "id": 66,
       "orden": 9,
       "nombre": "Agua",
       "disponible": true,
@@ -1069,7 +1069,7 @@
       "precio_centimos": 250
     },
     {
-      "id": "copas-bacardi-carta-blanca",
+      "id": 34,
       "orden": 10,
       "nombre": "Bacardi Carta Blanca",
       "disponible": true,
@@ -1080,7 +1080,7 @@
       "precio_centimos": 700
     },
     {
-      "id": "refrescos-zumo",
+      "id": 67,
       "orden": 10,
       "nombre": "Zumo",
       "disponible": true,
@@ -1091,7 +1091,7 @@
       "precio_centimos": 200
     },
     {
-      "id": "copas-arehucas",
+      "id": 35,
       "orden": 11,
       "nombre": "Arehucas",
       "disponible": true,
@@ -1102,7 +1102,7 @@
       "precio_centimos": 700
     },
     {
-      "id": "copas-capitan-morgan",
+      "id": 36,
       "orden": 12,
       "nombre": "Capitán Morgan",
       "disponible": true,
@@ -1113,7 +1113,7 @@
       "precio_centimos": 700
     },
     {
-      "id": "copas-white-label",
+      "id": 37,
       "orden": 13,
       "nombre": "White Label",
       "disponible": true,
@@ -1124,7 +1124,7 @@
       "precio_centimos": 700
     },
     {
-      "id": "copas-red-label",
+      "id": 38,
       "orden": 14,
       "nombre": "Red Label",
       "disponible": true,
@@ -1135,7 +1135,7 @@
       "precio_centimos": 700
     },
     {
-      "id": "copas-dyc",
+      "id": 39,
       "orden": 15,
       "nombre": "DYC",
       "disponible": true,
@@ -1146,7 +1146,7 @@
       "precio_centimos": 700
     },
     {
-      "id": "copas-ballantine-s",
+      "id": 40,
       "orden": 16,
       "nombre": "Ballantine's",
       "disponible": true,
@@ -1157,7 +1157,7 @@
       "precio_centimos": 700
     },
     {
-      "id": "copas-cutty-sark",
+      "id": 41,
       "orden": 17,
       "nombre": "Cutty Sark",
       "disponible": true,
@@ -1168,7 +1168,7 @@
       "precio_centimos": 700
     },
     {
-      "id": "copas-jb",
+      "id": 42,
       "orden": 18,
       "nombre": "JB",
       "disponible": true,
@@ -1179,7 +1179,7 @@
       "precio_centimos": 700
     },
     {
-      "id": "copas-dyc-8-anos",
+      "id": 43,
       "orden": 19,
       "nombre": "DYC 8 años",
       "disponible": true,
@@ -1190,7 +1190,7 @@
       "precio_centimos": 800
     },
     {
-      "id": "copas-black-label",
+      "id": 44,
       "orden": 20,
       "nombre": "Black Label",
       "disponible": true,
@@ -1201,7 +1201,7 @@
       "precio_centimos": 900
     },
     {
-      "id": "copas-gentleman-jack",
+      "id": 45,
       "orden": 21,
       "nombre": "Gentleman Jack",
       "disponible": true,
@@ -1212,7 +1212,7 @@
       "precio_centimos": 900
     },
     {
-      "id": "copas-glenfiddich",
+      "id": 46,
       "orden": 22,
       "nombre": "Glenfiddich",
       "disponible": true,
@@ -1223,7 +1223,7 @@
       "precio_centimos": 1100
     },
     {
-      "id": "copas-bailey-s",
+      "id": 47,
       "orden": 23,
       "nombre": "Bailey's",
       "disponible": true,
@@ -1234,7 +1234,7 @@
       "precio_centimos": 350
     },
     {
-      "id": "copas-chupito-licor-de-cafe",
+      "id": 48,
       "orden": 24,
       "nombre": "Chupito licor de café",
       "disponible": true,
@@ -1245,7 +1245,7 @@
       "precio_centimos": 200
     },
     {
-      "id": "copas-licor-de-hierbas",
+      "id": 49,
       "orden": 25,
       "nombre": "Licor de hierbas",
       "disponible": true,
@@ -1323,5 +1323,5 @@
       "nombre": "Refrescos"
     }
   ],
-  "generado_at": "2026-10-28T10:49:06.029694+00:00"
+  "generado_at": "2026-10-28T11:15:45.999394+00:00"
 }

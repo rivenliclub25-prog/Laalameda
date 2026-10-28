@@ -8,7 +8,7 @@ Este documento es la especificación viva de la **fase POS** de la web de La Ala
 - Al decidir algo se anota la decisión y la fecha. Si cambia la propuesta, se actualizan las secciones afectadas y se apunta en el **Historial** (al final).
 - No se programa ninguna fase hasta que estén 🟢 las decisiones de las que depende (ver «Fases»).
 
-Última actualización: 2026-10-28 · Estado: **P1b hecha, pendiente de prueba** (falta ejecutar `catalogo-codigos.sql`; ver «Estado de P1b» en la sección 8).
+Última actualización: 2026-10-28 · Estado: **P1 cerrada (P1a y P1b probadas). Siguiente: P2 (venta en barra)**, pendiente de aprobar su plan.
 
 ---
 
@@ -372,7 +372,7 @@ No se borra nada ahora. Cuando la carta y las promos lean de Supabase y estén p
   - El usuario probó en local: se ve igual que la web publicada y la copia de respaldo funciona.
   - Arreglo menor: al elegir la copia más reciente, `catalog.ts` compara fechas reales, no texto.
 
-### Estado de P1b (2026-10-28): hecha, pendiente de prueba
+### Estado de P1b (2026-10-28): ✅ cerrada
 
 - **Decisiones del usuario al aprobar P1b:**
   - **Los productos se identifican con un código numérico que se incrementa solo** (1, 2, 3…). El resto con las recomendaciones:
@@ -394,10 +394,11 @@ No se borra nada ahora. Cuando la carta y las promos lean de Supabase y estén p
   - PGlite: 6 pruebas de la conversión a códigos y 25 de las escrituras del panel (admin sí, socio no; lo publicado u oculto se refleja en `catalogo()`).
   - La comparación con `src/data` sigue idéntica con los códigos numéricos.
   - typecheck, lint y build sin errores.
-- **Pendiente para cerrar P1b:**
-  1. Ejecutar `catalogo-codigos.sql` en Supabase.
-  2. Regenerar `public/catalogo.json`.
-  3. Que el usuario pruebe el panel.
+- **Cierre (2026-10-28):**
+  - `catalogo-codigos.sql` ejecutado en Supabase; productos del 1 al 67.
+  - `public/catalogo.json` regenerado con los códigos.
+  - El usuario probó el panel: todo correcto.
+  - **Mejora pedida al cerrar:** con un menú o ventana abierta, el fondo ya no se desliza (`src/lib/useScrollLock.ts`). Se aplica al menú móvil, `Modal`, reservar, borrar cuenta, la pantalla de resultado de canjear y «¡Canjeado!».
 
 ### Respuestas al plan (2026-10-28)
 
@@ -428,4 +429,5 @@ No se borra nada ahora. Cuando la carta y las promos lean de Supabase y estén p
 - **2026-10-28** — Plan de P1 aprobado: sin publicación diaria; categorías, separadores y franjas editables desde el panel; descuento % manual. Empieza P1a.
 - **2026-10-28** — P1a implementada en la rama `pos` y verificada en PGlite.
 - **2026-10-28** — P1a cerrada: `catalogo.sql` ejecutado en Supabase, copia regenerada y prueba del usuario correcta.
-- **2026-10-28** — P1b aprobada con un cambio: los productos usan un código numérico incremental (`catalogo-codigos.sql`). P1b implementada en `pos`, pendiente de prueba.
+- **2026-10-28** — P1b aprobada con un cambio: los productos usan un código numérico incremental (`catalogo-codigos.sql`). P1b implementada en `pos`.
+- **2026-10-28** — P1b cerrada tras la prueba del usuario. Arreglo: el fondo no se desliza con menús o ventanas abiertos. **P1 completa.**

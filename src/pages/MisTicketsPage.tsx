@@ -5,6 +5,7 @@ import { PageShell } from '@/components/club/PageShell';
 import { Notice, focusRing } from '@/components/club/FormControls';
 import { useAuth } from '@/auth/AuthContext';
 import { getHashParams } from '@/lib/router';
+import { useScrollLock } from '@/lib/useScrollLock';
 import {
   fetchMyTickets,
   formatCountdown,
@@ -312,6 +313,7 @@ function AvailableTicket({
 /** Confirmación a pantalla completa cuando el camarero canjea el ticket. */
 function RedeemedOverlay({ ticket, onClose }: { ticket: Ticket; onClose: () => void }) {
   const closeRef = useRef<HTMLButtonElement>(null);
+  useScrollLock(true);
 
   useEffect(() => {
     closeRef.current?.focus();
