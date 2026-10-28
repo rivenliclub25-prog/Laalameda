@@ -8,7 +8,7 @@ Este documento es la especificación viva de la **fase POS** de la web de La Ala
 - Al decidir algo se anota la decisión y la fecha. Si cambia la propuesta, se actualizan las secciones afectadas y se apunta en el **Historial** (al final).
 - No se programa ninguna fase hasta que estén 🟢 las decisiones de las que depende (ver «Fases»).
 
-Última actualización: 2026-10-28 · Estado: **P4 programada (pedido del socio desde la mesa), pendiente de que el usuario ejecute `pos-pedidos.sql` y la pruebe.**
+Última actualización: 2026-10-28 · Estado: **P4 cerrada (probada). P5 (promos y tickets en las ventas) aprobada y en curso.**
 
 ---
 
@@ -453,7 +453,7 @@ No se borra nada ahora. Cuando la carta y las promos lean de Supabase y estén p
 - **Verificación:** 31 pruebas de SQL en PGlite (ciclo completo, doble envío, dos camareros a la vez, cambio de mesa, cancelación, devoluciones parciales y su tope, inmutabilidad, **neto = ventas − devoluciones** y **todo en `pos_events`**), más las 24 de P2 sin cambios, y typecheck, lint y build.
 - **Cierre (2026-10-28):** `pos-mesas.sql` ejecutado en Supabase y probado por el usuario: todo correcto.
 
-### Estado de P4 — pedido del socio desde la mesa (2026-10-28): 🟡 programada, falta probar
+### Estado de P4 — pedido del socio desde la mesa (2026-10-28): ✅ cerrada
 
 - **Plan aprobado con las recomendaciones:**
   - El socio solo ve sus propias líneas (ni las del camarero ni las de otros socios de la mesa).
@@ -470,7 +470,8 @@ No se borra nada ahora. Cuando la carta y las promos lean de Supabase y estén p
   - **`#/mesa?m=<token>`** (lo abre el QR de la mesa): carta por categorías con + y −, carrito guardado en la pestaña (sobrevive a iniciar sesión), confirmación «se paga al camarero al final» y **«Mis pedidos en esta mesa»** con el estado en directo (esperando, aceptada, servida, rechazada).
   - Sin sesión: aviso y botón a `#/club?modo=login&volver=mesa&m=…`, que vuelve a la mesa al entrar.
   - **TPV → Mesas:** las mesas con rondas nuevas se marcan con «Nueva ronda» y suena/vibra; en la cuenta, Aceptar o Rechazar cada ronda, con el nombre del socio. Se actualiza en tiempo real (`src/lib/realtime.ts`), con repaso cada 10 s.
-- **Verificación:** 26 pruebas de SQL en PGlite (un no socio no puede pedir, un socio no ve líneas ajenas aunque estén en su mesa, límites, doble envío, aceptar/rechazar, cobro bloqueado con rondas pendientes) y typecheck, lint y build. **Falta:** que el usuario compruebe en Supabase que la ronda llega al TPV en menos de 5 s.
+- **Verificación:** 26 pruebas de SQL en PGlite (un no socio no puede pedir, un socio no ve líneas ajenas aunque estén en su mesa, límites, doble envío, aceptar/rechazar, cobro bloqueado con rondas pendientes) y typecheck, lint y build. 
+- **Cierre (2026-10-28):** `pos-pedidos.sql` ejecutado en Supabase y probado por el usuario: todo correcto.
 
 ### Respuestas al plan (2026-10-28)
 
@@ -508,3 +509,4 @@ No se borra nada ahora. Cuando la carta y las promos lean de Supabase y estén p
 - **2026-10-28** — P3 (cuentas de mesa) aprobada con las recomendaciones e implementada en `pos`.
 - **2026-10-28** — P3 cerrada tras la prueba del usuario.
 - **2026-10-28** — P4 programada (pedido del socio desde la mesa), a la espera de prueba.
+- **2026-10-28** — P4 cerrada tras la prueba del usuario. Plan de P5 aprobado con las recomendaciones.
