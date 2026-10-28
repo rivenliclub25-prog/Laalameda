@@ -125,7 +125,7 @@ Por último, añade un apartado aparte, para hacerlo más adelante, sobre cómo 
 **Proyecto de Supabase en uso: `hinebaxynlpjisteuaus`.** Es el de `.env` y el de los GitHub Secrets, y el de la web publicada (comprobado el 2026-10-23). El otro proyecto (`eisuyvozingpasbqvrdx`) no se usa: tenerlo mezclado con el bueno dio `401 Invalid API key`.
 
 Ramas:
-- **`main`: la web publicada en GitHub Pages.** **Publicada el 2026-10-25** con los tickets (T1–T4) y El Clásico (commit `677c11a`). Se comprobó que la web real carga la versión nueva y usa el proyecto `hinebaxynlpjisteuaus`. Desde ese día el push desde la terminal de Claude funciona.
+- **`main`: la web publicada en GitHub Pages.** **Publicada el 2026-10-25** con los tickets (T1–T4) y El Clásico (commit `677c11a`). **Publicada de nuevo el 2026-10-28** con el inicio de sesión con Google y el teléfono por país (rama `google-auth`). Se comprobó que la web real carga la versión nueva y usa el proyecto `hinebaxynlpjisteuaus`. Desde ese día el push desde la terminal de Claude funciona.
 - **`tickets`: rama de trabajo de los tickets (ver `TICKETS.md`).** Las ampliaciones de tickets se siguen haciendo aquí. Al empezar cada fase hay que mezclar `main` en `tickets`, porque el script de precios hace push a `main`.
 - **`pos`: rama de trabajo del POS (ver `POS.md` en esa rama).** Creada el 2026-10-28 desde `main`. **En pausa:** P1–P6a cerradas y P6b hecha, pendiente de probar. No se publica en `main` antes del 2026-11-02 (inauguración y Halloween el sábado 31); la fecha exacta está sin decidir. Su `CONTEXT.MD` tiene el detalle del POS.
 - **`google-auth`: inicio de sesión con Google (OAuth).** Creada el 2026-10-28 desde `main` (`35d85f0`), no desde `pos`, porque **esta sí se publicará en `main`** cuando esté probada, sin esperar al POS. Después habrá que mezclar `main` en `pos`. Ver «Inicio de sesión con Google» más abajo.
@@ -133,7 +133,7 @@ Ramas:
 - `club-clientes` y `admin-dashboard`: ramas históricas, ya incluidas en `main`. No tienen push.
 - `main` también recibe los commits automáticos del script de precios (`Actualizar precios.bat` → `scripts/publish-prices.ps1`), que exige estar en `main` y hace push él mismo. Antes de trabajar, ejecuta `git pull`.
 
-## Inicio de sesión con Google (rama `google-auth`): en curso
+## Inicio de sesión con Google (rama `google-auth`): ✅ publicado (2026-10-28)
 
 - **Punto de partida:** el botón «Continuar con Google» ya existe en `#/club` (marcado «Próximamente», `googleEnabled = false` en `src/lib/auth.ts`) y `signInWithGoogle()` ya llama a `signInWithOAuth`. `handle_new_user` ya toma el nombre de Google (`full_name` / `name`).
 - **Configuración hecha por el usuario (2026-10-28):** proyecto «La Alameda» en Google Cloud (consentimiento publicado, cliente web, URI `https://hinebaxynlpjisteuaus.supabase.co/auth/v1/callback`) y proveedor Google activado en Supabase. **El Client Secret solo está en el panel de Supabase.** Pasos detallados en README.md.
@@ -145,7 +145,7 @@ Ramas:
   - `#/club`: el botón ya no dice «Próximamente» y explica que sirve para entrar y registrarse, y que con el mismo email se entra en la misma cuenta.
 - **Probado por el usuario (2026-10-28):** Google funciona correctamente.
 - **Añadido antes de publicar (petición del usuario):** en `#/perfil`, el teléfono se pide en dos partes: **país (prefijo)** y número (`PhoneField` en `FormControls.tsx`; España por defecto; «Otro país…» para escribirlo completo). Se sigue guardando en formato internacional (`+34612345678`), así que no cambia la base de datos. `splitPhone`, `buildPhone` y `formatPhone` en `src/lib/profile.ts` (sustituyen a `normalizePhone`). El panel de socios muestra el teléfono agrupado (`+34 612 345 678`).
-- **Al terminar:** probar en local y en el móvil, y publicar en `main` (con confirmación del usuario).
+- **Publicado en `main` el 2026-10-28** con la confirmación del usuario (`google-auth` mezclada sin conflictos). `supabase/google-auth.sql` ya estaba ejecutado. Pendiente: al retomar el POS, mezclar `main` en `pos` (habrá que resolver a mano CONTEXT.MD, ClubPage.tsx y lo que toque).
 
 ## Club de clientes: hecho y probado
 - **Fase 1 — estructura y auth** (commit `e325b3d`): cliente en `src/lib/supabase.ts`, `AuthProvider`, `ProtectedRoute`, router propio, `supabase/schema.sql`, `.env.example`.
