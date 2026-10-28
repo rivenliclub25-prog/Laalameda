@@ -22,7 +22,21 @@ El club (registro, perfil y panel de administración en `#/admin`) usa Supabase.
 
 Si faltan, la web funciona igual y el club aparece como "disponible muy pronto". La clave `service_role` no debe ponerse nunca ni en el código ni en los secretos.
 
-La base de datos se crea ejecutando en el SQL Editor de Supabase, en este orden, `supabase/schema.sql`, `supabase/admin.sql` y `supabase/tickets.sql`. Los archivos de promos especiales (como `supabase/promos-clasico.sql`) se ejecutan después, cuando toca. Para hacer admin a alguien, cambia su `role` a `admin` en **Table Editor → profiles**. Las promos se encienden y los camareros se marcan desde el **Panel del club** (`#/admin`).
+La base de datos se crea ejecutando en el SQL Editor de Supabase, en este orden, `supabase/schema.sql`, `supabase/admin.sql`, `supabase/tickets.sql` y `supabase/google-auth.sql`. Los archivos de promos especiales (como `supabase/promos-clasico.sql`) se ejecutan después, cuando toca. Para hacer admin a alguien, cambia su `role` a `admin` en **Table Editor → profiles**. Las promos se encienden y los camareros se marcan desde el **Panel del club** (`#/admin`).
+
+### Inicio de sesión con Google
+
+Ya está configurado (2026-10-28). Si hubiera que rehacerlo:
+
+1. **Google Cloud Console** (proyecto «La Alameda»):
+   - Pantalla de consentimiento: app externa «La Alameda», **publicada** («En producción»), sin logo (con logo Google pide verificación).
+   - Dominios autorizados: `supabase.co` y `rivenliclub25-prog.github.io`. Permisos: `email`, `profile` y `openid`.
+   - Cliente OAuth de tipo **Aplicación web**. Orígenes: `https://rivenliclub25-prog.github.io` y `http://localhost:5173`. URI de redirección: `https://<proyecto>.supabase.co/auth/v1/callback`.
+2. **Supabase → Authentication → Providers → Google**: activarlo y pegar el Client ID y el Client Secret. **El secreto solo va ahí**: nunca en el código, `.env` ni GitHub.
+3. **Supabase → Authentication → URL Configuration**: las Redirect URLs de la web y de `localhost` (las mismas que para los correos).
+4. Ejecutar `supabase/google-auth.sql`.
+
+Quien entra con Google por primera vez ve «Un último paso» (aceptar la privacidad y elegir si quiere emails). Si el email ya tenía cuenta con contraseña, Supabase la une y entra en la misma. El botón se apaga con `googleEnabled = false` en `src/lib/auth.ts`.
 
 ## Desarrollar localmente
 

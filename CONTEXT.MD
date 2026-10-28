@@ -136,10 +136,13 @@ Ramas:
 ## Inicio de sesión con Google (rama `google-auth`): en curso
 
 - **Punto de partida:** el botón «Continuar con Google» ya existe en `#/club` (marcado «Próximamente», `googleEnabled = false` en `src/lib/auth.ts`) y `signInWithGoogle()` ya llama a `signInWithOAuth`. `handle_new_user` ya toma el nombre de Google (`full_name` / `name`).
-- **Pendiente de aprobar el plan** (2026-10-28). Puntos a resolver:
-  - Configuración manual del usuario: credenciales OAuth en Google Cloud Console (URI de redirección `https://hinebaxynlpjisteuaus.supabase.co/auth/v1/callback`) y proveedor Google en Supabase. **El Client Secret solo va en el panel de Supabase**, nunca en el código, `.env` ni GitHub.
-  - Quien entra con Google no marca la casilla de privacidad ni los consentimientos: hace falta un paso para aceptarlos.
-  - Volver a donde estaba el socio (promo, canjear…) después de pasar por Google.
+- **Configuración hecha por el usuario (2026-10-28):** proyecto «La Alameda» en Google Cloud (consentimiento publicado, cliente web, URI `https://hinebaxynlpjisteuaus.supabase.co/auth/v1/callback`) y proveedor Google activado en Supabase. **El Client Secret solo está en el panel de Supabase.** Pasos detallados en README.md.
+- **Decisiones del usuario (2026-10-28):** el mismo email entra en la misma cuenta (Supabase une las identidades) y **tras entrar con Google se va siempre al perfil**. Se mantiene «Un último paso» para las cuentas nuevas de Google.
+- **Programado (falta ejecutar `supabase/google-auth.sql` y probar):**
+  - `supabase/google-auth.sql`: `aceptar_privacidad(p_acepta_email)` rellena una sola vez `acepta_privacidad_at` (no editable desde el navegador) y guarda el consentimiento de email. 8 pruebas en PGlite.
+  - `src/lib/auth.ts`: `googleEnabled = true`, `signInWithGoogle()` con `prompt: select_account` y una marca en la pestaña para traducir los errores de Google (p. ej. «Has cancelado el acceso con Google»); `aceptarPrivacidad()`.
+  - `AuthProvider`/`AuthContext`: `privacidadPendiente` y `refreshPerfil()`. `ProtectedRoute` muestra `UltimoPaso` (`src/components/club/UltimoPaso.tsx`) mientras la cuenta no haya aceptado la privacidad; ahí también puede borrar la cuenta si no acepta.
+  - `#/club`: el botón ya no dice «Próximamente» y explica que sirve para entrar y registrarse, y que con el mismo email se entra en la misma cuenta.
 - **Al terminar:** probar en local y en el móvil, y publicar en `main` (con confirmación del usuario).
 
 ## Club de clientes: hecho y probado

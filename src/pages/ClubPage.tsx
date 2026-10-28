@@ -399,6 +399,11 @@ function GoogleButton({ disabled }: { disabled: boolean }) {
         <GoogleIcon /> Continuar con Google
         {!googleEnabled && <span className="recommend-badge ml-1">Próximamente</span>}
       </button>
+      {googleEnabled && (
+        <p className="mt-2 text-center text-xs text-carbon/55">
+          Sirve para entrar y para hacerte socio. Si ya tienes cuenta con ese email, entrarás en la misma.
+        </p>
+      )}
       {error && (
         <div className="mt-3">
           <Notice kind="error">{error}</Notice>
