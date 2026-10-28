@@ -190,7 +190,7 @@ Ramas:
   - **Sin tocar:** `src/data/`, los scripts del Excel y los tickets (se limpiarán en la fase L).
 - **P1b (edición desde el panel): ✅ cerrada (2026-10-28).** `catalogo-codigos.sql` ejecutado, copia regenerada con los códigos y panel probado por el usuario.
   - **Bloqueo del fondo:** `useScrollLock()` (`src/lib/useScrollLock.ts`) impide que el fondo se deslice con el menú móvil o cualquier ventana abierta. Funciona en iPhone y, si se pulsa un enlace a una sección, va a ella al cerrar. **Usarlo en cualquier ventana nueva.**
-- **P2 (venta en barra): hecha, pendiente de que el usuario ejecute `supabase/pos.sql` y la pruebe.**
+- **P2 (venta en barra): ✅ cerrada (2026-10-28).** `pos.sql` ejecutado y TPV probado. Hay ventas de prueba en la base de datos real: **antes de P7 hay que dar el SQL de limpieza** (borra ventas, cuentas y eventos de prueba y reinicia la numeración).
   - `pos.sql`: `orders`, `order_items`, `sales` (inmutables) y `pos_events`, y la RPC `pos_venta_barra` (precio desde la BD, doble toque = 1 venta).
   - `#/pos` es el TPV del camarero, y la pestaña **Ventas** del panel sirve para cuadrar la caja.
   - 24 pruebas de SQL en PGlite.

@@ -8,7 +8,7 @@ Este documento es la especificación viva de la **fase POS** de la web de La Ala
 - Al decidir algo se anota la decisión y la fecha. Si cambia la propuesta, se actualizan las secciones afectadas y se apunta en el **Historial** (al final).
 - No se programa ninguna fase hasta que estén 🟢 las decisiones de las que depende (ver «Fases»).
 
-Última actualización: 2026-10-28 · Estado: **P2 hecha, pendiente de prueba** (falta ejecutar `pos.sql`; ver «Estado de P2» en la sección 8).
+Última actualización: 2026-10-28 · Estado: **P2 cerrada (probada). Siguiente: P3 (cuentas de mesa)**, pendiente de aprobar su plan.
 
 ---
 
@@ -400,7 +400,7 @@ No se borra nada ahora. Cuando la carta y las promos lean de Supabase y estén p
   - El usuario probó el panel: todo correcto.
   - **Mejora pedida al cerrar:** con un menú o ventana abierta, el fondo ya no se desliza (`src/lib/useScrollLock.ts`). Se aplica al menú móvil, `Modal`, reservar, borrar cuenta, la pantalla de resultado de canjear y «¡Canjeado!».
 
-### Estado de P2 — venta en barra (2026-10-28): hecha, pendiente de prueba
+### Estado de P2 — venta en barra (2026-10-28): ✅ cerrada
 
 - **Plan aprobado con las recomendaciones:**
   - En el TPV se venden los productos que salen en la carta; los agotados salen en gris y la base de datos los rechaza (`PRODUCTO_AGOTADO`).
@@ -426,7 +426,8 @@ No se borra nada ahora. Cuando la carta y las promos lean de Supabase y estén p
   - Enlace «TPV barra» en *Mi cuenta*, el menú móvil y la franja de camarero de Mi perfil.
   - `src/lib/pos.ts`; códigos de error nuevos en `ticketErrors.ts` (incluyen el nombre del producto cuando viene en el error).
 - **Verificación:** 24 pruebas de SQL en PGlite (doble toque = 1 venta, no camarero = error, precio manipulado ignorado, agotado, cantidades, venta vacía, método, sin cuentas a medias, permisos de lectura y escritura, ventas inmutables, borrar la cuenta de un camarero), además de typecheck, lint y build.
-- **Pendiente para cerrar P2:** ejecutar `pos.sql` en Supabase y la prueba del usuario.
+- **Cierre (2026-10-28):** `pos.sql` ejecutado en Supabase y TPV probado por el usuario.
+- **Ventas de prueba:** se están haciendo ventas de prueba en la base de datos real. Antes de la puesta en marcha (P7) se dará un SQL de limpieza de un solo uso: borra ventas, cuentas, líneas y eventos de prueba y reinicia la numeración (la primera venta real será la nº 1), sin tocar carta, promos, socios ni tickets.
 
 ### Respuestas al plan (2026-10-28)
 
@@ -459,4 +460,5 @@ No se borra nada ahora. Cuando la carta y las promos lean de Supabase y estén p
 - **2026-10-28** — P1a cerrada: `catalogo.sql` ejecutado en Supabase, copia regenerada y prueba del usuario correcta.
 - **2026-10-28** — P1b aprobada con un cambio: los productos usan un código numérico incremental (`catalogo-codigos.sql`). P1b implementada en `pos`.
 - **2026-10-28** — P1b cerrada tras la prueba del usuario. Arreglo: el fondo no se desliza con menús o ventanas abiertos. **P1 completa.**
-- **2026-10-28** — P2 (venta en barra) aprobada con las recomendaciones e implementada en `pos`; pendiente de ejecutar `pos.sql` y probar.
+- **2026-10-28** — P2 (venta en barra) aprobada con las recomendaciones e implementada en `pos`.
+- **2026-10-28** — P2 cerrada tras la prueba del usuario. Anotado: SQL de limpieza de ventas de prueba antes de P7.
