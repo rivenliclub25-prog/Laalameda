@@ -8,7 +8,7 @@ Este documento es la especificación viva de la **fase POS** de la web de La Ala
 - Al decidir algo se anota la decisión y la fecha. Si cambia la propuesta, se actualizan las secciones afectadas y se apunta en el **Historial** (al final).
 - No se programa ninguna fase hasta que estén 🟢 las decisiones de las que depende (ver «Fases»).
 
-Última actualización: 2026-10-28 · Estado: **P1 cerrada (P1a y P1b probadas). Siguiente: P2 (venta en barra)**, pendiente de aprobar su plan.
+Última actualización: 2026-10-28 · Estado: **P2 hecha, pendiente de prueba** (falta ejecutar `pos.sql`; ver «Estado de P2» en la sección 8).
 
 ---
 
@@ -400,6 +400,34 @@ No se borra nada ahora. Cuando la carta y las promos lean de Supabase y estén p
   - El usuario probó el panel: todo correcto.
   - **Mejora pedida al cerrar:** con un menú o ventana abierta, el fondo ya no se desliza (`src/lib/useScrollLock.ts`). Se aplica al menú móvil, `Modal`, reservar, borrar cuenta, la pantalla de resultado de canjear y «¡Canjeado!».
 
+### Estado de P2 — venta en barra (2026-10-28): hecha, pendiente de prueba
+
+- **Plan aprobado con las recomendaciones:**
+  - En el TPV se venden los productos que salen en la carta; los agotados salen en gris y la base de datos los rechaza (`PRODUCTO_AGOTADO`).
+  - Sin anulación en P2: las devoluciones son de P3 y solo las hace el admin.
+  - Sin notas en barra: quedan para P3.
+  - Se cobra con un toque: método de pago y «Cobrar X €», sin confirmación aparte.
+- **`supabase/pos.sql`:**
+  - Tablas `orders`, `order_items` (producto o promo, con copia del nombre y del precio; huecos para P3–P5), `sales` (nº de venta legible, una por cuenta, **inmutables por trigger**: solo se permite poner a null quién cobró si se borra esa cuenta) y `pos_events`.
+  - RLS: leen camareros y admins; nadie escribe directamente.
+  - RPC `pos_venta_barra(items, metodo, client_request_id)`:
+    - Solo camareros.
+    - El precio sale de `products`, y se agrupan las líneas del mismo producto.
+    - Crea la cuenta, las líneas, la venta y el evento en una sola operación.
+    - Un mismo `client_request_id` devuelve la venta ya creada (`repetida: true`).
+- **Web:**
+  - **`#/pos`** (`PosPage.tsx`, protegido con `CamareroRoute`):
+    - Categorías, buscador por nombre o código y cuadrícula de productos.
+    - Pedido con − y +, método de pago y «Cobrar X €»; pantalla verde «Venta registrada nº N» con sonido.
+    - Últimas ventas.
+    - En el móvil, el pedido es una barra fija abajo que se despliega.
+    - El mismo `requestId` se reutiliza hasta que el cobro sale bien.
+  - Pestaña **«Ventas»** del panel (`VentasSection.tsx`): total cobrado, por método y ticket medio, y lista de ventas con sus líneas.
+  - Enlace «TPV barra» en *Mi cuenta*, el menú móvil y la franja de camarero de Mi perfil.
+  - `src/lib/pos.ts`; códigos de error nuevos en `ticketErrors.ts` (incluyen el nombre del producto cuando viene en el error).
+- **Verificación:** 24 pruebas de SQL en PGlite (doble toque = 1 venta, no camarero = error, precio manipulado ignorado, agotado, cantidades, venta vacía, método, sin cuentas a medias, permisos de lectura y escritura, ventas inmutables, borrar la cuenta de un camarero), además de typecheck, lint y build.
+- **Pendiente para cerrar P2:** ejecutar `pos.sql` en Supabase y la prueba del usuario.
+
 ### Respuestas al plan (2026-10-28)
 
 1. P1 se divide en **P1a y P1b**, con pausa para probar entre ellas.
@@ -431,3 +459,4 @@ No se borra nada ahora. Cuando la carta y las promos lean de Supabase y estén p
 - **2026-10-28** — P1a cerrada: `catalogo.sql` ejecutado en Supabase, copia regenerada y prueba del usuario correcta.
 - **2026-10-28** — P1b aprobada con un cambio: los productos usan un código numérico incremental (`catalogo-codigos.sql`). P1b implementada en `pos`.
 - **2026-10-28** — P1b cerrada tras la prueba del usuario. Arreglo: el fondo no se desliza con menús o ventanas abiertos. **P1 completa.**
+- **2026-10-28** — P2 (venta en barra) aprobada con las recomendaciones e implementada en `pos`; pendiente de ejecutar `pos.sql` y probar.

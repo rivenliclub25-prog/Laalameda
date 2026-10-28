@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FocusEvent } from 'react';
-import { ChevronDown, LayoutDashboard, LogOut, Menu, ScanLine, Ticket as TicketIcon, UserRound, X } from 'lucide-react';
+import { Calculator, ChevronDown, LayoutDashboard, LogOut, Menu, ScanLine, Ticket as TicketIcon, UserRound, X } from 'lucide-react';
 import { navLinks, siteConfig } from '@/data/site';
 import { useAuth } from '@/auth/AuthContext';
 import { signOut } from '@/lib/auth';
@@ -26,7 +26,10 @@ function useAccountLinks(): AccountLink[] {
     { href: routeHref('/perfil'), label: 'Mi perfil', icon: UserRound },
     { href: routeHref('/mis-tickets'), label: 'Mis tickets', icon: TicketIcon },
   ];
-  if (esCamarero) links.push({ href: routeHref('/canjear'), label: 'Canjear tickets', icon: ScanLine });
+  if (esCamarero) {
+    links.push({ href: routeHref('/pos'), label: 'TPV barra', icon: Calculator });
+    links.push({ href: routeHref('/canjear'), label: 'Canjear tickets', icon: ScanLine });
+  }
   if (isAdmin) links.push({ href: routeHref('/admin'), label: 'Panel del club', icon: LayoutDashboard });
   return links;
 }

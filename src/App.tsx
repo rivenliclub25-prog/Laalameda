@@ -20,6 +20,7 @@ import { AdminRoute } from '@/auth/AdminRoute';
 import { AdminPage } from '@/pages/AdminPage';
 import { MisTicketsPage } from '@/pages/MisTicketsPage';
 import { CanjearPage } from '@/pages/CanjearPage';
+import { PosPage } from '@/pages/PosPage';
 import { CamareroRoute } from '@/auth/CamareroRoute';
 import { ClubPage } from '@/pages/ClubPage';
 import { RecuperarPage } from '@/pages/RecuperarPage';
@@ -123,6 +124,12 @@ function App() {
       return (
         <CamareroRoute>
           <CanjearPage />
+        </CamareroRoute>
+      );
+    case '/pos':
+      return (
+        <CamareroRoute>
+          <PosPage />
         </CamareroRoute>
       );
     case '/admin':

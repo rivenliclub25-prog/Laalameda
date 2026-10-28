@@ -87,6 +87,7 @@ export interface MenuItem {
   name?: string;
   desc?: string;
   price?: string; // "3,50€"
+  priceCents?: number;
   recommended?: boolean;
   available?: boolean;
   sectionHeader?: string;
@@ -168,6 +169,7 @@ export function toCatalog(raw: RawCatalog): Catalog {
       name: p.nombre,
       desc: p.descripcion ?? undefined,
       price: p.precio_centimos === null ? undefined : formatMenuPrice(p.precio_centimos),
+      priceCents: p.precio_centimos ?? undefined,
       recommended: p.recomendado || undefined,
       available: p.disponible,
     });

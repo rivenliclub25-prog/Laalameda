@@ -22,6 +22,15 @@ const messages: Record<string, string> = {
   MOTIVO_OBLIGATORIO: 'Indica un motivo.',
   IMPORTE_INVALIDO: 'El importe no es válido.',
   USUARIO_NO_EXISTE: 'Ese usuario no existe.',
+  // POS (pos.sql)
+  SOLICITUD_INVALIDA: 'No se ha podido enviar la venta. Inténtalo de nuevo.',
+  METODO_INVALIDO: 'Elige cómo ha pagado: efectivo, tarjeta u otro.',
+  VENTA_VACIA: 'Añade al menos un producto.',
+  CANTIDAD_INVALIDA: 'Hay una cantidad no válida (de 1 a 99 por producto).',
+  PRODUCTO_NO_EXISTE: 'Un producto ya no está en la carta. Recarga la página',
+  PRODUCTO_AGOTADO: 'Hay un producto agotado',
+  PRODUCTO_SIN_PRECIO: 'Un producto no tiene precio en la carta',
+  VENTA_INMUTABLE: 'Las ventas cobradas no se pueden modificar.',
 };
 
 const fallback = 'Algo ha salido mal. Inténtalo de nuevo en unos minutos.';
@@ -40,6 +49,9 @@ export function translateTicketError(error: PostgrestError): string {
   console.error('[club] Error de tickets:', error);
   const code = ticketErrorCode(error);
   let text = code ? messages[code] : fallback;
+  // Algunos errores traen el nombre del producto (p. ej. PRODUCTO_AGOTADO → "Patatas").
+  if (code && error.details) text = `${text.replace(/.$/, '')}: ${error.details}.`;
+  else if (code && !text.endsWith('.')) text += '.';
   if (!code && /fetch|network/i.test(error.message)) {
     text = 'No hemos podido conectar. Revisa tu conexión a internet.';
   }

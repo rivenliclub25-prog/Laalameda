@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import {
+  Calculator,
   LayoutDashboard,
   Loader2,
   LogOut,
@@ -181,9 +182,14 @@ export function PerfilPage() {
             <span className="inline-flex items-center gap-2 font-semibold">
               <ScanLine size={17} className="text-vino" aria-hidden="true" /> Eres del personal del bar
             </span>
-            <a href={routeHref('/canjear')} className={`btn-vino w-full sm:w-auto ${focusRing}`}>
-              <ScanLine size={16} aria-hidden="true" /> Canjear tickets
-            </a>
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+              <a href={routeHref('/pos')} className={`btn-vino w-full sm:w-auto ${focusRing}`}>
+                <Calculator size={16} aria-hidden="true" /> TPV barra
+              </a>
+              <a href={routeHref('/canjear')} className={`btn-outline-vino w-full sm:w-auto ${focusRing}`}>
+                <ScanLine size={16} aria-hidden="true" /> Canjear tickets
+              </a>
+            </div>
           </div>
         )}
 
