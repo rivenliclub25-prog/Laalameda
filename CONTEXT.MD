@@ -188,7 +188,13 @@ Ramas:
     - Si Supabase falla, se usa la más reciente entre la del navegador y `public/catalogo.json`, con un aviso, y se reintenta cada 60 s.
     - `scripts/catalog-snapshot.mjs` (`npm run catalog-snapshot`) regenera la copia; se ejecuta en `deploy.yml` antes del build y nunca hace fallar la publicación.
   - **Sin tocar:** `src/data/`, los scripts del Excel y los tickets (se limpiarán en la fase L).
-- **P1b (edición desde el panel):** siguiente fase; plan de archivos pendiente de aprobar.
+- **P1b (edición desde el panel): hecha, pendiente de que el usuario ejecute `supabase/catalogo-codigos.sql` y la pruebe.**
+  - **Productos con código numérico incremental** (decisión del usuario): `products.id` pasa a ser 1, 2, 3… (identity), y los nuevos reciben el siguiente número. Categorías, franjas y promos siguen con id de texto.
+  - **Panel:**
+    - Pestaña **Carta**: categorías, separadores y productos (precio en línea, en carta, disponible, recomendado, orden, crear y editar).
+    - **Promos** ampliada: franjas, orden, «Nueva promo» y editor completo de lo que se ve en la web, más el horario y los límites de los tickets.
+  - **Decisiones:** no se borra nada (se oculta); las promos nuevas nacen sin publicar y apagadas; `descuento_texto` se rellena con los contenidos al guardar; «Agotado» se quita a mano.
+  - **Verificado en PGlite:** 6 pruebas de los códigos y 25 de las escrituras del panel. La web sigue idéntica a `src/data`.
 
 ## Tickets del club (rama `tickets`, especificación en `TICKETS.md`)
 - **T1 — base de datos: hecha. Falta ejecutar `supabase/tickets.sql` en Supabase.**

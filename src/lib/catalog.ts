@@ -27,7 +27,8 @@ interface RawSeccion {
   orden: number;
 }
 interface RawProducto {
-  id: string;
+  /** Código numérico del producto (catalogo-codigos.sql). Las copias antiguas pueden traer texto. */
+  id: number | string;
   categoria_id: string;
   seccion_id: string | null;
   nombre: string;
@@ -64,7 +65,7 @@ interface RawPromo {
   hora_inicio: string | null;
   hora_fin: string | null;
   franjas: string[];
-  items: { product_id: string; cantidad: number }[];
+  items: { product_id: number | string; cantidad: number }[];
 }
 export interface RawCatalog {
   version: number;
@@ -81,6 +82,7 @@ export interface RawCatalog {
 // ---------------------------------------------------------------------
 
 export interface MenuItem {
+  /** Código del producto, como texto. */
   id?: string;
   name?: string;
   desc?: string;
@@ -157,11 +159,12 @@ function isRawCatalog(value: unknown): value is RawCatalog {
 }
 
 export function toCatalog(raw: RawCatalog): Catalog {
-  const byOrder = <T extends { orden: number; id: string }>(a: T, b: T) => a.orden - b.orden || a.id.localeCompare(b.id);
+  const byOrder = <T extends { orden: number; id: string | number }>(a: T, b: T) =>
+    a.orden - b.orden || String(a.id).localeCompare(String(b.id), undefined, { numeric: true });
 
   const menuTabs: MenuTab[] = [...raw.categorias].sort(byOrder).map((cat) => {
     const toItem = (p: RawProducto): MenuItem => ({
-      id: p.id,
+      id: String(p.id),
       name: p.nombre,
       desc: p.descripcion ?? undefined,
       price: p.precio_centimos === null ? undefined : formatMenuPrice(p.precio_centimos),
@@ -201,7 +204,7 @@ export function toCatalog(raw: RawCatalog): Catalog {
     people: p.personas ?? undefined,
     scheduleLabel: p.texto_horario ?? '',
     reserveMessage: p.mensaje_reserva ?? undefined,
-    productIds: p.items.map((i) => i.product_id),
+    productIds: p.items.map((i) => String(i.product_id)),
     exclusive: p.exclusiva,
     visibleUntil: p.visible_hasta,
     schedule: {

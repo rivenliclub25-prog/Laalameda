@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { translateTicketError } from '@/lib/ticketErrors';
 import type { Ticket } from '@/lib/tickets';
 
-/** Fila de public.promotions (ver supabase/tickets.sql). */
+/** Fila de public.promotions (tickets.sql, ampliada en catalogo.sql). */
 export interface PromotionRow {
   id: string;
   nombre: string;
@@ -17,6 +17,19 @@ export interface PromotionRow {
   hora_fin: string | null;
   max_usos: number | null;
   ventana_usos: 'total' | 'dia' | 'semana' | 'mes';
+  // Lo que se ve en la web (catalogo.sql)
+  publicada: boolean;
+  tipo: 'pack' | 'obsequio' | 'sorteo';
+  precio_centimos: number | null;
+  descuento_pct: number | null;
+  descripcion: string | null;
+  contenidos: string[];
+  personas: number | null;
+  texto_horario: string | null;
+  mensaje_reserva: string | null;
+  visible_hasta: string | null;
+  exclusiva: boolean;
+  orden: number;
   created_at: string;
   updated_at: string;
 }
@@ -64,7 +77,7 @@ function dbError(error: PostgrestError): string {
 // ---------------------------------------------------------------------
 
 export async function fetchPromotions(): Promise<{ promos: PromotionRow[]; error: string | null }> {
-  const { data, error } = await supabase.from('promotions').select('*').order('nombre');
+  const { data, error } = await supabase.from('promotions').select('*').order('orden').order('nombre');
   if (error) return { promos: [], error: dbError(error) };
   return { promos: data as PromotionRow[], error: null };
 }

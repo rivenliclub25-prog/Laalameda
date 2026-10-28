@@ -1,18 +1,20 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
-import { BarChart3, Megaphone, Ticket as TicketIcon, Users } from 'lucide-react';
+import { BarChart3, BookOpen, Megaphone, Ticket as TicketIcon, Users } from 'lucide-react';
 import { PageShell } from '@/components/club/PageShell';
 import { focusRing } from '@/components/club/FormControls';
 import { SociosSection } from '@/components/admin/SociosSection';
 import { PromosSection } from '@/components/admin/PromosSection';
+import { CartaSection } from '@/components/admin/CartaSection';
 import { TicketsSection } from '@/components/admin/TicketsSection';
 import { StatsSection } from '@/components/admin/StatsSection';
 import { fetchAdminUsers, type AdminUser } from '@/lib/admin';
 import { getHashParams } from '@/lib/router';
 
-type Seccion = 'socios' | 'promos' | 'tickets' | 'estadisticas';
+type Seccion = 'socios' | 'carta' | 'promos' | 'tickets' | 'estadisticas';
 
 const TABS: { id: Seccion; label: string; icon: typeof Users }[] = [
   { id: 'socios', label: 'Socios', icon: Users },
+  { id: 'carta', label: 'Carta', icon: BookOpen },
   { id: 'promos', label: 'Promos', icon: Megaphone },
   { id: 'tickets', label: 'Tickets', icon: TicketIcon },
   { id: 'estadisticas', label: 'Estadísticas', icon: BarChart3 },
@@ -26,7 +28,13 @@ function seccionFromUrl(): Seccion {
 /** Panel del club (#/admin?seccion=…): socios, promos, tickets y estadísticas. Solo admins (AdminRoute). */
 export function AdminPage() {
   const [seccion, setSeccion] = useState<Seccion>(seccionFromUrl);
-  const tabRefs = useRef<Record<Seccion, HTMLButtonElement | null>>({ socios: null, promos: null, tickets: null, estadisticas: null });
+  const tabRefs = useRef<Record<Seccion, HTMLButtonElement | null>>({
+    socios: null,
+    carta: null,
+    promos: null,
+    tickets: null,
+    estadisticas: null,
+  });
 
   // Los socios se cargan una vez y los comparten las pestañas (Tickets los usa para poner nombres).
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -121,6 +129,7 @@ export function AdminPage() {
               onReload={loadUsers}
             />
           )}
+          {seccion === 'carta' && <CartaSection />}
           {seccion === 'promos' && <PromosSection />}
           {seccion === 'tickets' && <TicketsSection users={users} />}
           {seccion === 'estadisticas' && <StatsSection />}

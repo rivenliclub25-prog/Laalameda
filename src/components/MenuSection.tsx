@@ -140,7 +140,14 @@ export function MenuSection() {
                         ))}
                       </div>
                       <div className="flex items-center gap-1.5 whitespace-nowrap">
-                        <span className="font-display text-lg font-semibold text-vino">{item.price}</span>
+                        {item.available === false && <span className="pend-badge">AGOTADO</span>}
+                        <span
+                          className={`font-display text-lg font-semibold ${
+                            item.available === false ? 'text-carbon/40 line-through' : 'text-vino'
+                          }`}
+                        >
+                          {item.price}
+                        </span>
                       </div>
                     </div>
                   );
