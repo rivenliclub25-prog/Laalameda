@@ -336,6 +336,11 @@ function CuentaView({
                 <p className="text-sm font-semibold text-carbon">
                   Ronda de {r.nombre ?? 'un socio'} · hace {minutosDesde(r.at, now)}
                 </p>
+                {r.aMano && (
+                  <p className="mt-1 inline-flex rounded-full border border-[#a86b00]/40 bg-[#a86b00]/10 px-2.5 py-0.5 text-xs font-semibold text-[#7a4e00]">
+                    Mesa elegida a mano (sin QR): comprueba que {r.nombre ?? 'el socio'} está en {mesa.nombre}
+                  </p>
+                )}
                 <ul className="mt-1.5 space-y-0.5 text-sm">
                   {r.lineas.map((l) => (
                     <li key={l.id} className="flex justify-between gap-3">

@@ -203,6 +203,8 @@ export interface LineaCuenta {
   /** Rondas pedidas por un socio desde la mesa (P4). */
   ronda: string | null;
   pedido_por_nombre: string | null;
+  /** Pedida eligiendo la mesa a mano, sin el QR (P6a): el camarero debe comprobarlo. */
+  mesa_a_mano: boolean;
 }
 
 export interface CuentaMesa {
@@ -233,7 +235,7 @@ export async function fetchMesas(): Promise<{ mesas: Mesa[]; error: string | nul
 }
 
 const CUENTA_COLS =
-  'id, mesa_id, estado, created_at, order_items(id, product_id, promo_id, tipo_linea, ticket_codigo, descuento_centimos, nombre, precio_unitario_centimos, cantidad, notas, estado, created_at, ronda, pedido_por_nombre)';
+  'id, mesa_id, estado, created_at, order_items(id, product_id, promo_id, tipo_linea, ticket_codigo, descuento_centimos, nombre, precio_unitario_centimos, cantidad, notas, estado, created_at, ronda, pedido_por_nombre, mesa_a_mano)';
 
 export async function fetchCuentasAbiertas(): Promise<{ cuentas: CuentaMesa[]; error: string | null }> {
   const { data, error } = await supabase.from('orders').select(CUENTA_COLS).eq('origen', 'mesa').eq('estado', 'abierta');
@@ -275,14 +277,16 @@ export const rechazarRonda = (orderId: string, ronda: string, motivo: string) =>
   rpc<number>('pos_rechazar_ronda', { p_order_id: orderId, p_ronda: ronda, p_motivo: motivo });
 
 /** Rondas pendientes de una cuenta, agrupadas (orden de llegada). */
-export function rondasPendientes(cuenta: CuentaMesa): { ronda: string; nombre: string | null; at: string; lineas: LineaCuenta[] }[] {
+export function rondasPendientes(
+  cuenta: CuentaMesa
+): { ronda: string; nombre: string | null; at: string; aMano: boolean; lineas: LineaCuenta[] }[] {
   const map = new Map<string, LineaCuenta[]>();
   for (const l of cuenta.order_items) {
     if (l.estado !== 'pendiente' || !l.ronda) continue;
     map.set(l.ronda, [...(map.get(l.ronda) ?? []), l]);
   }
   return [...map.entries()]
-    .map(([ronda, lineas]) => ({ ronda, nombre: lineas[0].pedido_por_nombre, at: lineas[0].created_at, lineas }))
+    .map(([ronda, lineas]) => ({ ronda, nombre: lineas[0].pedido_por_nombre, at: lineas[0].created_at, aMano: lineas.some((l) => l.mesa_a_mano), lineas }))
     .sort((a, b) => a.at.localeCompare(b.at));
 }
 

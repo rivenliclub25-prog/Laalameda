@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { Smartphone } from 'lucide-react';
 import { Reveal } from '@/components/Reveal';
-import { Notice } from '@/components/club/FormControls';
+import { Notice, focusRing } from '@/components/club/FormControls';
+import { routeHref } from '@/lib/router';
 import {
   formatPromotionDiscount,
   formatPromotionPrice,
@@ -30,6 +32,20 @@ export function MenuSection() {
             Precios por unidad. Copas servidas solas o con tónica/refresco.
           </p>
           <div className="divider-gold mt-4" />
+        </Reveal>
+
+        {/* Para socios que ya están en el bar: pedir desde el móvil eligiendo la mesa (#/pedir). */}
+        <Reveal className="mx-auto mb-8 max-w-[640px]">
+          <div className="flex flex-col items-center gap-3 rounded-r-md border border-vino/20 bg-white/70 px-5 py-4 text-center shadow-sm sm:flex-row sm:text-left">
+            <Smartphone size={28} className="shrink-0 text-vino" aria-hidden="true" />
+            <div className="flex-1">
+              <p className="font-semibold text-carbon">¿Estás en el bar?</p>
+              <p className="text-sm text-carbon/70">Si eres socio, pide desde tu móvil y el camarero te lo lleva a la mesa.</p>
+            </div>
+            <a href={routeHref('/pedir')} className={`btn-vino shrink-0 ${focusRing}`}>
+              Pedir
+            </a>
+          </div>
         </Reveal>
 
         {fromBackup && (

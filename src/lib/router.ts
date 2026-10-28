@@ -18,7 +18,8 @@ export type RoutePath =
   | '/mis-tickets'
   | '/canjear'
   | '/pos'
-  | '/mesa';
+  | '/mesa'
+  | '/pedir';
 
 const routes: RoutePath[] = [
   '/qr',
@@ -32,6 +33,7 @@ const routes: RoutePath[] = [
   '/canjear',
   '/pos',
   '/mesa',
+  '/pedir',
 ];
 
 export interface Route {

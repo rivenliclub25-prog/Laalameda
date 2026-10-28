@@ -23,7 +23,8 @@ export function ClubPage() {
   // "#/club?modo=login&promo=<id>": viene del botón "Obtener ticket" de una promo.
   // "#/club?modo=login&volver=canjear&c=<código>": un camarero que escaneó un QR sin haber iniciado sesión.
   // "#/club?modo=login&volver=mesa&m=<token>": un cliente que quiere pedir desde el QR de su mesa.
-  const [{ initialMode, promoId, volverCanjear, codigo, mesaToken }] = useState(() => {
+  // "#/club?modo=login&volver=pedir": un cliente que quiere pedir desde la carta (elige la mesa después).
+  const [{ initialMode, promoId, volverCanjear, codigo, mesaToken, volverPedir }] = useState(() => {
     const params = getHashParams();
     return {
       initialMode: (params.get('modo') === 'login' ? 'login' : 'registro') as Mode,
@@ -31,6 +32,7 @@ export function ClubPage() {
       promoId: /^[a-z0-9-]+$/.test(params.get('promo') ?? '') ? params.get('promo') : null,
       volverCanjear: params.get('volver') === 'canjear',
       codigo: parseScannedCode(params.get('c') ?? ''),
+      volverPedir: params.get('volver') === 'pedir',
       mesaToken:
         params.get('volver') === 'mesa' && /^[A-Za-z0-9_-]{8,64}$/.test(params.get('m') ?? '') ? params.get('m') : null,
     };
@@ -44,9 +46,10 @@ export function ClubPage() {
     if (!session) return;
     if (volverCanjear) navigate('/canjear', { replace: true, params: codigo ? { c: codigo } : undefined });
     else if (mesaToken) navigate('/mesa', { replace: true, params: { m: mesaToken } });
+    else if (volverPedir) navigate('/pedir', { replace: true });
     else if (promoId) window.location.replace(`#promo-${promoId}`);
     else navigate('/perfil', { replace: true });
-  }, [session, promoId, volverCanjear, codigo, mesaToken]);
+  }, [session, promoId, volverCanjear, codigo, mesaToken, volverPedir]);
 
   const changeMode = (next: Mode) => {
     setMode(next);
@@ -110,9 +113,13 @@ export function ClubPage() {
             </div>
           )}
 
-          {mesaToken && !notice && (
+          {(mesaToken || volverPedir) && !notice && (
             <div className="mb-5">
-              <Notice kind="info">Inicia sesión o hazte socio para enviar tu pedido. Lo que has elegido se guarda.</Notice>
+              <Notice kind="info">
+                {mesaToken
+                  ? 'Inicia sesión o hazte socio para enviar tu pedido. Lo que has elegido se guarda.'
+                  : 'Inicia sesión o hazte socio para pedir desde tu mesa.'}
+              </Notice>
             </div>
           )}
 

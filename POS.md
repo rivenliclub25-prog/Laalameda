@@ -8,7 +8,7 @@ Este documento es la especificación viva de la **fase POS** de la web de La Ala
 - Al decidir algo se anota la decisión y la fecha. Si cambia la propuesta, se actualizan las secciones afectadas y se apunta en el **Historial** (al final).
 - No se programa ninguna fase hasta que estén 🟢 las decisiones de las que depende (ver «Fases»).
 
-Última actualización: 2026-10-28 · Estado: **P5 cerrada (probada). Siguiente: P6 (panel e informes) y pedir sin QR**, pendiente de aprobar su plan.
+Última actualización: 2026-10-28 · Estado: **P6a (pedir desde la carta eligiendo la mesa) programada, pendiente de que el usuario ejecute `pos-pedir-sin-qr.sql` y la pruebe. Después: P6b (cierre de jornada e informes).**
 
 ---
 
@@ -498,6 +498,35 @@ No se borra nada ahora. Cuando la carta y las promos lean de Supabase y estén p
 
 - **Cierre (2026-10-28):** `pos-promos.sql` ejecutado en Supabase y probado por el usuario: todo correcto.
 
+### Plan de P6 (aprobado el 2026-10-28 con las recomendaciones)
+
+P6 se divide en dos partes, con pausa para probar entre ellas:
+
+- **P6a — Pedir desde la carta eligiendo la mesa** (petición del usuario): en la carta, «¿Estás en el bar?» → `#/pedir` → el socio elige su mesa (Mesa 1–4) y pide igual que con el QR.
+  - Riesgo asumido: sin QR no hay prueba de estar en la mesa. Se cubre con la aceptación del camarero (las rondas siguen pendientes), la marca **«Mesa elegida a mano»** en el TPV y los mismos límites. La lista de mesas nunca incluye el código del QR.
+- **P6b — Cierre de jornada e informes**, con estas decisiones:
+  1. Cierran la jornada camareros y admins; los informes solo los ven los admins.
+  2. No se cierra con mesas abiertas (hay que cobrarlas o cancelarlas).
+  3. Las ventas posteriores al cierre no bloquean el TPV: el cierre avisa y se puede volver a cerrar (se guarda la versión anterior).
+  4. Las devoluciones cuentan en el cierre del día en que se devuelve el dinero.
+  5. El efectivo contado es opcional; si se rellena, se muestra el descuadre.
+  6. Gráfico por horas con barras sencillas, sin librerías nuevas.
+  - Informes por producto, promo, camarero (con anulaciones), socio (solo nombre), hora y método. CSV de ventas (una fila por línea), cierres e informes.
+  - El SQL de limpieza previo a P7 borrará también los cierres de prueba.
+
+### Estado de P6a — pedir desde la carta (2026-10-28): 🟡 programada, falta probar
+
+- **`supabase/pos-pedir-sin-qr.sql`:**
+  - `order_items.mesa_a_mano`.
+  - `mesas_para_pedir()`: mesas activas (id, nombre, orden), solo con sesión y **sin el token del QR**.
+  - La lógica de `socio_pedir_ronda` pasa a `_socio_pedir_ronda` (interna), que usan `socio_pedir_ronda` (QR, mismos parámetros) y la nueva `socio_pedir_ronda_mesa(p_mesa_id, …)`, que marca las líneas como `mesa_a_mano`.
+- **Web:**
+  - Carta: aviso «¿Estás en el bar?» con el botón **Pedir** → `#/pedir`.
+  - `#/pedir` (`PedirPage`): sin sesión, pide iniciar sesión (`#/club?modo=login&volver=pedir`) y vuelve; con sesión, botones grandes con las mesas y «Seguir en Mesa N» (recordada en la pestaña).
+  - `#/mesa?n=<id>`: la misma página de pedir que con el QR, con «¿No es tu mesa? Cambiar».
+  - TPV: las rondas pedidas así muestran «Mesa elegida a mano (sin QR): comprueba que … está en …».
+- **Verificación:** 13 pruebas de SQL en PGlite (lista sin token y solo con sesión, pedido marcado a mano, doble envío, mesa desactivada o inventada, el QR sigue sin marca, límites compartidos con y sin QR, función interna cerrada). Las 26 de P4 y las 57 de P5 siguen pasando. Typecheck, lint y build.
+
 ### Respuestas al plan (2026-10-28)
 
 1. P1 se divide en **P1a y P1b**, con pausa para probar entre ellas.
@@ -537,3 +566,4 @@ No se borra nada ahora. Cuando la carta y las promos lean de Supabase y estén p
 - **2026-10-28** — P4 cerrada tras la prueba del usuario. Plan de P5 aprobado con las recomendaciones.
 - **2026-10-28** — P5 programada (promos y tickets en las ventas), a la espera de prueba.
 - **2026-10-28** — P5 cerrada tras la prueba del usuario. Nueva petición: pedir desde la carta eligiendo la mesa (sin escanear el QR).
+- **2026-10-28** — Plan de P6 aprobado (P6a pedir desde la carta + P6b cierre e informes). P6a programada, a la espera de prueba.

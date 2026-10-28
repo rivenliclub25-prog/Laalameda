@@ -22,6 +22,7 @@ import { MisTicketsPage } from '@/pages/MisTicketsPage';
 import { CanjearPage } from '@/pages/CanjearPage';
 import { PosPage } from '@/pages/PosPage';
 import { MesaPage } from '@/pages/MesaPage';
+import { PedirPage } from '@/pages/PedirPage';
 import { CamareroRoute } from '@/auth/CamareroRoute';
 import { ClubPage } from '@/pages/ClubPage';
 import { RecuperarPage } from '@/pages/RecuperarPage';
@@ -135,6 +136,8 @@ function App() {
       );
     case '/mesa':
       return <MesaPage />;
+    case '/pedir':
+      return <PedirPage />;
     case '/admin':
       return (
         <AdminRoute>

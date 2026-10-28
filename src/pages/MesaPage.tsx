@@ -3,11 +3,11 @@ import { CheckCircle2, Clock, Gift, Loader2, LogIn, Minus, Plus, Send, Ticket, X
 import { PageShell } from '@/components/club/PageShell';
 import { ClubCard, Notice, focusRing } from '@/components/club/FormControls';
 import { useAuth } from '@/auth/AuthContext';
-import { getHashParams, routeHref } from '@/lib/router';
+import { getHashParams, navigate, routeHref } from '@/lib/router';
 import { useCatalog } from '@/lib/catalog';
 import { TIPOS_PROMO, formatEuros, newRequestId, promosParaVender, type PromoVenta } from '@/lib/pos';
 import { usePromoStates } from '@/lib/tickets';
-import { fetchMisPedidos, mesaInfo, pedirRonda, type MesaInfo, type MiPedido } from '@/lib/mesaPedido';
+import { fetchMisPedidos, mesaInfo, mesasParaPedir, pedirRonda, pedirRondaMesa, type MesaInfo, type MiPedido } from '@/lib/mesaPedido';
 import { subscribeChanges } from '@/lib/realtime';
 import { useScrollLock } from '@/lib/useScrollLock';
 
@@ -71,16 +71,31 @@ function estadoDeRonda(lineas: MiPedido[]): MiPedido['estado'] {
   return 'servida';
 }
 
-/** "#/mesa?m=<token>": un socio pide desde la mesa leyendo su QR. Se paga al camarero al final. */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Cómo se llegó a la mesa: leyendo su QR o eligiéndola a mano desde la carta (#/pedir). */
+type Origen = { kind: 'qr'; token: string } | { kind: 'mano'; mesaId: string };
+
+/**
+ * "#/mesa?m=<token>": un socio pide desde la mesa leyendo su QR.
+ * "#/mesa?n=<id>": la eligió a mano en #/pedir (el TPV lo marca para que el camarero lo compruebe).
+ * Se paga al camarero al final.
+ */
 export function MesaPage() {
-  const [token] = useState(() => {
-    const m = getHashParams().get('m') ?? '';
-    return /^[A-Za-z0-9_-]{8,64}$/.test(m) ? m : null;
+  const [origen] = useState<Origen | null>(() => {
+    const params = getHashParams();
+    const m = params.get('m') ?? '';
+    if (/^[A-Za-z0-9_-]{8,64}$/.test(m)) return { kind: 'qr', token: m };
+    const n = params.get('n') ?? '';
+    return UUID.test(n) ? { kind: 'mano', mesaId: n } : null;
   });
+  // Clave del carrito guardado en la pestaña.
+  const token = origen ? (origen.kind === 'qr' ? origen.token : `n-${origen.mesaId}`) : null;
   const { session, user, loading: authLoading } = useAuth();
   const { catalog } = useCatalog();
   const { states } = usePromoStates();
 
+  const uidActual = user?.id ?? null;
   const [mesa, setMesa] = useState<MesaInfo | null>(null);
   const [mesaState, setMesaState] = useState<'cargando' | 'ok' | 'invalida' | 'error'>(token ? 'cargando' : 'invalida');
   const [mesaError, setMesaError] = useState<string | null>(null);
@@ -96,9 +111,30 @@ export function MesaPage() {
   const [pedidos, setPedidos] = useState<MiPedido[]>([]);
 
   const loadMesa = useCallback(async () => {
-    if (!token) return;
+    if (!origen) return;
+    if (origen.kind === 'mano') {
+      // Elegir la mesa a mano exige sesión: sin ella, se vuelve a #/pedir (que pide iniciar sesión).
+      if (authLoading) return;
+      if (!uidActual) {
+        navigate('/pedir', { replace: true });
+        return;
+      }
+      setMesaState('cargando');
+      const { mesas, error } = await mesasParaPedir();
+      const found = mesas.find((m) => m.id === origen.mesaId);
+      if (error) {
+        setMesaError(error);
+        setMesaState('error');
+      } else if (!found) {
+        setMesaState('invalida');
+      } else {
+        setMesa({ id: found.id, nombre: found.nombre, activa: true });
+        setMesaState('ok');
+      }
+      return;
+    }
     setMesaState('cargando');
-    const { mesa: info, error } = await mesaInfo(token);
+    const { mesa: info, error } = await mesaInfo(origen.token);
     if (error) {
       setMesaError(error);
       setMesaState('error');
@@ -108,7 +144,7 @@ export function MesaPage() {
       setMesa(info);
       setMesaState('ok');
     }
-  }, [token]);
+  }, [origen, authLoading, uidActual]);
 
   useEffect(() => {
     loadMesa();
@@ -194,16 +230,18 @@ export function MesaPage() {
   };
 
   const enviar = async () => {
-    if (!token || enviando || lineas.length === 0) return;
+    if (!origen || enviando || lineas.length === 0) return;
     // El mismo id en los reintentos: si la primera llegó, la base de datos no la duplica.
     requestIdRef.current ??= newRequestId();
     setEnviando(true);
     setEnvioError(null);
-    const { ok, error } = await pedirRonda(
-      token,
-      lineas.map((l) => (l.promo ? { promo_id: l.promo.id, cantidad: l.cantidad } : { product_id: Number(l.key), cantidad: l.cantidad })),
-      requestIdRef.current
+    const items = lineas.map((l) =>
+      l.promo ? { promo_id: l.promo.id, cantidad: l.cantidad } : { product_id: Number(l.key), cantidad: l.cantidad }
     );
+    const { ok, error } =
+      origen.kind === 'qr'
+        ? await pedirRonda(origen.token, items, requestIdRef.current)
+        : await pedirRondaMesa(origen.mesaId, items, requestIdRef.current);
     setEnviando(false);
     if (!ok) {
       setEnvioError(error);
@@ -249,8 +287,13 @@ export function MesaPage() {
             ) : (
               <div className="py-4 text-center">
                 <XCircle size={40} className="mx-auto text-vino" aria-hidden="true" />
-                <h1 className="mt-3 font-display text-2xl font-semibold text-vino">Este QR no es válido</h1>
+                <h1 className="mt-3 font-display text-2xl font-semibold text-vino">
+                  {origen?.kind === 'mano' ? 'Esa mesa ya no está disponible' : 'Este QR no es válido'}
+                </h1>
                 <p className="mt-2 text-carbon/75">Pide ayuda al camarero.</p>
+                <a href={routeHref('/pedir')} className={`btn-outline-vino mt-4 inline-flex ${focusRing}`}>
+                  Elegir mi mesa
+                </a>
               </div>
             )}
           </ClubCard>
@@ -259,7 +302,8 @@ export function MesaPage() {
     );
   }
 
-  const loginHref = routeHref('/club', { modo: 'login', volver: 'mesa', m: token! });
+  const loginHref =
+    origen?.kind === 'qr' ? routeHref('/club', { modo: 'login', volver: 'mesa', m: origen.token }) : routeHref('/club', { modo: 'login', volver: 'pedir' });
 
   return (
     <PageShell>
@@ -267,6 +311,11 @@ export function MesaPage() {
         <div className="text-center">
           <div className="eyebrow text-vino">Pedir desde la mesa</div>
           <h1 className="mt-2 font-display text-[2.2rem] font-semibold leading-tight text-vino">Estás en {mesa!.nombre}</h1>
+          {origen?.kind === 'mano' && (
+            <a href={routeHref('/pedir')} className={`mt-1 inline-block text-sm font-semibold text-vino underline-offset-4 hover:underline ${focusRing}`}>
+              ¿No es tu mesa? Cambiar
+            </a>
+          )}
           <p className="mt-2 text-carbon/75">Elige, envía la ronda y el camarero te la trae. Se paga al camarero al final.</p>
           {promos.length === 0 && (
             <a href="#promos" className={`mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-vino underline-offset-4 hover:underline ${focusRing}`}>
