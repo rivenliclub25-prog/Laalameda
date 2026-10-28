@@ -8,7 +8,7 @@ Este documento es la especificación viva de la **fase POS** de la web de La Ala
 - Al decidir algo se anota la decisión y la fecha. Si cambia la propuesta, se actualizan las secciones afectadas y se apunta en el **Historial** (al final).
 - No se programa ninguna fase hasta que estén 🟢 las decisiones de las que depende (ver «Fases»).
 
-Última actualización: 2026-10-28 · Estado: **P6a cerrada (probada). P6b (cierre de jornada e informes) programada, pendiente de que el usuario ejecute `pos-informes.sql` y la pruebe.**
+Última actualización: 2026-10-28 · Estado: **En pausa (2026-10-28).** P6a cerrada. P6b (cierre de jornada e informes) programada, pendiente de que el usuario ejecute `pos-informes.sql` y la pruebe. Mientras, se trabaja en el inicio de sesión con Google en la rama `google-auth` (desde `main`). Al retomar: mezclar `main` en `pos`, probar y cerrar P6b, y seguir con P7. Fecha de publicación del POS: no antes del 2026-11-02, exacta sin decidir.
 
 ---
 
@@ -584,3 +584,4 @@ P6 se divide en dos partes, con pausa para probar entre ellas:
 - **2026-10-28** — P5 cerrada tras la prueba del usuario. Nueva petición: pedir desde la carta eligiendo la mesa (sin escanear el QR).
 - **2026-10-28** — Plan de P6 aprobado (P6a pedir desde la carta + P6b cierre e informes). P6a programada, a la espera de prueba.
 - **2026-10-28** — P6a cerrada tras la prueba del usuario. P6b programada, a la espera de prueba.
+- **2026-10-28** — POS en pausa para hacer el inicio de sesión con Google en la rama `google-auth` (se publicará antes que el POS). La fecha de publicación del POS queda sin decidir (no antes del 2026-11-02).
