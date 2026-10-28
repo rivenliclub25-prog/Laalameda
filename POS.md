@@ -8,7 +8,7 @@ Este documento es la especificación viva de la **fase POS** de la web de La Ala
 - Al decidir algo se anota la decisión y la fecha. Si cambia la propuesta, se actualizan las secciones afectadas y se apunta en el **Historial** (al final).
 - No se programa ninguna fase hasta que estén 🟢 las decisiones de las que depende (ver «Fases»).
 
-Última actualización: 2026-10-28 · Estado: **P5 programada (promos y tickets en las ventas), pendiente de que el usuario ejecute `pos-promos.sql` y la pruebe.**
+Última actualización: 2026-10-28 · Estado: **P5 cerrada (probada). Siguiente: P6 (panel e informes) y pedir sin QR**, pendiente de aprobar su plan.
 
 ---
 
@@ -473,7 +473,7 @@ No se borra nada ahora. Cuando la carta y las promos lean de Supabase y estén p
 - **Verificación:** 26 pruebas de SQL en PGlite (un no socio no puede pedir, un socio no ve líneas ajenas aunque estén en su mesa, límites, doble envío, aceptar/rechazar, cobro bloqueado con rondas pendientes) y typecheck, lint y build. 
 - **Cierre (2026-10-28):** `pos-pedidos.sql` ejecutado en Supabase y probado por el usuario: todo correcto.
 
-### Estado de P5 — promos y tickets en las ventas (2026-10-28): 🟡 programada, falta probar
+### Estado de P5 — promos y tickets en las ventas (2026-10-28): ✅ cerrada
 
 - **Plan aprobado con las recomendaciones:**
   - Una promo sin precio no se puede vender.
@@ -495,6 +495,8 @@ No se borra nada ahora. Cuando la carta y las promos lean de Supabase y estén p
   - Panel → Ventas: ahorro en promos en el resumen y en cada venta. Panel → Tickets: nº de la venta donde se usó cada ticket.
 - **Desviación del plan:** «ya usada» no se muestra por adelantado en la mesa (la web no conoce el límite de cada promo). Si el socio ya la ha usado, al enviar la ronda sale el aviso del límite.
 - **Verificación:** 57 pruebas de SQL en PGlite (mismo ticket nunca dos veces: en dos ventas, dos veces en la misma venta, TPV y `#/canjear`, mesa reservada; límites desde el TPV y desde la mesa; horario; aceptar, rechazar, anular y cancelar con tickets; descuento calculado; bruto − descuentos = total; total = líneas vivas). Las suites anteriores (34 de tickets, 24 de P2, 31 de P3 y 26 de P4) siguen pasando con `pos-promos.sql` cargado. Typecheck, lint y build.
+
+- **Cierre (2026-10-28):** `pos-promos.sql` ejecutado en Supabase y probado por el usuario: todo correcto.
 
 ### Respuestas al plan (2026-10-28)
 
@@ -534,3 +536,4 @@ No se borra nada ahora. Cuando la carta y las promos lean de Supabase y estén p
 - **2026-10-28** — P4 programada (pedido del socio desde la mesa), a la espera de prueba.
 - **2026-10-28** — P4 cerrada tras la prueba del usuario. Plan de P5 aprobado con las recomendaciones.
 - **2026-10-28** — P5 programada (promos y tickets en las ventas), a la espera de prueba.
+- **2026-10-28** — P5 cerrada tras la prueba del usuario. Nueva petición: pedir desde la carta eligiendo la mesa (sin escanear el QR).
