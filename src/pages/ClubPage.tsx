@@ -170,7 +170,10 @@ export function ClubPage() {
             )}
           </div>
 
-          <GoogleButton disabled={!configured} />
+          <GoogleButton
+            disabled={!configured}
+            volver={mesaToken ? routeHref('/mesa', { m: mesaToken }) : volverPedir ? routeHref('/pedir') : undefined}
+          />
         </ClubCard>
       </div>
     </PageShell>
@@ -388,7 +391,7 @@ function GoogleIcon() {
   );
 }
 
-function GoogleButton({ disabled }: { disabled: boolean }) {
+function GoogleButton({ disabled, volver }: { disabled: boolean; volver?: string }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const available = googleEnabled && !disabled;
@@ -396,7 +399,7 @@ function GoogleButton({ disabled }: { disabled: boolean }) {
   const handleClick = async () => {
     setLoading(true);
     setError(null);
-    const result = await signInWithGoogle();
+    const result = await signInWithGoogle(volver);
     // Si va bien, el navegador se va a Google; solo volvemos aquí si hay error.
     if (result.error) {
       setError(result.error);

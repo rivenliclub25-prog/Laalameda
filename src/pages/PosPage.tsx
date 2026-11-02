@@ -1,5 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronUp, ClipboardCheck, Loader2, Minus, Plus, RefreshCw, ShoppingBag, Ticket, Trash2, Volume2, VolumeX, X } from 'lucide-react';
+import {
+  ChevronUp,
+  ClipboardCheck,
+  Loader2,
+  Maximize2,
+  Minimize2,
+  Minus,
+  Plus,
+  RefreshCw,
+  ShoppingBag,
+  Ticket,
+  Trash2,
+  Volume2,
+  VolumeX,
+  X,
+} from 'lucide-react';
 import { PageShell } from '@/components/club/PageShell';
 import { Notice, focusRing } from '@/components/club/FormControls';
 import { ProductPicker } from '@/components/pos/ProductPicker';
@@ -57,6 +72,38 @@ export function PosPage() {
   const [modo, setModo] = useState<Modo>(() => (getHashParams().get('modo') === 'barra' ? 'barra' : 'mesas'));
   const [soundOn, setSoundOn] = useState(loadSoundEnabled);
   const [cerrando, setCerrando] = useState(false);
+  // Pantalla completa (portátil táctil en la barra): sin el menú ni el pie de la web, a todo el ancho
+  // y, si el navegador lo permite, sin sus barras. Se sale con el botón o con Esc.
+  const [completa, setCompleta] = useState(false);
+
+  const entrarCompleta = async () => {
+    setCompleta(true);
+    try {
+      await document.documentElement.requestFullscreen?.();
+    } catch {
+      // Sin permiso o sin soporte (p. ej. iPhone): se queda el modo compacto igualmente.
+    }
+  };
+
+  const salirCompleta = async () => {
+    setCompleta(false);
+    if (document.fullscreenElement) {
+      try {
+        await document.exitFullscreen();
+      } catch {
+        // Ya había salido.
+      }
+    }
+  };
+
+  // Si se sale de la pantalla completa del navegador (Esc), se vuelve también a la vista normal.
+  useEffect(() => {
+    const onChange = () => {
+      if (!document.fullscreenElement) setCompleta(false);
+    };
+    document.addEventListener('fullscreenchange', onChange);
+    return () => document.removeEventListener('fullscreenchange', onChange);
+  }, []);
 
   const elegirModo = (m: Modo) => {
     setModo(m);
@@ -69,6 +116,84 @@ export function PosPage() {
       return !on;
     });
 
+  const roundButton = `flex h-12 shrink-0 items-center justify-center gap-2 rounded-full border border-carbon/20 bg-white text-sm font-semibold text-carbon/75 hover:border-vino hover:text-vino ${focusRing}`;
+
+  const botones = (
+    <div className="flex shrink-0 items-center gap-2">
+      <button type="button" onClick={() => setCerrando(true)} className={`${roundButton} px-4`}>
+        <ClipboardCheck size={18} aria-hidden="true" />
+        <span className="hidden sm:inline">Cerrar jornada</span>
+        <span className="sr-only sm:hidden">Cerrar jornada</span>
+      </button>
+      <button type="button" onClick={toggleSound} aria-pressed={soundOn} className={`${roundButton} w-12`}>
+        {soundOn ? <Volume2 size={20} aria-hidden="true" /> : <VolumeX size={20} aria-hidden="true" />}
+        <span className="sr-only">{soundOn ? 'Silenciar sonido' : 'Activar sonido'}</span>
+      </button>
+      <button
+        type="button"
+        onClick={completa ? salirCompleta : entrarCompleta}
+        aria-pressed={completa}
+        className={`${roundButton} ${completa ? 'w-12 border-vino text-vino' : 'px-4'}`}
+      >
+        {completa ? <Minimize2 size={20} aria-hidden="true" /> : <Maximize2 size={18} aria-hidden="true" />}
+        {!completa && <span className="hidden sm:inline">Pantalla completa</span>}
+        <span className={completa ? 'sr-only' : 'sr-only sm:hidden'}>{completa ? 'Salir de pantalla completa' : 'Pantalla completa'}</span>
+      </button>
+    </div>
+  );
+
+  const pestanas = (
+    <div role="tablist" aria-label="Modo del TPV" className={`grid grid-cols-2 rounded-r-sm bg-piedra-suave p-1 ${completa ? 'w-[300px]' : 'mt-4 max-w-[360px]'}`}>
+      {(['mesas', 'barra'] as Modo[]).map((m) => (
+        <button
+          key={m}
+          type="button"
+          role="tab"
+          aria-selected={modo === m}
+          onClick={() => elegirModo(m)}
+          className={`rounded-r-sm px-3 font-semibold transition-all ${completa ? 'py-3 text-base' : 'py-2.5 text-sm'} ${focusRing} ${
+            modo === m ? 'bg-vino text-white shadow-sm' : 'text-carbon/70 hover:text-vino'
+          }`}
+        >
+          {m === 'mesas' ? 'Mesas' : 'Barra'}
+        </button>
+      ))}
+    </div>
+  );
+
+  const contenido = (
+    <>
+      {cerrando && <CierreJornadaModal onClose={() => setCerrando(false)} />}
+
+      {fromBackup && (
+        <div className="mb-4">
+          <Notice kind="error">
+            Sin conexión con la base de datos: se muestra una copia de la carta. Los cobros no funcionarán hasta que vuelva.
+          </Notice>
+        </div>
+      )}
+
+      {modo === 'mesas' ? (
+        <MesasPanel tabs={tabs} promos={promos} catalogLoading={!catalog} soundOn={soundOn} />
+      ) : (
+        <BarraPanel tabs={tabs} promos={promos} catalogLoading={!catalog} soundOn={soundOn} completa={completa} />
+      )}
+    </>
+  );
+
+  if (completa) {
+    return (
+      <main className="min-h-[100dvh] bg-marfil px-3 pb-4 pt-3 sm:px-5">
+        <header className="mb-4 flex flex-wrap items-center gap-3 border-b border-piedra/50 pb-3">
+          <h1 className="font-display text-2xl font-semibold text-vino">TPV</h1>
+          {pestanas}
+          <div className="ml-auto">{botones}</div>
+        </header>
+        {contenido}
+      </main>
+    );
+  }
+
   return (
     <PageShell>
       <div className="mx-auto max-w-container">
@@ -77,60 +202,11 @@ export function PosPage() {
             <div className="eyebrow text-vino">Personal del bar</div>
             <h1 className="mt-2 font-display text-[2.2rem] font-semibold leading-[1.05] text-vino sm:text-[2.6rem]">TPV</h1>
           </div>
-          <div className="mt-1 flex shrink-0 items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setCerrando(true)}
-              className={`flex h-12 items-center gap-2 rounded-full border border-carbon/20 bg-white px-4 text-sm font-semibold text-carbon/75 hover:border-vino hover:text-vino ${focusRing}`}
-            >
-              <ClipboardCheck size={18} aria-hidden="true" />
-              <span className="hidden sm:inline">Cerrar jornada</span>
-              <span className="sr-only sm:hidden">Cerrar jornada</span>
-            </button>
-            <button
-              type="button"
-              onClick={toggleSound}
-              aria-pressed={soundOn}
-              className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-carbon/20 bg-white text-carbon/70 hover:text-vino ${focusRing}`}
-            >
-              {soundOn ? <Volume2 size={20} aria-hidden="true" /> : <VolumeX size={20} aria-hidden="true" />}
-              <span className="sr-only">{soundOn ? 'Silenciar sonido' : 'Activar sonido'}</span>
-            </button>
-          </div>
+          <div className="mt-1">{botones}</div>
         </header>
-        {cerrando && <CierreJornadaModal onClose={() => setCerrando(false)} />}
-
-        <div role="tablist" aria-label="Modo del TPV" className="mt-4 grid max-w-[360px] grid-cols-2 rounded-r-sm bg-piedra-suave p-1">
-          {(['mesas', 'barra'] as Modo[]).map((m) => (
-            <button
-              key={m}
-              type="button"
-              role="tab"
-              aria-selected={modo === m}
-              onClick={() => elegirModo(m)}
-              className={`rounded-r-sm px-3 py-2.5 text-sm font-semibold transition-all ${focusRing} ${
-                modo === m ? 'bg-vino text-white shadow-sm' : 'text-carbon/70 hover:text-vino'
-              }`}
-            >
-              {m === 'mesas' ? 'Mesas' : 'Barra'}
-            </button>
-          ))}
-        </div>
+        {pestanas}
         <div className="divider-gold mb-5 ml-0 mt-4" />
-
-        {fromBackup && (
-          <div className="mb-4">
-            <Notice kind="error">
-              Sin conexión con la base de datos: se muestra una copia de la carta. Los cobros no funcionarán hasta que vuelva.
-            </Notice>
-          </div>
-        )}
-
-        {modo === 'mesas' ? (
-          <MesasPanel tabs={tabs} promos={promos} catalogLoading={!catalog} soundOn={soundOn} />
-        ) : (
-          <BarraPanel tabs={tabs} promos={promos} catalogLoading={!catalog} soundOn={soundOn} />
-        )}
+        {contenido}
       </div>
     </PageShell>
   );
@@ -145,11 +221,14 @@ function BarraPanel({
   promos,
   catalogLoading,
   soundOn,
+  completa,
 }: {
   tabs: MenuTab[];
   promos: PromoVenta[];
   catalogLoading: boolean;
   soundOn: boolean;
+  /** Pantalla completa: sin el menú de la web encima. */
+  completa: boolean;
 }) {
   const [cart, setCart] = useState<CartLine[]>([]);
   const [pidiendoTicket, setPidiendoTicket] = useState<PromoVenta | null>(null);
@@ -278,7 +357,7 @@ function BarraPanel({
           />
           <UltimasVentas ventas={ultimas} onRefresh={loadUltimas} />
         </section>
-        <aside className="hidden lg:sticky lg:top-24 lg:block" aria-label="Pedido">
+        <aside className={`hidden lg:sticky lg:block ${completa ? 'lg:top-3' : 'lg:top-24'}`} aria-label="Pedido">
           {cartPanel}
         </aside>
       </div>

@@ -13,6 +13,17 @@ export function RouteLoading() {
 }
 
 /**
+ * Para páginas que se pueden ver sin sesión (pedir desde la mesa): si hay sesión pero la cuenta aún
+ * no ha aceptado la privacidad (alta con Google), muestra antes «Un último paso».
+ */
+export function PrivacyGate({ children }: { children: ReactNode }) {
+  const { session, roleLoading, privacidadPendiente } = useAuth();
+  if (session && roleLoading) return <RouteLoading />;
+  if (session && privacidadPendiente) return <UltimoPaso />;
+  return <>{children}</>;
+}
+
+/**
  * Muestra su contenido solo con sesión iniciada; si no, lleva a la página de acceso. Si la cuenta
  * aún no ha aceptado la privacidad (alta con Google), muestra antes «Un último paso».
  */

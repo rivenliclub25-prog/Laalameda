@@ -15,7 +15,7 @@ import { ReserveModal } from '@/components/ReserveModal';
 import { Watermark } from '@/components/Watermark';
 import { QRPage } from '@/components/QRPage';
 import { ClubSection } from '@/components/ClubSection';
-import { ProtectedRoute } from '@/auth/ProtectedRoute';
+import { PrivacyGate, ProtectedRoute } from '@/auth/ProtectedRoute';
 import { AdminRoute } from '@/auth/AdminRoute';
 import { AdminPage } from '@/pages/AdminPage';
 import { MisTicketsPage } from '@/pages/MisTicketsPage';
@@ -135,9 +135,17 @@ function App() {
         </CamareroRoute>
       );
     case '/mesa':
-      return <MesaPage />;
+      return (
+        <PrivacyGate>
+          <MesaPage />
+        </PrivacyGate>
+      );
     case '/pedir':
-      return <PedirPage />;
+      return (
+        <PrivacyGate>
+          <PedirPage />
+        </PrivacyGate>
+      );
     case '/admin':
       return (
         <AdminRoute>

@@ -22,7 +22,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
 
       const callback = consumeAuthCallback();
-      const fromGoogle = consumeGoogleFlag();
+      const { fromGoogle, volver } = consumeGoogleFlag();
       if (!callback) return;
 
       // Supabase puede dejar parámetros en la query (?error=…); se limpian para que no reaparezcan al recargar.
@@ -48,7 +48,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (callback.type === 'signup') {
           setNotice({ kind: 'success', text: '¡Email confirmado! Ya formas parte del club de La Alameda.' });
         }
-        navigate('/perfil', { replace: true });
+        // Con Google, si estaba pidiendo desde una mesa, vuelve a ella (como al entrar con email).
+        if (fromGoogle && volver) window.location.replace(volver);
+        else navigate('/perfil', { replace: true });
       }
     });
 

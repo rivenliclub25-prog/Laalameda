@@ -46,27 +46,34 @@ export async function signIn(email: string, password: string): Promise<AuthResul
 /** El proveedor Google está activado en Supabase (ver «Inicio de sesión con Google» en README.md). */
 export const googleEnabled = true;
 
-/** Marca que la vuelta a la web viene de Google (para traducir bien sus errores, p. ej. si se cancela). */
+/**
+ * Marca que la vuelta a la web viene de Google (para traducir bien sus errores, p. ej. si se cancela)
+ * y, si el socio estaba pidiendo desde una mesa, a qué página volver en lugar del perfil.
+ */
 const GOOGLE_FLAG = 'alameda-google-login';
+/** Solo se vuelve a páginas para pedir (#/mesa…, #/pedir): nunca a una dirección cualquiera. */
+const VOLVER_PERMITIDO = /^#\/(mesa\?[mn]=[A-Za-z0-9_-]{8,64}|pedir)$/;
 
-export function consumeGoogleFlag(): boolean {
+export function consumeGoogleFlag(): { fromGoogle: boolean; volver: string | null } {
   try {
-    const was = window.sessionStorage.getItem(GOOGLE_FLAG) === '1';
+    const value = window.sessionStorage.getItem(GOOGLE_FLAG);
     window.sessionStorage.removeItem(GOOGLE_FLAG);
-    return was;
+    if (!value) return { fromGoogle: false, volver: null };
+    return { fromGoogle: true, volver: VOLVER_PERMITIDO.test(value) ? value : null };
   } catch {
-    return false;
+    return { fromGoogle: false, volver: null };
   }
 }
 
 /**
  * Entrar o registrarse con Google. El navegador se va a Google y vuelve a la web con la sesión.
  * Si el email ya tiene cuenta (con contraseña), Supabase la une: entra en la misma cuenta.
+ * Después va al perfil, salvo que se pase `volver` (pedir desde una mesa: «#/mesa?m=…» o «#/pedir»).
  */
-export async function signInWithGoogle(): Promise<AuthResult> {
+export async function signInWithGoogle(volver?: string): Promise<AuthResult> {
   if (!isSupabaseConfigured) return notConfigured;
   try {
-    window.sessionStorage.setItem(GOOGLE_FLAG, '1');
+    window.sessionStorage.setItem(GOOGLE_FLAG, volver ?? '1');
   } catch {
     // Sin almacenamiento: solo se pierde el mensaje específico si se cancela.
   }

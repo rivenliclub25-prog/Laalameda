@@ -544,6 +544,10 @@ P6 se divide en dos partes, con pausa para probar entre ellas:
 - **Cierre (2026-11-02):** `pos-informes.sql` ejecutado en Supabase y probado por el usuario: todo correcto.
 - **Para P7:** el SQL de limpieza de las ventas de prueba debe borrar también `cierres_jornada` (desactivando un momento su trigger de inmutabilidad).
 
+- **Después de mezclar `main` (2026-11-02):**
+  - **TPV a pantalla completa** (portátil táctil): botón «Pantalla completa» en la cabecera del TPV. Usa la pantalla completa del navegador y oculta el menú y el pie de la web; cabecera compacta con las pestañas Mesas/Barra más grandes. Se sale con el botón o con Esc (en iPhone, sin pantalla completa del navegador, queda el modo compacto).
+  - **Google al pedir desde la mesa:** quien entra con Google desde `#/mesa` o `#/pedir` vuelve a esa página (como con email), no al perfil; en el resto de casos, al perfil. `#/mesa` y `#/pedir` muestran también «Un último paso» a las cuentas nuevas de Google (`PrivacyGate`).
+
 ### Respuestas al plan (2026-10-28)
 
 1. P1 se divide en **P1a y P1b**, con pausa para probar entre ellas.
