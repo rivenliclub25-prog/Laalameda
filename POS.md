@@ -8,7 +8,7 @@ Este documento es la especificación viva de la **fase POS** de la web de La Ala
 - Al decidir algo se anota la decisión y la fecha. Si cambia la propuesta, se actualizan las secciones afectadas y se apunta en el **Historial** (al final).
 - No se programa ninguna fase hasta que estén 🟢 las decisiones de las que depende (ver «Fases»).
 
-Última actualización: 2026-10-28 · Estado: **En pausa (2026-10-28).** P6a cerrada. P6b (cierre de jornada e informes) programada, pendiente de que el usuario ejecute `pos-informes.sql` y la pruebe. Mientras, se trabaja en el inicio de sesión con Google en la rama `google-auth` (desde `main`). Al retomar: mezclar `main` en `pos`, probar y cerrar P6b, y seguir con P7. Fecha de publicación del POS: no antes del 2026-11-02, exacta sin decidir.
+Última actualización: 2026-11-02 · Estado: **P6b cerrada (probada el 2026-11-02). Siguiente: P7 (puesta en marcha).** Se trae `main` (inicio de sesión con Google) a `pos` y se añade el modo pantalla completa del TPV.
 
 ---
 
@@ -529,7 +529,7 @@ P6 se divide en dos partes, con pausa para probar entre ellas:
 
 - **Cierre (2026-10-28):** `pos-pedir-sin-qr.sql` ejecutado en Supabase y probado por el usuario: todo correcto.
 
-### Estado de P6b — cierre de jornada e informes (2026-10-28): 🟡 programada, falta probar
+### Estado de P6b — cierre de jornada e informes (2026-10-28): ✅ cerrada
 
 - **`supabase/pos-informes.sql`:**
   - Tabla `cierres_jornada` (inmutable; varias versiones por jornada): ventas, cobrado, devuelto, neto, ahorro en promos, efectivo esperado, contado y descuadre, notas y el resumen completo en `resumen`.
@@ -541,6 +541,7 @@ P6 se divide en dos partes, con pausa para probar entre ellas:
   - Panel → Ventas con pestañas **Ventas · Cierres · Informes**. Ventas: botón **CSV** (una fila por línea). Cierres: lista con versiones, descuadre, hoja imprimible y CSV. Informes: periodos (hoy, ayer, 7 días, mes, fechas), resumen, comprobación «Cuadra», tablas con CSV y barras por hora.
   - CSV compartido en `src/lib/csv.ts` (el de socios lo usa también). Impresión de una sola zona con `printArea()` y `.print-area` (index.css).
 - **Verificación:** 38 pruebas de SQL en PGlite (cuadre por método, devolución de una venta de ayer contada hoy, mesas abiertas, descuadre, cierres inmutables y solo legibles por el personal, ventas después del cierre y nueva versión, admin no camarero puede cerrar, informe: líneas = cobrado, neto = cobrado − devuelto, por producto/promo/camarero/socio/hora, permisos). Typecheck, lint y build.
+- **Cierre (2026-11-02):** `pos-informes.sql` ejecutado en Supabase y probado por el usuario: todo correcto.
 - **Para P7:** el SQL de limpieza de las ventas de prueba debe borrar también `cierres_jornada` (desactivando un momento su trigger de inmutabilidad).
 
 ### Respuestas al plan (2026-10-28)
@@ -585,3 +586,4 @@ P6 se divide en dos partes, con pausa para probar entre ellas:
 - **2026-10-28** — Plan de P6 aprobado (P6a pedir desde la carta + P6b cierre e informes). P6a programada, a la espera de prueba.
 - **2026-10-28** — P6a cerrada tras la prueba del usuario. P6b programada, a la espera de prueba.
 - **2026-10-28** — POS en pausa para hacer el inicio de sesión con Google en la rama `google-auth` (se publicará antes que el POS). La fecha de publicación del POS queda sin decidir (no antes del 2026-11-02).
+- **2026-11-02** — P6b cerrada tras la prueba del usuario. Se mezcla `main` (Google) en `pos` y se pide el TPV a pantalla completa (portátil táctil). Prueba en el bar al día siguiente.
