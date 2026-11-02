@@ -8,7 +8,7 @@ Este documento es la especificación viva de la **fase POS** de la web de La Ala
 - Al decidir algo se anota la decisión y la fecha. Si cambia la propuesta, se actualizan las secciones afectadas y se apunta en el **Historial** (al final).
 - No se programa ninguna fase hasta que estén 🟢 las decisiones de las que depende (ver «Fases»).
 
-Última actualización: 2026-11-02 · Estado: **P6b cerrada (probada el 2026-11-02). Siguiente: P7 (puesta en marcha).** Se trae `main` (inicio de sesión con Google) a `pos` y se añade el modo pantalla completa del TPV.
+Última actualización: 2026-11-02 · Estado: **P7 en curso: POS publicado en `main` el 2026-11-02** (plan A del usuario). Prueba en el bar el 2026-11-03. Antes, ejecutar `supabase/pos-limpieza-pruebas.sql`.
 
 ---
 
@@ -548,6 +548,14 @@ P6 se divide en dos partes, con pausa para probar entre ellas:
   - **TPV a pantalla completa** (portátil táctil): botón «Pantalla completa» en la cabecera del TPV. Usa la pantalla completa del navegador y oculta el menú y el pie de la web; cabecera compacta con las pestañas Mesas/Barra más grandes. Se sale con el botón o con Esc (en iPhone, sin pantalla completa del navegador, queda el modo compacto).
   - **Google al pedir desde la mesa:** quien entra con Google desde `#/mesa` o `#/pedir` vuelve a esa página (como con email), no al perfil; en el resto de casos, al perfil. `#/mesa` y `#/pedir` muestran también «Un último paso» a las cuentas nuevas de Google (`PrivacyGate`).
 
+### Estado de P7 — puesta en marcha (2026-11-02): 🟡 en curso
+
+- **Decisión del usuario (2026-11-02):** plan A — publicar el POS en `main` ya (la restricción era «no antes del 2026-11-02») y probarlo en el bar al día siguiente.
+- **Publicado en `main` el 2026-11-02** (mezcla directa de `pos`, que ya traía `main`).
+- **`supabase/pos-limpieza-pruebas.sql` (un solo uso):** borra ventas, cuentas, líneas, devoluciones, cierres, eventos y solicitudes; quita la protección de ventas, devoluciones y cierres solo durante el borrado; los tickets pierden el enlace a la venta; la numeración vuelve a 1. No toca carta, promos, mesas, socios, camareros, tickets ni ajustes. Probado en PGlite (6 pruebas). **El usuario debe ejecutarlo antes de la primera venta real.**
+- **Guía del camarero** (Claude Docs): «Guía del TPV para camareros · La Alameda» — https://claude.ai/artifact/CpcdTFzMfhbMginYvTxd3h
+- **Pendiente:** jornada piloto sin descuadres; copias de seguridad (P-7); revisar la wifi del bar; imprimir los QR de las mesas **desde la web publicada** (Panel → Mesas) para que apunten a la dirección real; dejar de usar el Excel de precios (la carta ya se edita en el panel).
+
 ### Respuestas al plan (2026-10-28)
 
 1. P1 se divide en **P1a y P1b**, con pausa para probar entre ellas.
@@ -590,4 +598,5 @@ P6 se divide en dos partes, con pausa para probar entre ellas:
 - **2026-10-28** — Plan de P6 aprobado (P6a pedir desde la carta + P6b cierre e informes). P6a programada, a la espera de prueba.
 - **2026-10-28** — P6a cerrada tras la prueba del usuario. P6b programada, a la espera de prueba.
 - **2026-10-28** — POS en pausa para hacer el inicio de sesión con Google en la rama `google-auth` (se publicará antes que el POS). La fecha de publicación del POS queda sin decidir (no antes del 2026-11-02).
+- **2026-11-02** — POS publicado en `main` (plan A). SQL de limpieza de ventas de prueba y guía del camarero entregados. Prueba en el bar el 2026-11-03.
 - **2026-11-02** — P6b cerrada tras la prueba del usuario. Se mezcla `main` (Google) en `pos` y se pide el TPV a pantalla completa (portátil táctil). Prueba en el bar al día siguiente.

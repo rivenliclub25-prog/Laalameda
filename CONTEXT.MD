@@ -120,14 +120,14 @@ Por último, añade un apartado aparte, para hacerlo más adelante, sobre cómo 
 
 ---
 
-# Estado actual (actualizado 2026-10-28)
+# Estado actual (actualizado 2026-11-02)
 
 **Proyecto de Supabase en uso: `hinebaxynlpjisteuaus`.** Es el de `.env` y el de los GitHub Secrets, y el de la web publicada (comprobado el 2026-10-23). El otro proyecto (`eisuyvozingpasbqvrdx`) no se usa: tenerlo mezclado con el bueno dio `401 Invalid API key`.
 
 Ramas:
-- **`main`: la web publicada en GitHub Pages.** **Publicada el 2026-10-25** con los tickets (T1–T4) y El Clásico (commit `677c11a`). **Publicada de nuevo el 2026-10-28** con el inicio de sesión con Google y el teléfono por país (rama `google-auth`). Se comprobó que la web real carga la versión nueva y usa el proyecto `hinebaxynlpjisteuaus`. Desde ese día el push desde la terminal de Claude funciona.
+- **`main`: la web publicada en GitHub Pages.** **Publicada el 2026-10-25** con los tickets (T1–T4) y El Clásico (commit `677c11a`). **Publicada de nuevo el 2026-10-28** con el inicio de sesión con Google y el teléfono por país (rama `google-auth`). **Publicada con el POS el 2026-11-02** (rama `pos`: carta y promos desde Supabase, TPV, mesas con QR, pedidos desde el móvil, promos con ticket, cierres e informes). Se comprobó que la web real carga la versión nueva y usa el proyecto `hinebaxynlpjisteuaus`. Desde ese día el push desde la terminal de Claude funciona.
 - **`tickets`: rama de trabajo de los tickets (ver `TICKETS.md`).** Las ampliaciones de tickets se siguen haciendo aquí. Al empezar cada fase hay que mezclar `main` en `tickets`, porque el script de precios hace push a `main`.
-- **`pos`: rama de trabajo del POS (ver `POS.md`).** Creada el 2026-10-28 desde `main` (`35d85f0`). P1–P6b cerradas (P6b probada el 2026-11-02); siguiente: **P7 (puesta en marcha)**. Ya se puede publicar en `main` (la restricción era «no antes del 2026-11-02»): la fecha la decide el usuario. El 2026-11-02 se mezcló `main` en `pos` (trae el inicio de sesión con Google y el teléfono por país).
+- **`pos`: rama de trabajo del POS (ver `POS.md`).** Creada el 2026-10-28 desde `main` (`35d85f0`). P1–P6b cerradas; **publicada en `main` el 2026-11-02**; P7 (puesta en marcha) en curso: antes de vender de verdad hay que ejecutar `supabase/pos-limpieza-pruebas.sql`. Guía del camarero: https://claude.ai/artifact/CpcdTFzMfhbMginYvTxd3h El 2026-11-02 se mezcló `main` en `pos` (trae el inicio de sesión con Google y el teléfono por país).
 - **`google-auth`: inicio de sesión con Google (OAuth).** Creada el 2026-10-28 desde `main`, **publicada en `main` el 2026-10-28** y ya incluida en `pos`. No hace falta tocarla más. Ver «Inicio de sesión con Google» más abajo.
 - **Tras publicar:** las 13 promos originales están **apagadas** (los socios ven «Disponible próximamente») hasta que el bar las encienda en **Panel → Promos**. Las de El Clásico se encienden con `supabase/promos-clasico.sql`.
 - `club-clientes` y `admin-dashboard`: ramas históricas, ya incluidas en `main`. No tienen push.
