@@ -43,17 +43,52 @@ export async function signIn(email: string, password: string): Promise<AuthResul
   return { error: error ? translateAuthError(error) : null };
 }
 
-/** Cambiar a true cuando el proveedor Google esté activado en Supabase (ver guía). */
-export const googleEnabled = false;
+/** El proveedor Google está activado en Supabase (ver «Inicio de sesión con Google» en README.md). */
+export const googleEnabled = true;
 
-/** Preparado para cuando se active Google en Supabase (ver guía). */
+/** Marca que la vuelta a la web viene de Google (para traducir bien sus errores, p. ej. si se cancela). */
+const GOOGLE_FLAG = 'alameda-google-login';
+
+export function consumeGoogleFlag(): boolean {
+  try {
+    const was = window.sessionStorage.getItem(GOOGLE_FLAG) === '1';
+    window.sessionStorage.removeItem(GOOGLE_FLAG);
+    return was;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Entrar o registrarse con Google. El navegador se va a Google y vuelve a la web con la sesión.
+ * Si el email ya tiene cuenta (con contraseña), Supabase la une: entra en la misma cuenta.
+ */
 export async function signInWithGoogle(): Promise<AuthResult> {
   if (!isSupabaseConfigured) return notConfigured;
+  try {
+    window.sessionStorage.setItem(GOOGLE_FLAG, '1');
+  } catch {
+    // Sin almacenamiento: solo se pierde el mensaje específico si se cancela.
+  }
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: authRedirectUrl() },
+    // select_account: deja elegir cuenta aunque el móvil tenga una sola conectada.
+    options: { redirectTo: authRedirectUrl(), queryParams: { prompt: 'select_account' } },
   });
+  if (error) consumeGoogleFlag();
   return { error: error ? translateAuthError(error) : null };
+}
+
+/** «Un último paso» de quien entra con Google por primera vez (ver supabase/google-auth.sql). */
+export async function aceptarPrivacidad(aceptaEmail: boolean): Promise<AuthResult> {
+  if (!isSupabaseConfigured) return notConfigured;
+  const { error } = await supabase.rpc('aceptar_privacidad', { p_acepta_email: aceptaEmail });
+  if (error) {
+    console.error('[club] Error al aceptar la privacidad:', error);
+    const text = 'No hemos podido guardar tu respuesta. Inténtalo de nuevo en unos minutos.';
+    return { error: import.meta.env.DEV ? `${text} [${error.code} · ${error.message}]` : text };
+  }
+  return { error: null };
 }
 
 export async function sendPasswordReset(email: string): Promise<AuthResult> {

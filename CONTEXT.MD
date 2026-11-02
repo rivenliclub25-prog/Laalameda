@@ -125,13 +125,27 @@ Por último, añade un apartado aparte, para hacerlo más adelante, sobre cómo 
 **Proyecto de Supabase en uso: `hinebaxynlpjisteuaus`.** Es el de `.env` y el de los GitHub Secrets, y el de la web publicada (comprobado el 2026-10-23). El otro proyecto (`eisuyvozingpasbqvrdx`) no se usa: tenerlo mezclado con el bueno dio `401 Invalid API key`.
 
 Ramas:
-- **`main`: la web publicada en GitHub Pages.** **Publicada el 2026-10-25** con los tickets (T1–T4) y El Clásico (commit `677c11a`). Se comprobó que la web real carga la versión nueva y usa el proyecto `hinebaxynlpjisteuaus`. Desde ese día el push desde la terminal de Claude funciona.
+- **`main`: la web publicada en GitHub Pages.** **Publicada el 2026-10-25** con los tickets (T1–T4) y El Clásico (commit `677c11a`). **Publicada de nuevo el 2026-10-28** con el inicio de sesión con Google y el teléfono por país (rama `google-auth`). Se comprobó que la web real carga la versión nueva y usa el proyecto `hinebaxynlpjisteuaus`. Desde ese día el push desde la terminal de Claude funciona.
 - **`tickets`: rama de trabajo de los tickets (ver `TICKETS.md`).** Las ampliaciones de tickets se siguen haciendo aquí. Al empezar cada fase hay que mezclar `main` en `tickets`, porque el script de precios hace push a `main`.
-- **`pos`: rama de trabajo del POS (ver `POS.md`).** Creada el 2026-10-28 desde `main` (`35d85f0`). **No se publica en `main` antes del 2026-11-02** (inauguración y Halloween el sábado 31). La fecha exacta de publicación está **sin decidir** (2026-10-28: el usuario no sabe aún si será ese día). **En pausa** con P1–P6a cerradas y P6b hecha, pendiente de probar (falta ejecutar `pos-informes.sql`).
-- **`google-auth`: inicio de sesión con Google (OAuth).** Creada el 2026-10-28 desde `main` (no desde `pos`), porque **esta sí se publicará en `main`** cuando esté probada, sin esperar al POS. Al volver al POS habrá que mezclar `main` en `pos` (como siempre) para traer el cambio de Google.
+- **`pos`: rama de trabajo del POS (ver `POS.md`).** Creada el 2026-10-28 desde `main` (`35d85f0`). P1–P6b cerradas (P6b probada el 2026-11-02); siguiente: **P7 (puesta en marcha)**. Ya se puede publicar en `main` (la restricción era «no antes del 2026-11-02»): la fecha la decide el usuario. El 2026-11-02 se mezcló `main` en `pos` (trae el inicio de sesión con Google y el teléfono por país).
+- **`google-auth`: inicio de sesión con Google (OAuth).** Creada el 2026-10-28 desde `main`, **publicada en `main` el 2026-10-28** y ya incluida en `pos`. No hace falta tocarla más. Ver «Inicio de sesión con Google» más abajo.
 - **Tras publicar:** las 13 promos originales están **apagadas** (los socios ven «Disponible próximamente») hasta que el bar las encienda en **Panel → Promos**. Las de El Clásico se encienden con `supabase/promos-clasico.sql`.
 - `club-clientes` y `admin-dashboard`: ramas históricas, ya incluidas en `main`. No tienen push.
 - `main` también recibe los commits automáticos del script de precios (`Actualizar precios.bat` → `scripts/publish-prices.ps1`), que exige estar en `main` y hace push él mismo. Antes de trabajar, ejecuta `git pull`.
+
+## Inicio de sesión con Google (rama `google-auth`): ✅ publicado (2026-10-28)
+
+- **Punto de partida:** el botón «Continuar con Google» ya existe en `#/club` (marcado «Próximamente», `googleEnabled = false` en `src/lib/auth.ts`) y `signInWithGoogle()` ya llama a `signInWithOAuth`. `handle_new_user` ya toma el nombre de Google (`full_name` / `name`).
+- **Configuración hecha por el usuario (2026-10-28):** proyecto «La Alameda» en Google Cloud (consentimiento publicado, cliente web, URI `https://hinebaxynlpjisteuaus.supabase.co/auth/v1/callback`) y proveedor Google activado en Supabase. **El Client Secret solo está en el panel de Supabase.** Pasos detallados en README.md.
+- **Decisiones del usuario (2026-10-28):** el mismo email entra en la misma cuenta (Supabase une las identidades) y **tras entrar con Google se va siempre al perfil**. Se mantiene «Un último paso» para las cuentas nuevas de Google.
+- **Programado (falta ejecutar `supabase/google-auth.sql` y probar):**
+  - `supabase/google-auth.sql`: `aceptar_privacidad(p_acepta_email)` rellena una sola vez `acepta_privacidad_at` (no editable desde el navegador) y guarda el consentimiento de email. 8 pruebas en PGlite.
+  - `src/lib/auth.ts`: `googleEnabled = true`, `signInWithGoogle()` con `prompt: select_account` y una marca en la pestaña para traducir los errores de Google (p. ej. «Has cancelado el acceso con Google»); `aceptarPrivacidad()`.
+  - `AuthProvider`/`AuthContext`: `privacidadPendiente` y `refreshPerfil()`. `ProtectedRoute` muestra `UltimoPaso` (`src/components/club/UltimoPaso.tsx`) mientras la cuenta no haya aceptado la privacidad; ahí también puede borrar la cuenta si no acepta.
+  - `#/club`: el botón ya no dice «Próximamente» y explica que sirve para entrar y registrarse, y que con el mismo email se entra en la misma cuenta.
+- **Probado por el usuario (2026-10-28):** Google funciona correctamente.
+- **Añadido antes de publicar (petición del usuario):** en `#/perfil`, el teléfono se pide en dos partes: **país (prefijo)** y número (`PhoneField` en `FormControls.tsx`; España por defecto; «Otro país…» para escribirlo completo). Se sigue guardando en formato internacional (`+34612345678`), así que no cambia la base de datos. `splitPhone`, `buildPhone` y `formatPhone` en `src/lib/profile.ts` (sustituyen a `normalizePhone`). El panel de socios muestra el teléfono agrupado (`+34 612 345 678`).
+- **Publicado en `main` el 2026-10-28** con la confirmación del usuario (`google-auth` mezclada sin conflictos). `supabase/google-auth.sql` ya estaba ejecutado. Pendiente: al retomar el POS, mezclar `main` en `pos` (habrá que resolver a mano CONTEXT.MD, ClubPage.tsx y lo que toque).
 
 ## Club de clientes: hecho y probado
 - **Fase 1 — estructura y auth** (commit `e325b3d`): cliente en `src/lib/supabase.ts`, `AuthProvider`, `ProtectedRoute`, router propio, `supabase/schema.sql`, `.env.example`.

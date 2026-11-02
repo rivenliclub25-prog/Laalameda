@@ -3,6 +3,7 @@ import type { Session } from '@supabase/supabase-js';
 import { consumeAuthCallback, isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { translateAuthErrorCode } from '@/lib/authErrors';
 import { navigate } from '@/lib/router';
+import { consumeGoogleFlag } from '@/lib/auth';
 import { AuthContext, type AuthNotice } from '@/auth/AuthContext';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -21,6 +22,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
 
       const callback = consumeAuthCallback();
+      const fromGoogle = consumeGoogleFlag();
       if (!callback) return;
 
       // Supabase puede dejar parámetros en la query (?error=…); se limpian para que no reaparezcan al recargar.
@@ -28,7 +30,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         window.history.replaceState(null, '', window.location.pathname + window.location.hash);
       }
 
-      if (callback.errorCode) {
+      if (callback.errorCode && fromGoogle) {
+        setNotice({
+          kind: 'error',
+          text:
+            callback.errorCode === 'access_denied'
+              ? 'Has cancelado el acceso con Google. Puedes intentarlo de nuevo o entrar con tu email.'
+              : 'No hemos podido entrar con Google. Inténtalo de nuevo o entra con tu email y contraseña.',
+        });
+        navigate('/club', { replace: true, params: { modo: 'login' } });
+      } else if (callback.errorCode) {
         setNotice({ kind: 'error', text: translateAuthErrorCode(callback.errorCode) });
         navigate('/club', { replace: true });
       } else if (callback.type === 'recovery') {
@@ -54,9 +65,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Permisos del usuario conectado (admin, camarero). Se guardan junto a su id para saber si
   // corresponden a la sesión actual.
   const userId = session?.user.id ?? null;
-  const [roleState, setRoleState] = useState<{ userId: string; isAdmin: boolean; esCamarero: boolean } | null>(
-    null
-  );
+  const [roleState, setRoleState] = useState<{
+    userId: string;
+    isAdmin: boolean;
+    esCamarero: boolean;
+    privacidadPendiente: boolean;
+  } | null>(null);
+  const [perfilVersion, setPerfilVersion] = useState(0);
+  const refreshPerfil = useCallback(() => setPerfilVersion((v) => v + 1), []);
 
   useEffect(() => {
     if (!userId) {
@@ -74,16 +90,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!active) return;
         // Si falla, se trata como usuario normal.
         if (error) console.error('[club] No se pudo leer el rol:', error);
-        setRoleState({ userId, isAdmin: data?.role === 'admin', esCamarero: data?.es_camarero === true });
+        setRoleState({
+          userId,
+          isAdmin: data?.role === 'admin',
+          esCamarero: data?.es_camarero === true,
+          // Solo si el perfil existe y la columna viene vacía (alta con Google sin terminar).
+          privacidadPendiente: !!data && 'acepta_privacidad_at' in data && data.acepta_privacidad_at === null,
+        });
       });
     return () => {
       active = false;
     };
-  }, [userId]);
+  }, [userId, perfilVersion]);
 
   const roleLoading = userId !== null && roleState?.userId !== userId;
   const isAdmin = !roleLoading && userId !== null && roleState?.isAdmin === true;
   const esCamarero = !roleLoading && userId !== null && roleState?.esCamarero === true;
+  const privacidadPendiente = !roleLoading && userId !== null && roleState?.privacidadPendiente === true;
 
   const clearNotice = useCallback(() => setNotice(null), []);
 
@@ -96,11 +119,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAdmin,
       esCamarero,
       roleLoading,
+      privacidadPendiente,
+      refreshPerfil,
       notice,
       notify: setNotice,
       clearNotice,
     }),
-    [session, loading, isAdmin, esCamarero, roleLoading, notice, clearNotice]
+    [session, loading, isAdmin, esCamarero, roleLoading, privacidadPendiente, refreshPerfil, notice, clearNotice]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

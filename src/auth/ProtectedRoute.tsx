@@ -1,6 +1,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { useAuth } from '@/auth/AuthContext';
 import { navigate } from '@/lib/router';
+import { UltimoPaso } from '@/components/club/UltimoPaso';
 
 export function RouteLoading() {
   return (
@@ -11,9 +12,12 @@ export function RouteLoading() {
   );
 }
 
-/** Muestra su contenido solo con sesión iniciada; si no, lleva a la página de acceso. */
+/**
+ * Muestra su contenido solo con sesión iniciada; si no, lleva a la página de acceso. Si la cuenta
+ * aún no ha aceptado la privacidad (alta con Google), muestra antes «Un último paso».
+ */
 export function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { session, loading } = useAuth();
+  const { session, loading, roleLoading, privacidadPendiente } = useAuth();
   const hashOnMount = useRef(window.location.hash);
 
   useEffect(() => {
@@ -23,7 +27,8 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
     }
   }, [loading, session]);
 
-  if (loading) return <RouteLoading />;
+  if (loading || (session && roleLoading)) return <RouteLoading />;
+  if (session && privacidadPendiente) return <UltimoPaso />;
 
   return session ? <>{children}</> : null;
 }

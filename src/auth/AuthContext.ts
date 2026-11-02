@@ -22,6 +22,13 @@ export interface AuthContextValue {
   esCamarero: boolean;
   /** true mientras se consulta el rol del usuario recién conectado. */
   roleLoading: boolean;
+  /**
+   * true si el perfil aún no ha aceptado la privacidad (pasa al registrarse con Google, que no pasa
+   * por el formulario). Las páginas del club muestran entonces «Un último paso».
+   */
+  privacidadPendiente: boolean;
+  /** Vuelve a leer el perfil (rol, permisos y privacidad), p. ej. tras aceptar la privacidad. */
+  refreshPerfil: () => void;
   /** Mensaje tras volver de un enlace de correo (cuenta confirmada, enlace caducado…). */
   notice: AuthNotice | null;
   /** Deja un aviso para la siguiente página (p. ej. tras borrar la cuenta). */

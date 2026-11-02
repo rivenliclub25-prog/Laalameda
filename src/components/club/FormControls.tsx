@@ -9,6 +9,87 @@ const inputClass =
 export const focusRing =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vino focus-visible:ring-offset-2 focus-visible:ring-offset-marfil';
 
+/**
+ * Teléfono en dos partes: país (prefijo) y número. Con «Otro país» se escribe el número completo
+ * con su prefijo (+…).
+ */
+export function PhoneField({
+  label,
+  prefijos,
+  otroValue,
+  prefijo,
+  numero,
+  onPrefijo,
+  onNumero,
+  error,
+  hint,
+  disabled,
+}: {
+  label: string;
+  prefijos: { code: string; pais: string }[];
+  otroValue: string;
+  prefijo: string;
+  numero: string;
+  onPrefijo: (value: string) => void;
+  onNumero: (value: string) => void;
+  error?: string;
+  hint?: string;
+  disabled?: boolean;
+}) {
+  const id = useId();
+  const describedBy = [error && `${id}-error`, hint && `${id}-hint`].filter(Boolean).join(' ') || undefined;
+  const otro = prefijo === otroValue;
+  return (
+    <div>
+      <label htmlFor={id} className="mb-1 block text-xs font-semibold text-carbon/80">
+        {label}
+      </label>
+      <div className="flex gap-2">
+        <label htmlFor={`${id}-prefijo`} className="sr-only">
+          País (prefijo)
+        </label>
+        <select
+          id={`${id}-prefijo`}
+          value={prefijo}
+          onChange={(e) => onPrefijo(e.target.value)}
+          disabled={disabled}
+          className={`${inputClass} w-auto max-w-[46%] shrink-0 pr-8`}
+        >
+          {prefijos.map((p) => (
+            <option key={p.code} value={p.code}>
+              {p.pais} ({p.code})
+            </option>
+          ))}
+          <option value={otroValue}>Otro país…</option>
+        </select>
+        <input
+          id={id}
+          type="tel"
+          inputMode="tel"
+          autoComplete={otro ? 'tel' : 'tel-national'}
+          placeholder={otro ? '+00 000 000 000' : prefijo === '+34' ? '612 345 678' : 'Número'}
+          value={numero}
+          onChange={(e) => onNumero(e.target.value)}
+          disabled={disabled}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy}
+          className={`${inputClass} min-w-0 flex-1`}
+        />
+      </div>
+      {hint && !error && (
+        <p id={`${id}-hint`} className="mt-1 text-xs text-carbon/60">
+          {hint}
+        </p>
+      )}
+      {error && (
+        <p id={`${id}-error`} className="mt-1 text-xs font-medium text-vino">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
 interface TextFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'id'> {
   label: string;
   error?: string;
