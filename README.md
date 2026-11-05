@@ -38,6 +38,72 @@ Ya está configurado (2026-10-28). Si hubiera que rehacerlo:
 
 Quien entra con Google por primera vez ve «Un último paso» (aceptar la privacidad y elegir si quiere emails). Si el email ya tenía cuenta con contraseña, Supabase la une y entra en la misma. El botón se apaga con `googleEnabled = false` en `src/lib/auth.ts`.
 
+## Empezar a trabajar desde otro ordenador
+
+Guía para un colaborador nuevo. Antes de nada, lee `CONTEXT.MD` (estado del proyecto y forma de trabajar) y, según la tarea, `POS.md` o `TICKETS.md`.
+
+### 1. Lo que necesitas
+
+- **Git** y **Node.js 20 o superior** (versión LTS).
+- **Acceso al repositorio**: el dueño te invita en GitHub (**Settings → Collaborators**) y aceptas la invitación que llega por correo.
+- **Las dos claves de Supabase** (`VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`): pídeselas al dueño **por privado**. Son las públicas; la clave `service_role` / secret no se usa nunca en este proyecto.
+
+### 2. Descargar y arrancar el proyecto
+
+```sh
+git clone https://github.com/rivenliclub25-prog/Laalameda.git
+cd Laalameda
+npm ci
+```
+
+Crea el archivo `.env` a partir del ejemplo (en Windows con PowerShell: `Copy-Item .env.example .env`; en Mac o Linux: `cp .env.example .env`) y pega las dos claves. **El archivo `.env` no se sube nunca a git** (está en `.gitignore`).
+
+```sh
+npm run dev
+```
+
+Abre `http://localhost:5173`. Para probar el club o el TPV, regístrate con tu email y pide al dueño que te dé el rol de **admin** o el permiso de **camarero** (Panel → Socios).
+
+### 3. Forma de trabajar
+
+1. **Cada vez que empieces**, trae lo último:
+
+   ```sh
+   git switch main
+   git pull
+   ```
+
+2. **Cada tarea en su propia rama**, creada desde `main`:
+
+   ```sh
+   git switch -c nombre-de-la-tarea
+   ```
+
+3. **Antes de subir**, comprueba que todo compila:
+
+   ```sh
+   npm run typecheck
+   npm run lint
+   npm run build
+   ```
+
+4. **Guarda y sube tu rama**:
+
+   ```sh
+   git add -A
+   git commit -m "Qué has cambiado"
+   git push -u origin nombre-de-la-tarea
+   ```
+
+5. **Publicar = mezclar en `main`**. Cada push a `main` publica la web real automáticamente, así que se hace solo cuando la tarea está probada y **avisando al dueño**.
+
+**Importante:**
+
+- **La base de datos es la real** (no hay una de pruebas): lo que hagas en local (ventas en el TPV, socios, tickets) queda en la de verdad. Prueba con cuidado y borra lo que crees.
+- **Cambios en la base de datos**: siempre en un archivo `.sql` **nuevo** dentro de `supabase/` (los ya ejecutados no se modifican), y avisando al dueño, que es quien lo ejecuta en Supabase.
+- **La carta y los precios se editan en el Panel → Carta**, no en el Excel (`Actualizar precios.bat` ya no cambia la web).
+- Si los dos tocáis la misma rama, haced `git pull` antes de empezar y antes de subir.
+
 ## Desarrollar localmente
 
 ```sh

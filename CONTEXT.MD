@@ -120,7 +120,7 @@ Por último, añade un apartado aparte, para hacerlo más adelante, sobre cómo 
 
 ---
 
-# Estado actual (actualizado 2026-11-02)
+# Estado actual (actualizado 2026-11-05)
 
 **Proyecto de Supabase en uso: `hinebaxynlpjisteuaus`.** Es el de `.env` y el de los GitHub Secrets, y el de la web publicada (comprobado el 2026-10-23). El otro proyecto (`eisuyvozingpasbqvrdx`) no se usa: tenerlo mezclado con el bueno dio `401 Invalid API key`.
 
@@ -130,7 +130,8 @@ Ramas:
 - **`pos`: rama de trabajo del POS (ver `POS.md`).** Creada el 2026-10-28 desde `main` (`35d85f0`). P1–P6b cerradas; **publicada en `main` el 2026-11-02**; P7 (puesta en marcha) en curso: antes de vender de verdad hay que ejecutar `supabase/pos-limpieza-pruebas.sql`. Guía del camarero: https://claude.ai/artifact/CpcdTFzMfhbMginYvTxd3h El 2026-11-02 se mezcló `main` en `pos` (trae el inicio de sesión con Google y el teléfono por país).
 - **`google-auth`: inicio de sesión con Google (OAuth).** Creada el 2026-10-28 desde `main`, **publicada en `main` el 2026-10-28** y ya incluida en `pos`. No hace falta tocarla más. Ver «Inicio de sesión con Google» más abajo.
 - **Tras publicar:** las 13 promos originales están **apagadas** (los socios ven «Disponible próximamente») hasta que el bar las encienda en **Panel → Promos**. Las de El Clásico se encienden con `supabase/promos-clasico.sql`.
-- `club-clientes` y `admin-dashboard`: ramas históricas, ya incluidas en `main`. No tienen push.
+- `club-clientes` y `admin-dashboard`: ramas históricas, ya incluidas en `main`.
+- **2026-11-05: todas las ramas subidas a GitHub y puestas al día con `main`** (`admin-dashboard`, `club-clientes`, `google-auth`, `tickets` y `pos` apuntan al mismo commit que `main`). **Un compañero empieza a trabajar desde otro ordenador**: la guía para arrancar está en `README.md` → «Empezar a trabajar desde otro ordenador». A partir de ahora, cada tarea nueva en su propia rama creada desde `main`, y `git pull` antes de empezar.
 - `main` también recibe los commits automáticos del script de precios (`Actualizar precios.bat` → `scripts/publish-prices.ps1`), que exige estar en `main` y hace push él mismo. Antes de trabajar, ejecuta `git pull`.
 
 ## Inicio de sesión con Google (rama `google-auth`): ✅ publicado (2026-10-28)
