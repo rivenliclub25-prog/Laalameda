@@ -1,0 +1,143 @@
+# Copia de seguridad nocturna de PRODUCCIÓN (ENTORNOS.md, E-D7, E-D12 y E-D15).
+#
+# - Solo LEE la base de datos de producción: roles, estructura y datos.
+# - La cifra con gpg (AES-256) y la sube al repositorio PRIVADO Laalameda-copias.
+# - Allí se conservan las últimas 30: la rama se rehace en cada copia, así las
+#   antiguas desaparecen también del historial.
+# - Cómo descifrar y restaurar (solo en PRUEBAS): COPIAS.md.
+#
+# Secretos del repositorio (Settings → Secrets and variables → Actions), NO del
+# entorno production (si no, la copia se quedaría esperando una aprobación):
+#   BACKUP_DB_URL      cadena del "Session pooler" de producción, con la contraseña
+#   BACKUP_PASSPHRASE  contraseña de cifrado (guardada también fuera de GitHub)
+#   COPIAS_DEPLOY_KEY  clave privada de la deploy key con escritura en Laalameda-copias
+#
+# Ojo: GitHub desactiva los workflows programados tras 60 días sin actividad en
+# el repositorio. Si dejan de llegar copias, ver COPIAS.md.
+
+name: Copia de seguridad
+
+on:
+  schedule:
+    # 05:00 UTC = 06:00 en Madrid en invierno y 07:00 en verano (el bar cierra a las 03:00).
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: copia-seguridad
+  cancel-in-progress: false
+
+env:
+  COPIAS_REPO: git@github.com:rivenliclub25-prog/Laalameda-copias.git
+  CONSERVAR: 30
+  PROYECTO_PRODUCCION: hinebaxynlpjisteuaus
+
+jobs:
+  copia:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Comprobar los secretos
+        env:
+          BACKUP_DB_URL: ${{ secrets.BACKUP_DB_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+          COPIAS_DEPLOY_KEY: ${{ secrets.COPIAS_DEPLOY_KEY }}
+        run: |
+          set -euo pipefail
+          for nombre in BACKUP_DB_URL BACKUP_PASSPHRASE COPIAS_DEPLOY_KEY; do
+            if [ -z "${!nombre}" ]; then
+              echo "::error::Falta el secreto $nombre (ver COPIAS.md)."
+              exit 1
+            fi
+          done
+          # Se copia producción: la cadena del pooler lleva su identificador en el usuario.
+          case "$BACKUP_DB_URL" in
+            *"$PROYECTO_PRODUCCION"*) ;;
+            *) echo "::error::BACKUP_DB_URL no es la de producción ($PROYECTO_PRODUCCION)."; exit 1 ;;
+          esac
+
+      - name: Instalar la CLI de Supabase
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Volcar la base de datos (solo lectura)
+        working-directory: ${{ runner.temp }}
+        env:
+          BACKUP_DB_URL: ${{ secrets.BACKUP_DB_URL }}
+        run: |
+          set -euo pipefail
+          mkdir -p volcado
+          # La CLI usa por dentro un pg_dump de la misma versión que el proyecto.
+          supabase db dump --db-url "$BACKUP_DB_URL" --role-only -f volcado/roles.sql
+          supabase db dump --db-url "$BACKUP_DB_URL" -f volcado/schema.sql
+          supabase db dump --db-url "$BACKUP_DB_URL" --data-only --use-copy -f volcado/data.sql
+          for f in roles schema data; do
+            test -s "volcado/$f.sql" || { echo "::error::El volcado $f.sql ha salido vacío."; exit 1; }
+          done
+          ls -l volcado
+
+      - name: Empaquetar y cifrar
+        working-directory: ${{ runner.temp }}
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          nombre="copia-$(date -u +%Y-%m-%d_%H%M).tar.gz.gpg"
+          tar -czf copia.tar.gz -C volcado roles.sql schema.sql data.sql
+          printf '%s' "$BACKUP_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 \
+            --symmetric --cipher-algo AES256 -o "$nombre" copia.tar.gz
+          # Lo que no está cifrado no sale del runner.
+          rm -rf volcado copia.tar.gz
+          tamano=$(stat -c %s "$nombre")
+          if [ "$tamano" -gt 95000000 ]; then
+            echo "::error::La copia ocupa $tamano bytes: GitHub no admite archivos de más de 100 MB. Ver COPIAS.md."
+            exit 1
+          fi
+          echo "NOMBRE=$nombre" >> "$GITHUB_ENV"
+
+      - name: Subir a Laalameda-copias (últimas ${{ env.CONSERVAR }})
+        working-directory: ${{ runner.temp }}
+        env:
+          COPIAS_DEPLOY_KEY: ${{ secrets.COPIAS_DEPLOY_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          printf '%s\n' "$COPIAS_DEPLOY_KEY" > ~/.ssh/copias
+          chmod 600 ~/.ssh/copias
+          ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts 2>/dev/null
+          export GIT_SSH_COMMAND="ssh -i ~/.ssh/copias -o IdentitiesOnly=yes"
+
+          git clone --quiet --depth 1 "$COPIAS_REPO" repo-copias
+          mkdir -p repo-copias/copias
+          mv "$NOMBRE" repo-copias/copias/
+          cd repo-copias
+          # Se quedan las últimas $CONSERVAR (los nombres llevan la fecha, así que ordenar por nombre es ordenar por fecha).
+          ls -1 copias/copia-*.tar.gz.gpg | sort | head -n -"$CONSERVAR" | xargs -r rm --
+          cat > README.md <<EOF
+          # Copias de seguridad de La Alameda
+
+          Repositorio **privado**. Cada archivo es una copia cifrada de la base de datos de producción.
+          Se conservan las últimas $CONSERVAR. Cómo descifrar y restaurar: \`COPIAS.md\` del repositorio Laalameda.
+
+          Última copia: \`$NOMBRE\`
+          EOF
+
+          # La rama se rehace desde cero: las copias antiguas desaparecen también del historial (E-D12).
+          git config user.name "copia-seguridad[bot]"
+          git config user.email "copia-seguridad@users.noreply.github.com"
+          git checkout --quiet --orphan nueva
+          git add -A
+          git commit --quiet -m "Copia $NOMBRE"
+          git push --quiet --force origin HEAD:main
+          rm -f ~/.ssh/copias
+
+          {
+            echo "### Copia de seguridad hecha"
+            echo ""
+            echo "- Archivo: \`$NOMBRE\`"
+            echo "- Copias guardadas: $(ls -1 copias | wc -l) (se conservan $CONSERVAR)"
+          } >> "$GITHUB_STEP_SUMMARY"

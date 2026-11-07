@@ -8,7 +8,7 @@ Este documento es la propuesta para **separar las pruebas de los datos reales** 
 - No se programa ninguna fase hasta que estén 🟢 las decisiones de las que depende.
 - Antes de escribir código, se propone el plan de archivos de la fase y se espera aprobación.
 
-Última actualización: 2026-11-07 · Estado: **E0 en curso** (revisión del repositorio hecha y plan de E0 aprobado). Trabajo en la rama `e0-preparar`; `staging` ya existe.
+Última actualización: 2026-11-07 · Estado: **E0: código hecho en la rama `e0-preparar`, falta la parte del usuario** (secretos, PR a `main` y primera copia). `staging` ya existe.
 
 ---
 
@@ -514,12 +514,12 @@ En cada fase: **🤖 Claude** = lo que programa Claude Code; **🙋 Usuario** = 
 - **🤖 Claude:**
   - ✅ Revisión del repositorio («Resultado de la revisión»).
   - ✅ Rama `staging` creada desde `main` actualizado.
-  - Este documento en el repositorio (`ENTORNOS.md`).
-  - Retirar el script de precios (E-D8): `Actualizar precios.bat`, `scripts/publish-prices.ps1`, `scripts/sync-prices.mjs`, el script `sync-prices` de `package.json` y las dependencias `fflate` y `fast-xml-parser` (E-D14).
-  - Quitar las instrucciones del Excel de `GUIA-EDICION.md`, `README.md` y `CONTEXT.MD`; en `POS.md`, solo las instrucciones (el historial no se toca).
-  - Bloqueo al principio de `supabase/pos-limpieza-pruebas.sql` (E-D13).
-  - `.github/workflows/backup.yml` (E-D7, E-D12, E-D15): a las 05:00 UTC y a mano (`workflow_dispatch`); volcado de roles, estructura y datos con la CLI de Supabase por el session pooler; cifrado con `gpg`; subida a `Laalameda-copias` con la deploy key, rehaciendo la rama con las últimas 30; sin mostrar secretos.
-  - `COPIAS.md`: qué contiene una copia, cómo descifrarla, cómo restaurarla **solo en PRUEBAS**, y qué revisar si dejan de llegar (incluida la regla de los 60 días).
+  - ✅ Este documento en el repositorio (`ENTORNOS.md`).
+  - ✅ Retirar el script de precios (E-D8): `Actualizar precios.bat`, `scripts/publish-prices.ps1`, `scripts/sync-prices.mjs`, el script `sync-prices` de `package.json` y las dependencias `fflate` y `fast-xml-parser` (E-D14).
+  - ✅ Quitar las instrucciones del Excel de `GUIA-EDICION.md`, `README.md` y `CONTEXT.MD`; en `POS.md`, solo las instrucciones (el historial no se toca).
+  - ✅ Bloqueo al principio de `supabase/pos-limpieza-pruebas.sql` (E-D13). Probado en PGlite: falla con «BLOQUEADO» y no borra nada.
+  - ✅ `.github/workflows/backup.yml` (E-D7, E-D12, E-D15): a las 05:00 UTC y a mano (`workflow_dispatch`); volcado de roles, estructura y datos con la CLI de Supabase por el session pooler; cifrado con `gpg`; subida a `Laalameda-copias` con la deploy key, rehaciendo la rama con las últimas 30; sin mostrar secretos.
+  - ✅ `COPIAS.md` (con los pasos exactos para el usuario): qué contiene una copia, cómo descifrarla, cómo restaurarla **solo en PRUEBAS**, y qué revisar si dejan de llegar (incluida la regla de los 60 días).
 - **🙋 Usuario:**
   - Crear el repositorio **privado** `Laalameda-copias` (vacío).
   - Crear una deploy key con escritura en `Laalameda-copias` y guardar la parte privada como secreto `COPIAS_DEPLOY_KEY` del repositorio principal.

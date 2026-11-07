@@ -56,9 +56,9 @@ No se borra nada ahora. Cuando la carta y las promos lean de Supabase y estén p
 
 - `src/data/prices.generated.ts`, y los precios escritos en `site.ts` y `promos.ts`.
 - Los datos de carta y promos de `site.ts` y `promos.ts`. Los sustituye la copia de respaldo generada desde Supabase (D11). Se quedan en el código los textos de la web que no son carta ni promos (D13).
-- `scripts/sync-prices.mjs`, `scripts/publish-prices.ps1`, `Actualizar precios.bat` y las dependencias `fflate` y `fast-xml-parser`.
-- `GUIA-EDICION.md`: «pulsa Publish», el flujo de Bolt y todo lo relativo al Excel y a editar carta y promos en el código.
-- En `CONTEXT.MD` y `TICKETS.md`: las menciones al script de precios que hace push a `main` y a «las promos se pintan desde `promos.ts`».
+- ~~`scripts/sync-prices.mjs`, `scripts/publish-prices.ps1`, `Actualizar precios.bat` y las dependencias `fflate` y `fast-xml-parser`.~~ **Retirados el 2026-11-07** (`ENTORNOS.md`, E0).
+- `GUIA-EDICION.md`: «pulsa Publish» y el flujo de Bolt. (Lo relativo al Excel y a editar carta y promos en el código ya se quitó el 2026-11-07.)
+- En `TICKETS.md`: las menciones a «las promos se pintan desde `promos.ts`». (La del script de precios en `CONTEXT.MD` ya se quitó.)
 
 ---
 
