@@ -8,7 +8,7 @@ Este documento es la propuesta para **separar las pruebas de los datos reales** 
 - No se programa ninguna fase hasta que estén 🟢 las decisiones de las que depende.
 - Antes de escribir código, se propone el plan de archivos de la fase y se espera aprobación.
 
-Última actualización: 2026-11-07 · Estado: **E0: código hecho en la rama `e0-preparar`, falta la parte del usuario** (secretos, PR a `main` y primera copia). `staging` ya existe.
+Última actualización: 2026-11-07 · Estado: **E0 cerrada (2026-11-08): primera copia cifrada en `Laalameda-copias`.** Siguiente: **E1**, pendiente de aprobar su plan (rama `e1-pruebas`).
 
 ---
 
@@ -528,6 +528,7 @@ En cada fase: **🤖 Claude** = lo que programa Claude Code; **🙋 Usuario** = 
   - Lanzar la primera copia a mano y comprobar que aparece en `Laalameda-copias`.
   - Decidir E-D17 y avisar al compañero.
 - **Hecha cuando:** el script de precios ya no existe, la web publicada sigue igual y hay una primera copia cifrada en `Laalameda-copias`.
+- **✅ Cerrada (2026-11-08):** PR #1 (E0) y PR #2 (versión fija de la CLI, 2.122.0) mezclados en `main`. Primera copia: `copia-2026-11-08_1911.tar.gz.gpg`. Notas: la base de datos de producción es **Postgres 17** (imagen `supabase/postgres:17.11.0.006`) y está en **eu-west-1** (Irlanda, por el host del pooler). La primera conexión falló por la contraseña de `BACKUP_DB_URL`; se resolvió con una contraseña nueva solo de letras y números.
 
 ### E1 — PRUEBAS en Supabase
 
@@ -615,3 +616,4 @@ En cada fase: **🤖 Claude** = lo que programa Claude Code; **🙋 Usuario** = 
 - **2026-11-07** — Decididas E-D5 (web de pruebas en `Laalameda-pruebas`) y E-D7 (copias nocturnas cifradas en `Laalameda-copias`, 30 días). Sin decisiones pendientes. Añadida la sección «Para Claude Code: empieza aquí» y el plan detallado por fases, con lo que hace Claude y lo que hace el usuario. **Listo para empezar E0.**
 - **2026-11-07** — Revisión del repositorio por Claude Code: lo que encaja, lo que no (sin `base` fijo en Vite, pruebas de PGlite fuera del repositorio y parte perdidas, `prices.generated.ts` aún en uso, `deploy.yml` con el entorno `github-pages`) y riesgos nuevos (push directo a `main`, retención real de 30 días, secretos de las copias, regla de los 60 días, script de limpieza). Decididas E-D12 a E-D16 con las recomendaciones de Claude; E-D17 pendiente. Creadas las ramas `staging` y `e0-preparar`. **E0 en curso.**
 - **2026-11-08** — E0 mezclado en `main` (PR #1). La primera copia falló al instalar la CLI de Supabase (`version: latest` → límite de la API de GitHub); se fija la versión 2.122.0 (rama `e0-arreglo-cli`).
+- **2026-11-08** — **E0 cerrada:** primera copia cifrada en `Laalameda-copias` (`copia-2026-11-08_1911.tar.gz.gpg`). `staging` puesta al día con `main`.
