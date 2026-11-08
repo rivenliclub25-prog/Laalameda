@@ -8,7 +8,7 @@ Este documento es la propuesta para **separar las pruebas de los datos reales** 
 - No se programa ninguna fase hasta que estén 🟢 las decisiones de las que depende.
 - Antes de escribir código, se propone el plan de archivos de la fase y se espera aprobación.
 
-Última actualización: 2026-11-07 · Estado: **E0 cerrada (2026-11-08): primera copia cifrada en `Laalameda-copias`.** Siguiente: **E1**, pendiente de aprobar su plan (rama `e1-pruebas`).
+Última actualización: 2026-11-07 · Estado: **E1 en curso (2026-11-08).** E1a (workflow «Estructura de la base de datos») en la rama `e1-pruebas`, pendiente de PR a `main`. Proyecto de PRUEBAS creado: `hrhhkzajweggpnupytms`.
 
 ---
 
@@ -44,7 +44,7 @@ Este documento es la propuesta para **separar las pruebas de los datos reales** 
 | Lo que se suponía | Lo que hay | Consecuencia |
 |---|---|---|
 | `vite.config.ts` tiene `base: '/Laalameda/'` fijo | No lo tiene: la ruta base la pone `deploy.yml` con `--base` (de `configure-pages`) | En E2 no hay que quitar nada: cada workflow pasa su `--base` |
-| Las pruebas de PGlite están en el repositorio | Vivían en una carpeta temporal fuera del repositorio. **Se han perdido** las de tickets, catálogo, códigos, P2, P3 y P4; quedan las de P5, P6a, P6b, Google y la limpieza | Se traen al repositorio y se reescriben las perdidas en **E1** (E-D16) |
+| Las pruebas de PGlite están en el repositorio | Vivían en una carpeta temporal fuera del repositorio. **Se han perdido** las de tickets, catálogo, códigos, P2, P3 y P4; quedan las de P5, P6a, P6b, Google y la limpieza | No se recuperan: la base de datos se prueba aplicando las migraciones en PRUEBAS (E-D16, cambiada el 2026-11-08) |
 | `prices.generated.ts`, `fflate` y `fast-xml-parser` se pueden quitar juntos | `src/data/site.ts` aún importa `prices.generated.ts`; `fflate` y `fast-xml-parser` solo los usa `sync-prices.mjs` | Las dependencias se van en E0; `prices.generated.ts`, en la fase L de `POS.md` (E-D14) |
 | `deploy.yml` puede usar el entorno `production` | Usa el entorno `github-pages` (el que exige GitHub Pages) | En E5, la aprobación va en un paso aparte con el entorno `production`, antes de publicar |
 
@@ -304,7 +304,7 @@ Supabase apunta en cada proyecto qué migraciones ya tiene, así que cada una se
 - **Siempre compatibles con la versión anterior de la web:** primero se añade (columna, tabla, función nueva), y solo en una migración posterior se quita lo viejo. Así no se rompe nada entre que se migra la base de datos y se publica la web.
 - **Nada de borrar ni reescribir datos reales** en una migración sin una decisión explícita en este documento.
 - **Nunca se cambia el esquema a mano en el panel de producción.** Un workflow semanal compara producción con las migraciones y avisa si alguien lo ha hecho.
-- **Las pruebas de PGlite pasan a vivir en el repositorio** (E1, E-D16) y se ejecutan solas en cada PR contra `supabase/migrations/` (E5).
+- **Cada migración se prueba aplicándola primero en el Supabase de PRUEBAS** (un Supabase real). Las pruebas de PGlite no se mantienen (E-D16, cambiada el 2026-11-08).
 
 ### Edge Functions
 
@@ -469,10 +469,17 @@ Precios consultados el 2026-11-07, en dólares. **Comprobar en https://supabase.
 - **Decisión:** como **secretos del repositorio** (`BACKUP_DB_URL`, `BACKUP_PASSPHRASE`, `COPIAS_DEPLOY_KEY`), no en el entorno `production`. Si estuvieran en `production`, cuando ese entorno pida aprobación (E5), la copia nocturna se quedaría esperando a que alguien la aprobara.
 
 #### E-D16 — Pruebas de PGlite
-- **Estado:** 🟢 Decidida (2026-11-07)
-- **Decisión:** se traen al repositorio en **E1** (cuando pasen a cargar `supabase/migrations/`) y se **reescriben las que se perdieron**: tickets, catálogo, códigos, P2, P3 y P4. Las que quedan (P5, P6a, P6b, Google y limpieza) se reutilizan. En E5 las lanza el CI.
+- **Estado:** 🟢 Decidida (2026-11-07) · **cambiada el 2026-11-08**
+- **Decisión (2026-11-08):** **no se recuperan ni se reescriben** las pruebas de PGlite: el usuario no lo ve necesario. La comprobación de la base de datos pasa a ser **aplicar las migraciones en el Supabase de PRUEBAS** (un Supabase real) y probar allí. El CI de E5 se queda en typecheck, lint, build, comprobación de entorno y las migraciones pendientes.
+- *Decisión anterior (2026-11-07, sustituida):* traerlas al repositorio en E1 y reescribir las perdidas.
 
 ### Pendientes
+
+#### E-D18 — Cómo se trabaja con las bases de datos en E1
+- **Estado:** 🟢 Decidida (2026-11-08)
+- **Decisión:** las operaciones con bases de datos de E1 las hace un **workflow manual** de GitHub (`.github/workflows/estructura.yml`), no un ordenador: leer la estructura de producción necesita Docker y la contraseña de producción (solo está en GitHub), y `supabase link` exigiría un token personal que también da acceso a producción.
+- **Consecuencia:** E1 se divide en **E1a** (solo el workflow, porque GitHub solo deja lanzar a mano workflows que ya están en `main`) y **E1b** (lo demás).
+- **Secretos:** `BACKUP_DB_URL` (del repositorio, ya existe) para leer producción; `PRUEBAS_DB_URL` en el entorno `pruebas` (sin revisores) para PRUEBAS.
 
 #### E-D17 — Push directo a `main` hasta E5
 - **Estado:** 🟡 Pendiente (recomendación de Claude, 2026-11-07)
@@ -499,7 +506,7 @@ Resumen:
 | Fase | En una frase | Toca producción |
 |---|---|---|
 | **E0** | Retirar el script de precios y poner en marcha las copias de seguridad | Solo lectura (la copia) |
-| **E1** | Crear el Supabase de PRUEBAS con la misma estructura que producción, gestionada con migraciones; traer las pruebas de PGlite | Lectura + tabla de control de migraciones (con aprobación) |
+| **E1** | Crear el Supabase de PRUEBAS con la misma estructura que producción, gestionada con migraciones | Lectura + tabla de control de migraciones (con aprobación) |
 | **E2** | La web sabe en qué entorno está y no puede conectarse a producción por error | No |
 | **E3** | Web de pruebas publicada desde `staging` | No |
 | **E4** | Datos y usuarios de prueba, «Reiniciar pruebas» | Solo lectura de la carta pública |
@@ -532,18 +539,36 @@ En cada fase: **🤖 Claude** = lo que programa Claude Code; **🙋 Usuario** = 
 
 ### E1 — PRUEBAS en Supabase
 
-- **🙋 Usuario (primero):**
-  - Crear el proyecto `la-alameda-pruebas` en Supabase, en la UE (misma región que producción si es posible).
-  - Pasar a Claude la URL y la clave anon de PRUEBAS (son públicas) y guardar la contraseña de la base de datos de PRUEBAS.
+Se divide en **E1a** y **E1b** (E-D18).
+
+- **Proyecto de PRUEBAS (✅ 2026-11-08):** `la-alameda-pruebas`, identificador **`hrhhkzajweggpnupytms`**, URL `https://hrhhkzajweggpnupytms.supabase.co`. La clave anon la tiene el usuario (es pública, pero no se guarda en el repositorio: va al `.env` local y a los secretos del entorno `pruebas`). Producción está en **eu-west-1** y con **Postgres 17**: PRUEBAS, igual.
+
+#### E1a — Workflow «Estructura de la base de datos»
+
+- **🤖 Claude:** `.github/workflows/estructura.yml`, manual, con cuatro acciones:
+
+  | Acción | Qué hace | Escribe en |
+  |---|---|---|
+  | `leer-produccion` | Copia **solo la estructura** de producción como `supabase/migrations/<fecha>_base.sql` y la guarda en la rama desde la que se lanza (nunca desde `main`). En el resumen enseña los triggers de `auth.users` y las tablas de Realtime, que el volcado no incluye | Nada en producción |
+  | `aplicar-pruebas` | `supabase db push` de la rama elegida al Supabase de PRUEBAS | Solo PRUEBAS (se niega si la conexión es la de producción) |
+  | `comparar` | Estructura de producción frente a la de PRUEBAS, con las diferencias en el resumen | Nada |
+  | `marcar-produccion` | `migration repair` de la migración base en producción. Exige escribir `SI-PRODUCCION` | Solo la tabla de control de migraciones |
+
+- **🙋 Usuario:** entorno `pruebas` con el secreto `PRUEBAS_DB_URL` (Session pooler de PRUEBAS); mezclar el PR de `e1-pruebas`.
+
+#### E1b — Migraciones
+
+- **🙋 Usuario (antes):** nada más; los datos de PRUEBAS ya están.
 - **🤖 Claude:**
   - `supabase init` → `supabase/config.toml`.
   - Mover los `.sql` actuales a `supabase/legacy/`, con un `README` que explique el orden en que se aplicaron (sección 4).
   - Preparar el comando (o un workflow manual) que **lee solo la estructura** de producción (`supabase db dump`, sin datos) y genera `supabase/migrations/<fecha>_base.sql`. Revisar que incluye esquema `public`, funciones, triggers, políticas RLS, permisos (`grant`), publicación de Realtime y lo que se haya tocado en `auth` (el trigger `on_auth_user_created`).
   - Aplicar la migración base en PRUEBAS (`supabase link` **solo con PRUEBAS** + `supabase db push`) y comparar con producción hasta que no haya diferencias.
   - Lista de ajustes del panel de Supabase de PRUEBAS (sección 3b): URLs, sin confirmación de email (E-D9), Google opcional.
-  - **Traer las pruebas de PGlite al repositorio** (E-D16), con `@electric-sql/pglite` como dependencia de desarrollo: que carguen `supabase/migrations/` en lugar de los `.sql` sueltos, reescribir las que se perdieron y comprobar que pasan todas.
-- **🙋 Usuario (al final, con aprobación explícita):** ejecutar `supabase migration repair --status applied <fecha>` contra producción. **No ejecuta la migración:** solo apunta que producción ya la tiene.
-- **Hecha cuando:** PRUEBAS tiene exactamente la estructura de producción, PGlite pasa con las migraciones dentro del repositorio y producción figura con la migración base aplicada.
+  - Las acciones de base de datos las lanza el usuario con el workflow de E1a, en este orden: `leer-produccion` (desde la rama de E1b) → revisión de Claude (completar lo que el volcado no incluye) → `aplicar-pruebas` → `comparar` hasta que salga «Iguales».
+  - Sin pruebas de PGlite (E-D16, cambiada).
+- **🙋 Usuario (al final, con aprobación explícita):** acción `marcar-produccion` (`supabase migration repair --status applied <fecha>`). **No ejecuta la migración:** solo apunta que producción ya la tiene.
+- **Hecha cuando:** PRUEBAS tiene exactamente la estructura de producción («Iguales» en `comparar`) y producción figura con la migración base aplicada.
 
 ### E2 — Web por entornos
 
@@ -581,7 +606,7 @@ En cada fase: **🤖 Claude** = lo que programa Claude Code; **🙋 Usuario** = 
 ### E5 — Paso a producción controlado
 
 - **🤖 Claude:**
-  - `.github/workflows/ci.yml`: en cada PR, typecheck, lint, build, PGlite contra `supabase/migrations/` y comprobación de entorno.
+  - `.github/workflows/ci.yml`: en cada PR, typecheck, lint, build y comprobación de entorno (sin PGlite, E-D16).
   - `deploy-pruebas.yml`: `supabase db push` a PRUEBAS antes del build.
   - En los PR a `main`: comentario con las migraciones que se aplicarían en producción (`db push --dry-run`).
   - `deploy.yml` adaptado: un paso con el entorno `production` (espera aprobación) → `db push` a producción → snapshot → build → Pages, que sigue usando el entorno `github-pages`. Si la migración falla, no se publica.
@@ -617,3 +642,4 @@ En cada fase: **🤖 Claude** = lo que programa Claude Code; **🙋 Usuario** = 
 - **2026-11-07** — Revisión del repositorio por Claude Code: lo que encaja, lo que no (sin `base` fijo en Vite, pruebas de PGlite fuera del repositorio y parte perdidas, `prices.generated.ts` aún en uso, `deploy.yml` con el entorno `github-pages`) y riesgos nuevos (push directo a `main`, retención real de 30 días, secretos de las copias, regla de los 60 días, script de limpieza). Decididas E-D12 a E-D16 con las recomendaciones de Claude; E-D17 pendiente. Creadas las ramas `staging` y `e0-preparar`. **E0 en curso.**
 - **2026-11-08** — E0 mezclado en `main` (PR #1). La primera copia falló al instalar la CLI de Supabase (`version: latest` → límite de la API de GitHub); se fija la versión 2.122.0 (rama `e0-arreglo-cli`).
 - **2026-11-08** — **E0 cerrada:** primera copia cifrada en `Laalameda-copias` (`copia-2026-11-08_1911.tar.gz.gpg`). `staging` puesta al día con `main`.
+- **2026-11-08** — Plan de E1 aprobado con las recomendaciones (E-D18: workflow manual, E1a + E1b; secretos de PRUEBAS en el entorno `pruebas`). Cambiada E-D16: no se recuperan las pruebas de PGlite. Proyecto de PRUEBAS creado por el usuario (`hrhhkzajweggpnupytms`). E1a programado en `e1-pruebas`.

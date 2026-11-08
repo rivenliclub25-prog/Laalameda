@@ -1,0 +1,246 @@
+# Estructura de la base de datos (ENTORNOS.md, fase E1). Se lanza a mano:
+#   Actions → Estructura de la base de datos → Run workflow → elegir rama y acción.
+#
+# Acciones:
+#   leer-produccion   Copia SOLO la estructura de producción (sin datos) como migración base
+#                     y la guarda en la rama elegida. Nunca desde main. No escribe en producción.
+#   aplicar-pruebas   Aplica las migraciones de la rama elegida al Supabase de PRUEBAS.
+#                     Se niega si la conexión no es la de PRUEBAS.
+#   comparar          Saca la estructura de producción y la de PRUEBAS y enseña las diferencias.
+#                     No escribe en ningún sitio.
+#   marcar-produccion Apunta en producción que ya tiene la migración base (migration repair).
+#                     NO toca las tablas del bar: solo la tabla de control de migraciones.
+#                     Exige escribir SI-PRODUCCION en «confirmacion».
+#
+# Secretos:
+#   BACKUP_DB_URL   (del repositorio)      Session pooler de PRODUCCIÓN (el mismo de las copias)
+#   PRUEBAS_DB_URL  (del entorno pruebas)  Session pooler de PRUEBAS
+
+name: Estructura de la base de datos
+
+on:
+  workflow_dispatch:
+    inputs:
+      accion:
+        description: Qué hacer
+        type: choice
+        required: true
+        options:
+          - leer-produccion
+          - aplicar-pruebas
+          - comparar
+          - marcar-produccion
+      confirmacion:
+        description: Solo para marcar-produccion, escribe SI-PRODUCCION
+        type: string
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: estructura-base-de-datos
+  cancel-in-progress: false
+
+env:
+  PROYECTO_PRODUCCION: hinebaxynlpjisteuaus
+  PROYECTO_PRUEBAS: hrhhkzajweggpnupytms
+  SUPABASE_CLI: 2.122.0
+
+jobs:
+  # ---------------------------------------------------------------------------
+  leer-produccion:
+    if: inputs.accion == 'leer-produccion'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - name: No se ejecuta desde main
+        run: |
+          if [ "$GITHUB_REF_NAME" = "main" ]; then
+            echo "::error::Lánzalo desde la rama de la fase (por ejemplo e1b-migraciones), nunca desde main."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - name: Comprobar que la conexión es la de producción
+        env:
+          BACKUP_DB_URL: ${{ secrets.BACKUP_DB_URL }}
+        run: |
+          set -euo pipefail
+          [ -n "$BACKUP_DB_URL" ] || { echo "::error::Falta el secreto BACKUP_DB_URL."; exit 1; }
+          case "$BACKUP_DB_URL" in *"$PROYECTO_PRODUCCION"*) ;; *) echo "::error::BACKUP_DB_URL no es la de producción."; exit 1 ;; esac
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: ${{ env.SUPABASE_CLI }}
+
+      - name: Copiar la estructura (sin datos)
+        env:
+          BACKUP_DB_URL: ${{ secrets.BACKUP_DB_URL }}
+        run: |
+          set -euo pipefail
+          mkdir -p supabase/migrations
+          if ls supabase/migrations/*_base.sql >/dev/null 2>&1; then
+            echo "::error::Ya hay una migración base en esta rama. Bórrala antes si quieres volver a generarla."
+            exit 1
+          fi
+          archivo="supabase/migrations/$(date -u +%Y%m%d%H%M%S)_base.sql"
+          supabase db dump --db-url "$BACKUP_DB_URL" -f "$archivo"
+          test -s "$archivo" || { echo "::error::La copia de la estructura ha salido vacía."; exit 1; }
+          echo "ARCHIVO=$archivo" >> "$GITHUB_ENV"
+
+      - name: Lo que el volcado no incluye (para revisarlo)
+        env:
+          BACKUP_DB_URL: ${{ secrets.BACKUP_DB_URL }}
+        run: |
+          set -euo pipefail
+          # El volcado de Supabase no incluye el esquema auth ni, a veces, la publicación de Realtime.
+          {
+            echo "### Triggers propios sobre auth.users"
+            echo '```'
+            psql "$BACKUP_DB_URL" -X -A -t -c "select tgname || ': ' || pg_get_triggerdef(oid) from pg_trigger where tgrelid = 'auth.users'::regclass and not tgisinternal order by tgname"
+            echo '```'
+            echo "### Tablas en la publicación supabase_realtime"
+            echo '```'
+            psql "$BACKUP_DB_URL" -X -A -t -c "select schemaname || '.' || tablename from pg_publication_tables where pubname = 'supabase_realtime' order by 1"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Guardar en la rama
+        run: |
+          set -euo pipefail
+          git config user.name "estructura[bot]"
+          git config user.email "estructura@users.noreply.github.com"
+          git add "$ARCHIVO"
+          git commit -m "Add the base migration read from production (structure only)"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+          echo "Migración base guardada en \`$ARCHIVO\` (rama \`$GITHUB_REF_NAME\`)." >> "$GITHUB_STEP_SUMMARY"
+
+  # ---------------------------------------------------------------------------
+  aplicar-pruebas:
+    if: inputs.accion == 'aplicar-pruebas'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: pruebas
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Comprobar que la conexión es la de PRUEBAS
+        env:
+          PRUEBAS_DB_URL: ${{ secrets.PRUEBAS_DB_URL }}
+        run: |
+          set -euo pipefail
+          [ -n "$PRUEBAS_DB_URL" ] || { echo "::error::Falta el secreto PRUEBAS_DB_URL en el entorno pruebas."; exit 1; }
+          case "$PRUEBAS_DB_URL" in *"$PROYECTO_PRODUCCION"*) echo "::error::PRUEBAS_DB_URL apunta a PRODUCCIÓN. No se aplica nada."; exit 1 ;; esac
+          case "$PRUEBAS_DB_URL" in *"$PROYECTO_PRUEBAS"*) ;; *) echo "::error::PRUEBAS_DB_URL no es la de PRUEBAS ($PROYECTO_PRUEBAS)."; exit 1 ;; esac
+          ls supabase/migrations/*.sql >/dev/null 2>&1 || { echo "::error::No hay migraciones en esta rama."; exit 1; }
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: ${{ env.SUPABASE_CLI }}
+
+      - name: Aplicar las migraciones en PRUEBAS
+        env:
+          PRUEBAS_DB_URL: ${{ secrets.PRUEBAS_DB_URL }}
+        run: |
+          set -euo pipefail
+          supabase db push --db-url "$PRUEBAS_DB_URL" --include-all --yes
+          {
+            echo "### Migraciones en PRUEBAS"
+            echo '```'
+            supabase migration list --db-url "$PRUEBAS_DB_URL"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # ---------------------------------------------------------------------------
+  comparar:
+    if: inputs.accion == 'comparar'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: pruebas
+    steps:
+      - name: Comprobar las conexiones
+        env:
+          BACKUP_DB_URL: ${{ secrets.BACKUP_DB_URL }}
+          PRUEBAS_DB_URL: ${{ secrets.PRUEBAS_DB_URL }}
+        run: |
+          set -euo pipefail
+          case "$BACKUP_DB_URL" in *"$PROYECTO_PRODUCCION"*) ;; *) echo "::error::BACKUP_DB_URL no es la de producción."; exit 1 ;; esac
+          case "$PRUEBAS_DB_URL" in *"$PROYECTO_PRUEBAS"*) ;; *) echo "::error::PRUEBAS_DB_URL no es la de PRUEBAS."; exit 1 ;; esac
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: ${{ env.SUPABASE_CLI }}
+
+      - name: Comparar las estructuras
+        env:
+          BACKUP_DB_URL: ${{ secrets.BACKUP_DB_URL }}
+          PRUEBAS_DB_URL: ${{ secrets.PRUEBAS_DB_URL }}
+        run: |
+          set -euo pipefail
+          supabase db dump --db-url "$BACKUP_DB_URL" -f produccion.sql
+          supabase db dump --db-url "$PRUEBAS_DB_URL" -f pruebas.sql
+          # Fuera comentarios, líneas vacías y ajustes de sesión: solo cuenta la estructura.
+          for f in produccion pruebas; do
+            grep -v -E '^\s*(--|SET |SELECT pg_catalog\.set_config|$)' "$f.sql" > "$f.limpio.sql"
+          done
+          if diff -u produccion.limpio.sql pruebas.limpio.sql > diferencias.txt; then
+            echo "### ✅ Iguales: PRUEBAS tiene la misma estructura que producción" >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo "### ⚠️ Hay diferencias ($(grep -c -E '^[+-][^+-]' diferencias.txt) líneas)"
+              echo "\`-\` = solo en producción · \`+\` = solo en PRUEBAS (primeras 300 líneas)"
+              echo '```diff'
+              head -n 300 diferencias.txt
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  # ---------------------------------------------------------------------------
+  marcar-produccion:
+    if: inputs.accion == 'marcar-produccion'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Confirmación
+        env:
+          CONFIRMACION: ${{ inputs.confirmacion }}
+        run: |
+          if [ "$CONFIRMACION" != "SI-PRODUCCION" ]; then
+            echo "::error::Para marcar producción escribe SI-PRODUCCION en «confirmacion». No se ha hecho nada."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - name: Buscar la migración base
+        env:
+          BACKUP_DB_URL: ${{ secrets.BACKUP_DB_URL }}
+        run: |
+          set -euo pipefail
+          case "$BACKUP_DB_URL" in *"$PROYECTO_PRODUCCION"*) ;; *) echo "::error::BACKUP_DB_URL no es la de producción."; exit 1 ;; esac
+          bases=$(ls supabase/migrations/*_base.sql 2>/dev/null || true)
+          [ "$(echo "$bases" | grep -c . || true)" = "1" ] || { echo "::error::Tiene que haber exactamente una migración *_base.sql en esta rama."; exit 1; }
+          version=$(basename "$bases" | cut -d_ -f1)
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: ${{ env.SUPABASE_CLI }}
+
+      - name: Marcar la migración base como aplicada (no toca las tablas)
+        env:
+          BACKUP_DB_URL: ${{ secrets.BACKUP_DB_URL }}
+        run: |
+          set -euo pipefail
+          supabase migration repair --status applied "$VERSION" --db-url "$BACKUP_DB_URL"
+          {
+            echo "### Producción: migración base $VERSION marcada como aplicada"
+            echo '```'
+            supabase migration list --db-url "$BACKUP_DB_URL"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
