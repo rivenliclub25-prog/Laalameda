@@ -82,6 +82,9 @@ El workflow solo funciona cuando está en `main`. Después de mezclar el PR de E
   | `password authentication failed` | La contraseña de la URI no es la buena (sección 1.3) |
   | `Permission denied (publickey)` | La deploy key no está, o le falta **Allow write access** (sección 1.2) |
   | `La copia ocupa … bytes` | La base de datos ha crecido mucho: hay que cambiar el sistema de copias (avisar) |
+  | `Failed to resolve latest Supabase CLI release: rate limit exceeded` | Pasaba con `version: latest`. Ya está fijada una versión en `backup.yml` (2026-11-08) |
+
+- **Versión de la CLI de Supabase:** está fija en `backup.yml` (`version: 2.122.0`). Si un día el volcado falla porque la versión es antigua, se cambia por una más reciente de https://github.com/supabase/cli/releases (con un PR, como cualquier cambio).
 
 ---
 
