@@ -38,6 +38,11 @@ Ya está configurado (2026-10-28). Si hubiera que rehacerlo:
 
 Quien entra con Google por primera vez ve «Un último paso» (aceptar la privacidad y elegir si quiere emails). Si el email ya tenía cuenta con contraseña, Supabase la une y entra en la misma. El botón se apaga con `googleEnabled = false` en `src/lib/auth.ts`.
 
+## Entornos y copias de seguridad
+
+- **`ENTORNOS.md`**: plan para separar PRUEBAS de PRODUCCIÓN (en marcha). Mientras no termine la fase E2, no se prueba nada que escriba datos: el `.env` local todavía apunta a producción.
+- **`COPIAS.md`**: copias de seguridad nocturnas de producción, cómo comprobarlas y cómo restaurarlas (solo en PRUEBAS).
+
 ## Empezar a trabajar desde otro ordenador
 
 Guía para un colaborador nuevo. Antes de nada, lee `CONTEXT.MD` (estado del proyecto y forma de trabajar) y, según la tarea, `POS.md` o `TICKETS.md`.
@@ -101,7 +106,7 @@ Abre `http://localhost:5173`. Para probar el club o el TPV, regístrate con tu e
 
 - **La base de datos es la real** (no hay una de pruebas): lo que hagas en local (ventas en el TPV, socios, tickets) queda en la de verdad. Prueba con cuidado y borra lo que crees.
 - **Cambios en la base de datos**: siempre en un archivo `.sql` **nuevo** dentro de `supabase/` (los ya ejecutados no se modifican), y avisando al dueño, que es quien lo ejecuta en Supabase.
-- **La carta y los precios se editan en el Panel → Carta**, no en el Excel (`Actualizar precios.bat` ya no cambia la web).
+- **La carta y los precios se editan en el Panel → Carta y Panel → Promos.** El antiguo Excel de precios y su script se retiraron (`ENTORNOS.md`, E0).
 - Si los dos tocáis la misma rama, haced `git pull` antes de empezar y antes de subir.
 
 ## Desarrollar localmente

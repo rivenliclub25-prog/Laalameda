@@ -1,4 +1,11 @@
 -- =====================================================================
+--  🔒 BLOQUEADO DESDE EL 2026-11-07 (ENTORNOS.md, E-D2 y E-D13)
+--  Este script ya se usó una vez (2026-11-02, antes de abrir). Hoy los datos
+--  de producción son REALES: ejecutarlo borraría la caja del bar. Por eso
+--  falla al instante. Se conserva solo como historia (en E1 pasa a
+--  supabase/legacy/). Para vaciar PRUEBAS se usará «Reiniciar pruebas» (E4).
+-- =====================================================================
+--
 --  La Alameda — POS: borrar las ventas de PRUEBA (un solo uso, antes de
 --  empezar a vender de verdad)
 --
@@ -16,6 +23,14 @@
 -- =====================================================================
 
 begin;
+
+-- Bloqueo: falla aquí y la transacción queda anulada, así que nada de lo
+-- que sigue se aplica (ni en el SQL Editor ni con psql).
+do $$
+begin
+  raise exception 'BLOQUEADO: este script ya se usó y hoy borraría las ventas REALES del bar. No se ejecuta (ENTORNOS.md, E-D2).';
+end;
+$$;
 
 -- Las ventas, devoluciones y cierres no se pueden borrar (están protegidos
 -- a propósito): se quita la protección solo durante esta limpieza.

@@ -132,7 +132,8 @@ Ramas:
 - **Tras publicar:** las 13 promos originales están **apagadas** (los socios ven «Disponible próximamente») hasta que el bar las encienda en **Panel → Promos**. Las de El Clásico se encienden con `supabase/promos-clasico.sql`.
 - `club-clientes` y `admin-dashboard`: ramas históricas, ya incluidas en `main`.
 - **2026-11-05: todas las ramas subidas a GitHub y puestas al día con `main`** (`admin-dashboard`, `club-clientes`, `google-auth`, `tickets` y `pos` apuntan al mismo commit que `main`). **Un compañero empieza a trabajar desde otro ordenador**: la guía para arrancar está en `README.md` → «Empezar a trabajar desde otro ordenador». A partir de ahora, cada tarea nueva en su propia rama creada desde `main`, y `git pull` antes de empezar.
-- `main` también recibe los commits automáticos del script de precios (`Actualizar precios.bat` → `scripts/publish-prices.ps1`), que exige estar en `main` y hace push él mismo. Antes de trabajar, ejecuta `git pull`.
+- **El script de precios del Excel se retiró el 2026-11-07** (`ENTORNOS.md`, E-D8): la carta y los precios se editan solo en el panel. Antes de trabajar, ejecuta `git pull`.
+- **Separación de pruebas y producción en marcha:** ver `ENTORNOS.md` (rama `staging`, fase E0 en la rama `e0-preparar`). Hasta E2, no se prueba nada que escriba datos en producción.
 
 ## Inicio de sesión con Google (rama `google-auth`): ✅ publicado (2026-10-28)
 
