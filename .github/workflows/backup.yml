@@ -62,7 +62,9 @@ jobs:
       - name: Instalar la CLI de Supabase
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          # Versión fija: con "latest" la acción consulta la API de GitHub sin identificarse
+          # y falla por límite de peticiones. Para actualizarla, ver COPIAS.md.
+          version: 2.122.0
 
       - name: Volcar la base de datos (solo lectura)
         working-directory: ${{ runner.temp }}
