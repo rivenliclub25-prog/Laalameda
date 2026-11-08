@@ -3971,3 +3971,41 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 
 
 
+-- =====================================================================
+--  Añadido a mano en la revisión de E1b (ENTORNOS.md), 2026-11-08
+--
+--  El volcado de Supabase no incluye lo que vive fuera del esquema public
+--  ni los datos. Esto es lo que producción ya tiene y un proyecto nuevo
+--  necesita para funcionar igual. Todo se puede ejecutar varias veces.
+--  En producción esta migración se marca como aplicada (no se ejecuta).
+-- =====================================================================
+
+-- Perfil automático al registrarse (legacy/schema.sql y admin.sql).
+DROP TRIGGER IF EXISTS "on_auth_user_created" ON "auth"."users";
+CREATE TRIGGER "on_auth_user_created"
+  AFTER INSERT ON "auth"."users"
+  FOR EACH ROW EXECUTE FUNCTION "public"."handle_new_user"();
+
+-- Tiempo real: tickets del socio (legacy/tickets.sql) y cuentas del TPV
+-- y de #/mesa (legacy/pos-pedidos.sql).
+DO $$
+DECLARE
+  t text;
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+    CREATE PUBLICATION supabase_realtime;
+  END IF;
+  FOREACH t IN ARRAY ARRAY['tickets', 'orders', 'order_items'] LOOP
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_publication_tables
+      WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = t
+    ) THEN
+      EXECUTE format('ALTER PUBLICATION supabase_realtime ADD TABLE public.%I', t);
+    END IF;
+  END LOOP;
+END;
+$$;
+
+-- Ajustes de la jornada: una única fila con la hora de cierre (03:00) y el
+-- margen de cortesía (30 min). Sin ella no funcionan las funciones de la jornada.
+INSERT INTO "public"."app_settings" ("id") VALUES (true) ON CONFLICT ("id") DO NOTHING;
