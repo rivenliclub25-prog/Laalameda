@@ -22,7 +22,7 @@ El club (registro, perfil y panel de administración en `#/admin`) usa Supabase.
 
 Si faltan, la web funciona igual y el club aparece como "disponible muy pronto". La clave `service_role` no debe ponerse nunca ni en el código ni en los secretos.
 
-La base de datos se crea ejecutando en el SQL Editor de Supabase, en este orden, `supabase/schema.sql`, `supabase/admin.sql`, `supabase/tickets.sql`, `supabase/google-auth.sql`, `supabase/catalogo.sql`, `supabase/catalogo-codigos.sql`, `supabase/pos.sql`, `supabase/pos-mesas.sql`, `supabase/pos-pedidos.sql`, `supabase/pos-promos.sql`, `supabase/pos-pedir-sin-qr.sql` y `supabase/pos-informes.sql`. Los archivos de promos especiales (como `supabase/promos-clasico.sql`) se ejecutan después, cuando toca. Para hacer admin a alguien, cambia su `role` a `admin` en **Table Editor → profiles**. Las promos se encienden y los camareros se marcan desde el **Panel del club** (`#/admin`).
+**La estructura de la base de datos está en `supabase/migrations/`** y se aplica con la CLI de Supabase desde GitHub (`ENTORNOS.md`, fase E1). **Nunca se pega SQL a mano en producción.** Los `.sql` que se usaban antes están en `supabase/legacy/` solo como historia (con el orden en que se aplicaron). Para hacer admin a alguien, cambia su `role` a `admin` en **Table Editor → profiles**. Las promos se encienden y los camareros se marcan desde el **Panel del club** (`#/admin`).
 
 ### Inicio de sesión con Google
 
