@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { publicBaseUrl } from '@/data/site';
+import { problemaDeEntorno } from '@/lib/entornoReglas';
 
 /** Se queda solo con el dominio, por si se copió la URL con "/rest/v1/" u otra ruta detrás. */
 function normalizeSupabaseUrl(value: string | undefined): string | undefined {
@@ -16,8 +17,14 @@ function normalizeSupabaseUrl(value: string | undefined): string | undefined {
 const supabaseUrl = normalizeSupabaseUrl(import.meta.env.VITE_SUPABASE_URL);
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim().replace(/^["']|["']$/g, '');
 
+/**
+ * Si el entorno y la base de datos no casan (p. ej. en local con la URL de PRODUCCIÓN), la web no
+ * arranca y enseña este texto (ENTORNOS.md, E2). vite.config.ts hace la misma comprobación antes.
+ */
+export const bloqueoEntorno = problemaDeEntorno(import.meta.env.VITE_APP_ENV, supabaseUrl);
+
 /** false si faltan las variables de entorno: la web sigue funcionando, pero el club se muestra como no disponible. */
-export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
+export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey) && !bloqueoEntorno;
 
 if (!isSupabaseConfigured) {
   console.warn('[club] Faltan VITE_SUPABASE_URL o VITE_SUPABASE_ANON_KEY: el club de clientes está desactivado.');
@@ -66,8 +73,8 @@ export function authRedirectUrl(): string {
 
 // Con valores de relleno si no hay configuración, para no romper la web; las llamadas se bloquean con isSupabaseConfigured.
 export const supabase = createClient(
-  supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder-anon-key',
+  (!bloqueoEntorno && supabaseUrl) || 'https://placeholder.supabase.co',
+  (!bloqueoEntorno && supabaseAnonKey) || 'placeholder-anon-key',
   {
     auth: {
       // Implícito: los enlaces de los correos funcionan aunque se abran en otro navegador (habitual en móvil).

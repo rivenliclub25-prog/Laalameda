@@ -580,6 +580,14 @@ Se divide en **E1a** y **E1b** (E-D18).
 
 ### E2 — Web por entornos
 
+- **Estado (2026-11-09):** plan aprobado con las recomendaciones (sin `VITE_APP_ENV` = `local`; la copia de la carta sigue en E4). Programado en la rama `e2-entornos`:
+  - `src/lib/entornoReglas.ts` (reglas sin dependencias, compartidas con `vite.config.ts`) y `src/lib/entorno.ts` (`entorno`, `esProduccion`, `storageKey()`).
+  - Guarda en `src/lib/supabase.ts` (`bloqueoEntorno`) y en `vite.config.ts` (no arranca `npm run dev` ni se construye con una combinación incorrecta). Probado: `.env` local con producción → bloqueado; `produccion` + producción → construye sin `noindex`; `pruebas` + PRUEBAS → construye con `noindex` y «[PRUEBAS]»; `produccion` + PRUEBAS → bloqueado; valor mal escrito → bloqueado.
+  - `src/components/Entorno.tsx`: aviso fijo arriba (pastilla centrada que no tapa clics, también en el TPV a pantalla completa) y pantalla de bloqueo. Título con «[LOCAL]» o «[PRUEBAS]».
+  - Claves del navegador con `storageKey()` (producción conserva los nombres de siempre).
+  - `deploy.yml` construye con `VITE_APP_ENV=produccion`; `.env.example` con los tres entornos; README actualizado.
+  - `scripts/check-env.mjs` no hace falta: la comprobación está en `vite.config.ts`, que se ejecuta en cada `npm run dev` y `npm run build`.
+
 - **🤖 Claude:**
   - `VITE_APP_ENV` (`local`, `pruebas`, `produccion`) y la guarda de `src/lib/supabase.ts` (sección 5, punto 2).
   - `scripts/check-env.mjs`: la misma comprobación antes del build.

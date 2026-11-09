@@ -1,6 +1,7 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { publicBaseUrl, siteConfig } from '@/data/site';
+import { storageKey } from '@/lib/entorno';
 
 /**
  * Carta y promos desde Supabase (función catalogo(), ver supabase/catalogo.sql).
@@ -326,7 +327,7 @@ export interface CatalogState {
   fromBackup: boolean;
 }
 
-const STORAGE_KEY = 'alameda-catalogo-v1';
+const STORAGE_KEY = storageKey('alameda-catalogo-v1');
 const RETRY_MS = 60_000;
 
 function readBrowserCopy(): RawCatalog | null {

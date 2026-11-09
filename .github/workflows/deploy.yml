@@ -44,6 +44,8 @@ jobs:
       - name: Build
         run: npm run build -- --base="${{ steps.pages.outputs.base_path }}"
         env:
+          # La web real. Si los secretos no son los de PRODUCCIÓN, la guarda de vite.config.ts para el build (ENTORNOS.md, E2).
+          VITE_APP_ENV: produccion
           # Settings → Secrets and variables → Actions. Solo la clave pública (anon), nunca la service_role.
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}

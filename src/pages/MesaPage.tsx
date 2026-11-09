@@ -10,6 +10,7 @@ import { usePromoStates } from '@/lib/tickets';
 import { fetchMisPedidos, mesaInfo, mesasParaPedir, pedirRonda, pedirRondaMesa, type MesaInfo, type MiPedido } from '@/lib/mesaPedido';
 import { subscribeChanges } from '@/lib/realtime';
 import { useScrollLock } from '@/lib/useScrollLock';
+import { storageKey } from '@/lib/entorno';
 
 /** Mismos límites que socio_pedir_ronda (supabase/pos-pedidos.sql). */
 const MAX_UNIDADES_RONDA = 20;
@@ -28,7 +29,7 @@ interface LineaCarrito {
   promo?: PromoVenta;
 }
 
-const cartKey = (token: string) => `alameda-mesa-carrito-${token}`;
+const cartKey = (token: string) => storageKey(`alameda-mesa-carrito-${token}`);
 
 /** El carrito se guarda en la pestaña para que sobreviva a iniciar sesión. */
 function loadCart(token: string): Carrito {

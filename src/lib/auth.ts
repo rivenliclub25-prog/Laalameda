@@ -1,5 +1,6 @@
 import { authRedirectUrl, isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { translateAuthError } from '@/lib/authErrors';
+import { storageKey } from '@/lib/entorno';
 
 export interface AuthResult {
   error: string | null;
@@ -50,7 +51,7 @@ export const googleEnabled = true;
  * Marca que la vuelta a la web viene de Google (para traducir bien sus errores, p. ej. si se cancela)
  * y, si el socio estaba pidiendo desde una mesa, a qué página volver en lugar del perfil.
  */
-const GOOGLE_FLAG = 'alameda-google-login';
+const GOOGLE_FLAG = storageKey('alameda-google-login');
 /** Solo se vuelve a páginas para pedir (#/mesa…, #/pedir): nunca a una dirección cualquiera. */
 const VOLVER_PERMITIDO = /^#\/(mesa\?[mn]=[A-Za-z0-9_-]{8,64}|pedir)$/;
 

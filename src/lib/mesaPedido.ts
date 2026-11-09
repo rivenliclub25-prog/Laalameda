@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { ticketErrorCode, translateTicketError } from '@/lib/ticketErrors';
 import type { TipoLinea } from '@/lib/pos';
+import { storageKey } from '@/lib/entorno';
 
 /** Mesa del QR (función pública mesa_info, ver supabase/pos-pedidos.sql). */
 export interface MesaInfo {
@@ -40,7 +41,7 @@ export async function mesasParaPedir(): Promise<{ mesas: { id: string; nombre: s
 }
 
 /** Última mesa elegida a mano en esta pestaña ("Seguir en Mesa 3"). */
-const MESA_ELEGIDA_KEY = 'alameda-mesa-elegida';
+const MESA_ELEGIDA_KEY = storageKey('alameda-mesa-elegida');
 
 export function loadMesaElegida(): string | null {
   try {
