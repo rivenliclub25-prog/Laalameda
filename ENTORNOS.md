@@ -8,7 +8,7 @@ Este documento es la propuesta para **separar las pruebas de los datos reales** 
 - No se programa ninguna fase hasta que estén 🟢 las decisiones de las que depende.
 - Antes de escribir código, se propone el plan de archivos de la fase y se espera aprobación.
 
-Última actualización: 2026-11-09 · Estado: **E0, E1 y E2 cerradas. E3 programada** (workflow «Publicar web de pruebas» en la rama `e3-web-pruebas`), pendiente de la parte del usuario y de la primera publicación.
+Última actualización: 2026-11-09 · Estado: **E0 a E3 cerradas. E4 programada** (workflow «Datos de PRUEBAS» en la rama `e4-datos-prueba`), pendiente de la parte del usuario.
 
 ---
 
@@ -54,9 +54,23 @@ Las dos tienen **la misma estructura** (tablas, funciones, permisos). Solo cambi
    VITE_SUPABASE_ANON_KEY=<clave anon de PRUEBAS>
    ```
 4. `npm run dev` → `http://localhost:5173`. Arriba tiene que salir la pastilla **«LOCAL · base de datos de PRUEBAS»** y la pestaña dice **«[LOCAL]»**.
-5. Crea una cuenta en la web (en PRUEBAS entra al momento, sin correo de confirmación). Si necesitas ser admin o camarero en PRUEBAS, pídeselo al dueño.
+5. Entra con un **usuario de prueba** (abajo) o crea una cuenta tuya (en PRUEBAS entra al momento, sin correo de confirmación).
 
-Hasta E4, **PRUEBAS no tiene datos**: la carta sale vacía y no hay mesas. Es normal.
+### Usuarios y datos de PRUEBAS
+
+| Usuario | Correo | Qué puede hacer |
+|---|---|---|
+| Admin | `admin@prueba.test` | Panel completo y TPV |
+| Camarero | `camarero@prueba.test` | TPV y canjear tickets |
+| Socio 1 / Socio 2 | `socio1@prueba.test`, `socio2@prueba.test` | Club, tickets y pedir desde la mesa |
+
+La contraseña de todos es la misma: pídesela al dueño (está en el secreto `PRUEBAS_USUARIOS_CLAVE`). Si en la web pone otros correos (`…+admin@…`), es porque Supabase no aceptó los `@prueba.test`.
+
+**Carta, mesas y «dejarlo como nuevo»:** GitHub → **Actions → Datos de PRUEBAS → Run workflow**:
+
+- `copiar-carta`: trae la carta pública de la web real (productos, precios y promos, que quedan encendidas). Repetirlo la pone al día.
+- `crear-usuarios`: crea los cuatro usuarios de arriba (si ya existen, solo repasa sus roles).
+- `reiniciar`: borra ventas, cuentas, cierres y tickets de prueba, vuelve a la venta nº 1 y deja las mesas 1–4. No toca la carta ni los usuarios.
 
 ### El día a día
 
@@ -91,13 +105,14 @@ Hasta E4, **PRUEBAS no tiene datos**: la carta sale vacía y no hay mesas. Es no
 | **Estructura de la base de datos** | `leer-produccion`, `aplicar-pruebas`, `comparar` y `marcar-produccion` | A mano |
 | **Deploy to GitHub Pages** | Publica la web real | Solo al mezclar en `main` |
 | **Publicar web de pruebas** | Construye con PRUEBAS y publica en `Laalameda-pruebas` | En cada push a `staging`, o a mano desde `staging` |
+| **Datos de PRUEBAS** | `copiar-carta`, `crear-usuarios` y `reiniciar` (solo PRUEBAS) | A mano |
 
 ### Si algo falla
 
 | Ves | Qué pasa |
 |---|---|
 | «🔒 … es la base de datos de PRODUCCIÓN» al arrancar | Tu `.env` apunta a producción. Pon la de PRUEBAS |
-| La carta vacía en local | PRUEBAS aún no tiene datos (llegan en E4) |
+| La carta vacía en local o en la web de pruebas | Falta copiarla: **Actions → Datos de PRUEBAS → `copiar-carta`** |
 | Errores de conexión con PRUEBAS | El plan gratuito pausa el proyecto tras 7 días sin uso: panel de Supabase → proyecto de pruebas → *Restore* |
 | No sale la pastilla «LOCAL» | No estás en la versión nueva: `git pull` en `main` |
 
@@ -105,8 +120,8 @@ Hasta E4, **PRUEBAS no tiene datos**: la carta sale vacía y no hay mesas. Es no
 
 | Fase | Qué trae |
 |---|---|
-| **E3** | Web de pruebas en `…github.io/Laalameda-pruebas/`, publicada sola desde `staging` (programada, falta activarla) |
-| **E4** | Datos y usuarios de prueba, y el botón «Reiniciar pruebas» |
+| ~~E3~~ | ✅ Web de pruebas en `…github.io/Laalameda-pruebas/`, publicada sola desde `staging` |
+| **E4** | Datos y usuarios de prueba, y el botón «Reiniciar pruebas» (programada, falta activarla) |
 | **E5** | Paso a producción automático con aprobación, y `main` protegida |
 | **E6** | Guía final y ensayo de restaurar una copia |
 
@@ -708,6 +723,7 @@ Se divide en **E1a** y **E1b** (E-D18).
 
 ### E3 — Web de PRUEBAS
 
+- **✅ Cerrada (2026-11-09):** PR #7 mezclado; `staging` puesta al día con `main`; primera publicación correcta (rama `gh-pages` de `Laalameda-pruebas`); Pages activado por el usuario. La web de pruebas muestra la pastilla «Entorno de pruebas», «[PRUEBAS]» en el título y la carta vacía (sin datos hasta E4).
 - **Estado (2026-11-09):** plan aprobado con las recomendaciones (E-D19; se publica en cada push a `staging` y a mano; carta vacía hasta E4). Programado en la rama `e3-web-pruebas`:
   - `.github/workflows/deploy-pruebas.yml`: solo desde `staging`; comprueba que los secretos son los de PRUEBAS; copia de la carta desde PRUEBAS (si falla, la de la web de pruebas, nunca la de la real); construye con `VITE_APP_ENV=pruebas` y `--base=/Laalameda-pruebas/`; sube `dist` a `Laalameda-pruebas` (rama `gh-pages` rehecha en cada publicación, con `.nojekyll`). Probado en local: construye con la ruta `/Laalameda-pruebas/`, `noindex` y «[PRUEBAS]».
 
@@ -720,6 +736,13 @@ Se divide en **E1a** y **E1b** (E-D18).
 - **Hecha cuando:** un push a `staging` publica la web de pruebas con la franja, y la web real no cambia.
 
 ### E4 — Datos de prueba
+
+- **Estado (2026-11-09):** plan aprobado con las recomendaciones (carta copiada de la pública; correos `@prueba.test`; sin ventas ficticias por ahora; `reiniciar` borra también los tickets pero no la carta ni los usuarios). Programado en la rama `e4-datos-prueba`:
+  - `.github/workflows/pruebas-datos.yml` (manual, entorno `pruebas`): `copiar-carta`, `crear-usuarios` y `reiniciar`. Antes de nada comprueba que `PRUEBAS_DB_URL` y `VITE_SUPABASE_URL` son de PRUEBAS y no de producción.
+  - `scripts/pruebas/carta-a-sql.mjs`: lee el `catalogo.json` público de la web real (sin claves: en el entorno `pruebas` los secretos tapan a los del repositorio con el mismo nombre, así que no se usan claves de producción) y genera SQL que **actualiza sin borrar** (lo que ya no está, se oculta). Limitación: la copia está tan al día como la última publicación de la web real.
+  - `scripts/pruebas/crear-usuarios.mjs`: registra los usuarios con la clave anon de PRUEBAS y prepara el SQL de roles. Alternativa si Supabase rechaza `@prueba.test`: secreto opcional `PRUEBAS_USUARIOS_EMAIL` (`nombre+admin@dominio`…).
+  - `supabase/pruebas/reiniciar.sql` + `supabase/seed.sql` (mesas 1–4 y ajustes), en una sola transacción.
+  - Comprobado en local con PGlite (sin guardarlo en el repositorio, E-D16): la carta de PRUEBAS sale idéntica a la pública (71 productos, mismos precios y promos), copiar dos veces no duplica, `reiniciar` vacía ventas y conserva carta y usuarios, la numeración vuelve a 1 y la protección de las ventas sigue activa.
 
 - **🤖 Claude:**
   - `supabase/seed.sql` (carta, promos, franjas, mesas 1–4, ajustes) y `scripts/pruebas-usuarios.mjs` (admin, camarero, socio1, socio2, con contraseñas que no se escriben en el repositorio).
@@ -772,3 +795,5 @@ Se divide en **E1a** y **E1b** (E-D18).
 - **2026-11-09** — E1b: migración base completada a mano (trigger de `auth.users`, Realtime y `app_settings`), aplicada en PRUEBAS. `comparar` destapó que en PRUEBAS `anon` y `authenticated` tenían todos los permisos por defecto: migración nueva de permisos y regla de permisos explícitos en cada migración. `comparar` mejorado (sin orden, sin `rls_auto_enable`). **E1 cerrada:** «Iguales» y migración base marcada en producción.
 - **2026-11-09** — **E2 cerrada** (PR #5). Añadida la «Guía rápida para el equipo» al principio del documento.
 - **2026-11-09** — Plan de E3 aprobado con las recomendaciones (E-D19: secretos de producción hasta E5). Workflow «Publicar web de pruebas» programado en `e3-web-pruebas`.
+- **2026-11-09** — **E3 cerrada:** web de pruebas publicada y comprobada por el usuario.
+- **2026-11-09** — Plan de E4 aprobado con las recomendaciones. Workflow «Datos de PRUEBAS» programado en `e4-datos-prueba`.

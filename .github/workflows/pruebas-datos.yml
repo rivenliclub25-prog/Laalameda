@@ -1,0 +1,119 @@
+# Datos de PRUEBAS (ENTORNOS.md, fase E4). Se lanza a mano:
+#   Actions → Datos de PRUEBAS → Run workflow → elegir la acción.
+#
+# Acciones (todas SOLO sobre el Supabase de PRUEBAS; se niegan si la conexión es la de producción):
+#   copiar-carta    Copia la carta PÚBLICA de la web real (catalogo.json, sin claves) a PRUEBAS.
+#                   Actualiza y añade; lo que ya no está en la carta real se oculta. Promos encendidas.
+#   crear-usuarios  Crea admin, camarero, socio1 y socio2 (contraseña: PRUEBAS_USUARIOS_CLAVE)
+#                   y les da su rol. Si ya existen, solo se repasan los roles.
+#   reiniciar       Vacía ventas, cuentas, devoluciones, cierres, registro del TPV y tickets;
+#                   numeración desde 1; mesas 1–4 nuevas y ajustes. Conserva carta y usuarios.
+#
+# Secretos del entorno "pruebas": PRUEBAS_DB_URL, VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY,
+# PRUEBAS_USUARIOS_CLAVE y, opcional, PRUEBAS_USUARIOS_EMAIL (ver scripts/pruebas/crear-usuarios.mjs).
+
+name: Datos de PRUEBAS
+
+on:
+  workflow_dispatch:
+    inputs:
+      accion:
+        description: Qué hacer en PRUEBAS
+        type: choice
+        required: true
+        options:
+          - copiar-carta
+          - crear-usuarios
+          - reiniciar
+
+permissions:
+  contents: read
+
+concurrency:
+  group: datos-pruebas
+  cancel-in-progress: false
+
+env:
+  PROYECTO_PRUEBAS: hrhhkzajweggpnupytms
+  PROYECTO_PRODUCCION: hinebaxynlpjisteuaus
+
+jobs:
+  datos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: pruebas
+    steps:
+      - name: Comprobar que todo es de PRUEBAS
+        env:
+          PRUEBAS_DB_URL: ${{ secrets.PRUEBAS_DB_URL }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+        run: |
+          set -euo pipefail
+          for nombre in PRUEBAS_DB_URL VITE_SUPABASE_URL; do
+            valor="${!nombre}"
+            [ -n "$valor" ] || { echo "::error::Falta el secreto $nombre en el entorno pruebas."; exit 1; }
+            case "$valor" in *"$PROYECTO_PRODUCCION"*) echo "::error::$nombre apunta a PRODUCCIÓN. No se hace nada."; exit 1 ;; esac
+            case "$valor" in *"$PROYECTO_PRUEBAS"*) ;; *) echo "::error::$nombre no es de PRUEBAS ($PROYECTO_PRUEBAS)."; exit 1 ;; esac
+          done
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # -----------------------------------------------------------------
+      - name: Copiar la carta pública a PRUEBAS
+        if: inputs.accion == 'copiar-carta'
+        env:
+          PRUEBAS_DB_URL: ${{ secrets.PRUEBAS_DB_URL }}
+        run: |
+          set -euo pipefail
+          node scripts/pruebas/carta-a-sql.mjs "$RUNNER_TEMP/carta.sql"
+          {
+            echo "### Carta copiada a PRUEBAS"
+            echo '```'
+            psql "$PRUEBAS_DB_URL" -X -q -v ON_ERROR_STOP=1 --single-transaction -f "$RUNNER_TEMP/carta.sql"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # -----------------------------------------------------------------
+      - name: Instalar dependencias
+        if: inputs.accion == 'crear-usuarios'
+        run: npm ci
+
+      - name: Crear los usuarios de prueba
+        if: inputs.accion == 'crear-usuarios'
+        env:
+          PRUEBAS_DB_URL: ${{ secrets.PRUEBAS_DB_URL }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          PRUEBAS_USUARIOS_CLAVE: ${{ secrets.PRUEBAS_USUARIOS_CLAVE }}
+          PRUEBAS_USUARIOS_EMAIL: ${{ secrets.PRUEBAS_USUARIOS_EMAIL }}
+        run: |
+          set -euo pipefail
+          node scripts/pruebas/crear-usuarios.mjs "$RUNNER_TEMP/roles.sql"
+          {
+            echo "### Usuarios de PRUEBAS"
+            echo "La contraseña de todos es la del secreto \`PRUEBAS_USUARIOS_CLAVE\`."
+            echo '```'
+            psql "$PRUEBAS_DB_URL" -X -q -v ON_ERROR_STOP=1 --single-transaction -f "$RUNNER_TEMP/roles.sql"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # -----------------------------------------------------------------
+      - name: Reiniciar PRUEBAS
+        if: inputs.accion == 'reiniciar'
+        env:
+          PRUEBAS_DB_URL: ${{ secrets.PRUEBAS_DB_URL }}
+        run: |
+          set -euo pipefail
+          psql "$PRUEBAS_DB_URL" -X -q -v ON_ERROR_STOP=1 --single-transaction \
+            -f supabase/pruebas/reiniciar.sql -f supabase/seed.sql
+          {
+            echo "### PRUEBAS reiniciado"
+            echo '```'
+            psql "$PRUEBAS_DB_URL" -X -A -F ' · ' -c "select (select count(*) from public.sales) as ventas, (select count(*) from public.tickets) as tickets, (select count(*) from public.mesas) as mesas, (select count(*) from public.products where activo) as productos, (select count(*) from public.profiles) as usuarios"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
