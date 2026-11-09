@@ -185,17 +185,36 @@ jobs:
           supabase db dump --db-url "$BACKUP_DB_URL" -f produccion.sql
           supabase db dump --db-url "$PRUEBAS_DB_URL" -f pruebas.sql
           # Fuera comentarios, líneas vacías y ajustes de sesión: solo cuenta la estructura.
+          # También rls_auto_enable(): la crea Supabase en los proyectos nuevos, no es nuestra.
           for f in produccion pruebas; do
-            grep -v -E '^\s*(--|SET |SELECT pg_catalog\.set_config|$)' "$f.sql" > "$f.limpio.sql"
+            grep -v -E '^\s*(--|SET |SELECT pg_catalog\.set_config|$)' "$f.sql" \
+              | awk '/FUNCTION "public"\."rls_auto_enable"\(\) RETURNS/ {saltar=1}
+                     saltar && /^\$\$;/ {saltar=0; next}
+                     saltar {next}
+                     /"public"\."rls_auto_enable"\(\)/ {next}
+                     {print}' > "$f.limpio.sql"
+            # El orden de los GRANT cambia si se quitan y se vuelven a dar permisos: se compara sin orden.
+            sort "$f.limpio.sql" > "$f.ordenado.sql"
           done
-          if diff -u produccion.limpio.sql pruebas.limpio.sql > diferencias.txt; then
-            echo "### ✅ Iguales: PRUEBAS tiene la misma estructura que producción" >> "$GITHUB_STEP_SUMMARY"
-          else
+          nota="Se ignoran el orden de las líneas y \`public.rls_auto_enable()\` (la crea Supabase en los proyectos nuevos)."
+          if cmp -s produccion.ordenado.sql pruebas.ordenado.sql; then
             {
-              echo "### ⚠️ Hay diferencias ($(grep -c -E '^[+-][^+-]' diferencias.txt) líneas)"
-              echo "\`-\` = solo en producción · \`+\` = solo en PRUEBAS (primeras 300 líneas)"
-              echo '```diff'
-              head -n 300 diferencias.txt
+              echo "### ✅ Iguales: PRUEBAS tiene la misma estructura que producción"
+              echo "$nota"
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            comm -23 produccion.ordenado.sql pruebas.ordenado.sql > solo-produccion.txt
+            comm -13 produccion.ordenado.sql pruebas.ordenado.sql > solo-pruebas.txt
+            {
+              echo "### ⚠️ Hay diferencias"
+              echo "$nota"
+              echo "#### Solo en producción ($(wc -l < solo-produccion.txt) líneas, primeras 150)"
+              echo '```sql'
+              head -n 150 solo-produccion.txt
+              echo '```'
+              echo "#### Solo en PRUEBAS ($(wc -l < solo-pruebas.txt) líneas, primeras 150)"
+              echo '```sql'
+              head -n 150 solo-pruebas.txt
               echo '```'
             } >> "$GITHUB_STEP_SUMMARY"
           fi
