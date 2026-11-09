@@ -1,9 +1,10 @@
+import { storageKey } from '@/lib/entorno';
 /**
  * Sonido y vibración para la pantalla del camarero. El sonido se genera con la Web Audio API
  * (sin archivos). La preferencia de sonido se recuerda en este dispositivo.
  */
 
-const SOUND_KEY = 'alameda-canjear-sonido';
+const SOUND_KEY = storageKey('alameda-canjear-sonido');
 
 export function loadSoundEnabled(): boolean {
   try {

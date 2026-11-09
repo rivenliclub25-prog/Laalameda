@@ -17,8 +17,8 @@ La compilación ajusta la ruta base del repositorio para que también funcionen 
 
 El club (registro, perfil y panel de administración en `#/admin`) usa Supabase. Necesita dos variables con la URL del proyecto y la clave pública *anon*:
 
-- **En local**: copia `.env.example` como `.env` y rellénalo. El archivo `.env` no se sube a git.
-- **En GitHub Pages**: en **Settings → Secrets and variables → Actions** crea los secretos `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`. El workflow los usa al compilar.
+- **En local**: copia `.env.example` como `.env` y rellénalo con el Supabase de **PRUEBAS**. El archivo `.env` no se sube a git. Si pones la URL de producción, la web no arranca (es a propósito, `ENTORNOS.md`).
+- **En GitHub Pages**: en **Settings → Secrets and variables → Actions** están los secretos `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` de PRODUCCIÓN. El workflow los usa al compilar con `VITE_APP_ENV=produccion`.
 
 Si faltan, la web funciona igual y el club aparece como "disponible muy pronto". La clave `service_role` no debe ponerse nunca ni en el código ni en los secretos.
 
@@ -40,7 +40,7 @@ Quien entra con Google por primera vez ve «Un último paso» (aceptar la privac
 
 ## Entornos y copias de seguridad
 
-- **`ENTORNOS.md`**: plan para separar PRUEBAS de PRODUCCIÓN (en marcha). Mientras no termine la fase E2, no se prueba nada que escriba datos: el `.env` local todavía apunta a producción.
+- **`ENTORNOS.md`**: separación de PRUEBAS y PRODUCCIÓN. Desde la fase E2, el `.env` local apunta siempre a PRUEBAS (`hrhhkzajweggpnupytms`): lo que hagas en local no toca los datos reales. Arriba sale la franja «LOCAL · base de datos de PRUEBAS».
 - **`COPIAS.md`**: copias de seguridad nocturnas de producción, cómo comprobarlas y cómo restaurarlas (solo en PRUEBAS).
 
 ## Empezar a trabajar desde otro ordenador
@@ -51,7 +51,7 @@ Guía para un colaborador nuevo. Antes de nada, lee `CONTEXT.MD` (estado del pro
 
 - **Git** y **Node.js 20 o superior** (versión LTS).
 - **Acceso al repositorio**: el dueño te invita en GitHub (**Settings → Collaborators**) y aceptas la invitación que llega por correo.
-- **Las dos claves de Supabase** (`VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`): pídeselas al dueño **por privado**. Son las públicas; la clave `service_role` / secret no se usa nunca en este proyecto.
+- **La clave anon del Supabase de PRUEBAS** (`VITE_SUPABASE_ANON_KEY`): pídesela al dueño **por privado**. La URL ya viene en `.env.example`. Nunca se usan en local las claves de producción, ni la clave `service_role` / secret.
 
 ### 2. Descargar y arrancar el proyecto
 
@@ -61,7 +61,7 @@ cd Laalameda
 npm ci
 ```
 
-Crea el archivo `.env` a partir del ejemplo (en Windows con PowerShell: `Copy-Item .env.example .env`; en Mac o Linux: `cp .env.example .env`) y pega las dos claves. **El archivo `.env` no se sube nunca a git** (está en `.gitignore`).
+Crea el archivo `.env` a partir del ejemplo (en Windows con PowerShell: `Copy-Item .env.example .env`; en Mac o Linux: `cp .env.example .env`) y pega la clave anon de PRUEBAS. **El archivo `.env` no se sube nunca a git** (está en `.gitignore`).
 
 ```sh
 npm run dev
