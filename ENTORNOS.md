@@ -8,7 +8,104 @@ Este documento es la propuesta para **separar las pruebas de los datos reales** 
 - No se programa ninguna fase hasta que estén 🟢 las decisiones de las que depende.
 - Antes de escribir código, se propone el plan de archivos de la fase y se espera aprobación.
 
-Última actualización: 2026-11-07 · Estado: **E1 cerrada (2026-11-09):** PRUEBAS (`hrhhkzajweggpnupytms`) tiene la misma estructura que producción y producción tiene marcada la migración base. Pendiente: PR de `e1b-migraciones` a `main`. Siguiente: **E2** (plan pendiente de aprobar).
+Última actualización: 2026-11-09 · Estado: **E0, E1 y E2 cerradas.** Hay copias nocturnas, un Supabase de PRUEBAS con la misma estructura que producción y una web que no puede tocar producción fuera de producción. Siguiente: **E3** (web de pruebas publicada desde `staging`).
+
+---
+
+## Guía rápida para el equipo (léela primero)
+
+> Resumen de cómo trabajamos desde noviembre de 2026. El resto del documento cuenta el porqué y el plan completo; esto es lo que hace falta saber para trabajar.
+
+### La idea
+
+**Los datos del bar (ventas, caja, socios, tickets) son reales y no se tocan nunca para probar.** Por eso hay dos bases de datos:
+
+| | Supabase | Para qué | Quién la usa |
+|---|---|---|---|
+| **PRODUCCIÓN** | `hinebaxynlpjisteuaus` | El bar de verdad | Solo la web publicada (`…github.io/Laalameda/`) |
+| **PRUEBAS** | `hrhhkzajweggpnupytms` | Probar con datos inventados | Tu ordenador y, desde E3, la web de pruebas |
+
+```
+   TU ORDENADOR  ──────────►  PRUEBAS            (datos inventados, se pueden romper)
+   npm run dev                hrhhkzajweggpnupytms
+
+   WEB REAL      ──────────►  PRODUCCIÓN         (datos reales, intocable)
+   rama main                  hinebaxynlpjisteuaus
+```
+
+Las dos tienen **la misma estructura** (tablas, funciones, permisos). Solo cambian los datos.
+
+### Ramas
+
+| Rama | Qué es | Quién escribe |
+|---|---|---|
+| `main` | La web real. Cada cambio aquí se publica solo | **Nadie hace push directo.** Entra por PR y lo mezcla el dueño |
+| `staging` | Lo que se está probando (desde E3 se publica en la web de pruebas) | Por PR o mezclando ramas de trabajo |
+| Ramas de trabajo (`miguel`, `e3-…`) | Una por tarea | Cada uno la suya |
+
+### El primer día
+
+1. Trae lo último: `git switch main` y `git pull`.
+2. Instala: `npm ci`.
+3. Crea el `.env` a partir de `.env.example` (`Copy-Item .env.example .env`) y pega la **clave anon de PRUEBAS** (pídela por privado). Debe quedar:
+   ```
+   VITE_APP_ENV=local
+   VITE_SUPABASE_URL=https://hrhhkzajweggpnupytms.supabase.co
+   VITE_SUPABASE_ANON_KEY=<clave anon de PRUEBAS>
+   ```
+4. `npm run dev` → `http://localhost:5173`. Arriba tiene que salir la pastilla **«LOCAL · base de datos de PRUEBAS»** y la pestaña dice **«[LOCAL]»**.
+5. Crea una cuenta en la web (en PRUEBAS entra al momento, sin correo de confirmación). Si necesitas ser admin o camarero en PRUEBAS, pídeselo al dueño.
+
+Hasta E4, **PRUEBAS no tiene datos**: la carta sale vacía y no hay mesas. Es normal.
+
+### El día a día
+
+1. `git switch main` → `git pull` → `git switch -c nombre-de-la-tarea`.
+2. Programa y prueba en local (todo va a PRUEBAS: puedes vender, cobrar o borrar sin miedo).
+3. Antes de subir: `npm run typecheck`, `npm run lint` y `npm run build`.
+4. `git push -u origin nombre-de-la-tarea` y abre un **PR a `main`**. Lo revisa y lo mezcla el dueño. (Desde E3, primero a `staging` para probarlo en la web de pruebas.)
+
+### Cambios en la base de datos
+
+- **Nunca se pega SQL a mano**, ni en producción ni en PRUEBAS.
+- Cada cambio es un archivo **nuevo** en `supabase/migrations/` con fecha delante (`20261115100000_stock.sql`). Los ya aplicados no se editan; si algo falla, otra migración que lo arregle.
+- **Permisos explícitos:** Supabase da por defecto todos los permisos a `anon` y `authenticated` sobre todo lo nuevo. Cada migración los quita (`revoke all … from anon, authenticated;`) y da solo los necesarios.
+- Se aplica en PRUEBAS desde GitHub: **Actions → Estructura de la base de datos → Run workflow** → tu rama → `aplicar-pruebas`. Después, `comparar` enseña en qué se diferencia de producción.
+- **A producción todavía no llega ninguna migración nueva:** el paso automático y con aprobación es la fase E5. Hasta entonces, nada de cambios de base de datos que haya que publicar sin hablarlo antes.
+- Los `.sql` antiguos están en `supabase/legacy/`, solo como historia.
+
+### Lo que te protege
+
+- **Si en local pones la URL de producción, la web no arranca** (ni `npm run dev` ni `npm run build`) y explica por qué. La web real solo se construye con la de producción.
+- Lo guardado en el navegador (carrito, carta…) va separado por entorno.
+- `main` publica la web real: por eso solo entra por PR.
+- La clave `service_role` / secret no se usa nunca, en ningún sitio.
+
+### Herramientas en GitHub (Actions)
+
+| Workflow | Qué hace | Cuándo |
+|---|---|---|
+| **Copia de seguridad** | Copia cifrada de producción en el repositorio privado `Laalameda-copias` (últimas 30) | Cada noche, solo (`COPIAS.md`) |
+| **Estructura de la base de datos** | `leer-produccion`, `aplicar-pruebas`, `comparar` y `marcar-produccion` | A mano |
+| **Deploy to GitHub Pages** | Publica la web real | Solo al mezclar en `main` |
+
+### Si algo falla
+
+| Ves | Qué pasa |
+|---|---|
+| «🔒 … es la base de datos de PRODUCCIÓN» al arrancar | Tu `.env` apunta a producción. Pon la de PRUEBAS |
+| La carta vacía en local | PRUEBAS aún no tiene datos (llegan en E4) |
+| Errores de conexión con PRUEBAS | El plan gratuito pausa el proyecto tras 7 días sin uso: panel de Supabase → proyecto de pruebas → *Restore* |
+| No sale la pastilla «LOCAL» | No estás en la versión nueva: `git pull` en `main` |
+
+### Lo que falta
+
+| Fase | Qué trae |
+|---|---|
+| **E3** | Web de pruebas en `…github.io/Laalameda-pruebas/`, publicada sola desde `staging` |
+| **E4** | Datos y usuarios de prueba, y el botón «Reiniciar pruebas» |
+| **E5** | Paso a producción automático con aprobación, y `main` protegida |
+| **E6** | Guía final y ensayo de restaurar una copia |
 
 ---
 
@@ -580,6 +677,7 @@ Se divide en **E1a** y **E1b** (E-D18).
 
 ### E2 — Web por entornos
 
+- **✅ Cerrada (2026-11-09):** probada por el usuario (`.env` local en PRUEBAS, franja, guarda) y mezclada en `main` (PR #5). `staging` puesta al día.
 - **Estado (2026-11-09):** plan aprobado con las recomendaciones (sin `VITE_APP_ENV` = `local`; la copia de la carta sigue en E4). Programado en la rama `e2-entornos`:
   - `src/lib/entornoReglas.ts` (reglas sin dependencias, compartidas con `vite.config.ts`) y `src/lib/entorno.ts` (`entorno`, `esProduccion`, `storageKey()`).
   - Guarda en `src/lib/supabase.ts` (`bloqueoEntorno`) y en `vite.config.ts` (no arranca `npm run dev` ni se construye con una combinación incorrecta). Probado: `.env` local con producción → bloqueado; `produccion` + producción → construye sin `noindex`; `pruebas` + PRUEBAS → construye con `noindex` y «[PRUEBAS]»; `produccion` + PRUEBAS → bloqueado; valor mal escrito → bloqueado.
@@ -660,3 +758,4 @@ Se divide en **E1a** y **E1b** (E-D18).
 - **2026-11-08** — **E0 cerrada:** primera copia cifrada en `Laalameda-copias` (`copia-2026-11-08_1911.tar.gz.gpg`). `staging` puesta al día con `main`.
 - **2026-11-08** — Plan de E1 aprobado con las recomendaciones (E-D18: workflow manual, E1a + E1b; secretos de PRUEBAS en el entorno `pruebas`). Cambiada E-D16: no se recuperan las pruebas de PGlite. Proyecto de PRUEBAS creado por el usuario (`hrhhkzajweggpnupytms`). E1a programado en `e1-pruebas`.
 - **2026-11-09** — E1b: migración base completada a mano (trigger de `auth.users`, Realtime y `app_settings`), aplicada en PRUEBAS. `comparar` destapó que en PRUEBAS `anon` y `authenticated` tenían todos los permisos por defecto: migración nueva de permisos y regla de permisos explícitos en cada migración. `comparar` mejorado (sin orden, sin `rls_auto_enable`). **E1 cerrada:** «Iguales» y migración base marcada en producción.
+- **2026-11-09** — **E2 cerrada** (PR #5). Añadida la «Guía rápida para el equipo» al principio del documento.
