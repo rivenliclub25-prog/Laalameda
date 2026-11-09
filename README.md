@@ -40,7 +40,7 @@ Quien entra con Google por primera vez ve «Un último paso» (aceptar la privac
 
 ## Entornos y copias de seguridad
 
-- **`ENTORNOS.md`**: separación de PRUEBAS y PRODUCCIÓN. Desde la fase E2, el `.env` local apunta siempre a PRUEBAS (`hrhhkzajweggpnupytms`): lo que hagas en local no toca los datos reales. Arriba sale la franja «LOCAL · base de datos de PRUEBAS».
+- **`ENTORNOS.md`** (empieza por su «Guía rápida para el equipo»): separación de PRUEBAS y PRODUCCIÓN. Desde la fase E2, el `.env` local apunta siempre a PRUEBAS (`hrhhkzajweggpnupytms`): lo que hagas en local no toca los datos reales. Arriba sale la franja «LOCAL · base de datos de PRUEBAS».
 - **`COPIAS.md`**: copias de seguridad nocturnas de producción, cómo comprobarlas y cómo restaurarlas (solo en PRUEBAS).
 
 ## Empezar a trabajar desde otro ordenador
