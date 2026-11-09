@@ -8,7 +8,7 @@ Este documento es la propuesta para **separar las pruebas de los datos reales** 
 - No se programa ninguna fase hasta que estén 🟢 las decisiones de las que depende.
 - Antes de escribir código, se propone el plan de archivos de la fase y se espera aprobación.
 
-Última actualización: 2026-11-07 · Estado: **E1 en curso (2026-11-08).** E1a (workflow «Estructura de la base de datos») en la rama `e1-pruebas`, pendiente de PR a `main`. Proyecto de PRUEBAS creado: `hrhhkzajweggpnupytms`.
+Última actualización: 2026-11-07 · Estado: **E1 cerrada (2026-11-09):** PRUEBAS (`hrhhkzajweggpnupytms`) tiene la misma estructura que producción y producción tiene marcada la migración base. Pendiente: PR de `e1b-migraciones` a `main`. Siguiente: **E2** (plan pendiente de aprobar).
 
 ---
 
@@ -574,6 +574,7 @@ Se divide en **E1a** y **E1b** (E-D18).
   - `leer-produccion` ✅: el resumen confirmó el trigger `on_auth_user_created` y las tablas de Realtime `order_items`, `orders` y `tickets`, que se añadieron a mano al final de la migración base, junto con la fila de `app_settings`.
   - `aplicar-pruebas` ✅ y primer `comparar`: **184 líneas de diferencia**, todas de permisos. En PRUEBAS, `anon` y `authenticated` tenían todos los permisos por defecto de Supabase sobre tablas y funciones internas (en producción se quitaron con los `.sql` antiguos y el volcado no recoge lo quitado). Arreglo: migración nueva `20261109094300_permisos_como_produccion.sql`, generada a partir de la base: quita todo a `anon`/`authenticated` y devuelve exactamente lo de producción (20 tablas, 4 secuencias, 65 funciones). En producción no cambia nada.
   - Diferencia que se acepta: `public.rls_auto_enable()`, que Supabase crea solo en los proyectos nuevos (activa RLS en las tablas nuevas). No es nuestra.
+  - **Cierre (2026-11-09):** tercer `comparar` → **✅ Iguales**. `marcar-produccion` → «Producción: migración base 20261108194540 marcada como aplicada». En producción queda pendiente `20261109094300_permisos_como_produccion.sql`, a propósito: se aplicará en E5 y no cambia nada (producción ya tiene esos permisos).
   - Segundo `comparar` (tras la migración de permisos): **solo diferencias de orden** (mismos `GRANT` en otro orden) y `rls_auto_enable`. `comparar` se mejora: compara sin tener en cuenta el orden de las líneas, aparta `rls_auto_enable` y enseña solo las líneas que están en un lado y no en el otro.
   - **Para revisar más adelante (no se toca ahora):** en producción, `anon` y `authenticated` tienen `TRUNCATE` sobre `profiles` (permiso por defecto de Supabase que nunca se quitó). La API (PostgREST) no permite `TRUNCATE`, así que no se puede usar desde la web, pero conviene quitarlo con una migración cuando exista el paso a producción (E5).
 
@@ -650,3 +651,4 @@ Se divide en **E1a** y **E1b** (E-D18).
 - **2026-11-08** — E0 mezclado en `main` (PR #1). La primera copia falló al instalar la CLI de Supabase (`version: latest` → límite de la API de GitHub); se fija la versión 2.122.0 (rama `e0-arreglo-cli`).
 - **2026-11-08** — **E0 cerrada:** primera copia cifrada en `Laalameda-copias` (`copia-2026-11-08_1911.tar.gz.gpg`). `staging` puesta al día con `main`.
 - **2026-11-08** — Plan de E1 aprobado con las recomendaciones (E-D18: workflow manual, E1a + E1b; secretos de PRUEBAS en el entorno `pruebas`). Cambiada E-D16: no se recuperan las pruebas de PGlite. Proyecto de PRUEBAS creado por el usuario (`hrhhkzajweggpnupytms`). E1a programado en `e1-pruebas`.
+- **2026-11-09** — E1b: migración base completada a mano (trigger de `auth.users`, Realtime y `app_settings`), aplicada en PRUEBAS. `comparar` destapó que en PRUEBAS `anon` y `authenticated` tenían todos los permisos por defecto: migración nueva de permisos y regla de permisos explícitos en cada migración. `comparar` mejorado (sin orden, sin `rls_auto_enable`). **E1 cerrada:** «Iguales» y migración base marcada en producción.
