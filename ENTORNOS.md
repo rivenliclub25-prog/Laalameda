@@ -8,7 +8,7 @@ Este documento es la propuesta para **separar las pruebas de los datos reales** 
 - No se programa ninguna fase hasta que estén 🟢 las decisiones de las que depende.
 - Antes de escribir código, se propone el plan de archivos de la fase y se espera aprobación.
 
-Última actualización: 2026-11-09 · Estado: **E0 a E3 cerradas. E4 programada** (workflow «Datos de PRUEBAS» en la rama `e4-datos-prueba`), pendiente de la parte del usuario.
+Última actualización: 2026-11-09 · Estado: **E0 a E4 cerradas.** PRUEBAS tiene carta, usuarios y mesas, y se reinicia con un botón. Siguiente: **E5** (paso a producción controlado), plan pendiente de aprobar.
 
 ---
 
@@ -121,7 +121,7 @@ La contraseña de todos es la misma: pídesela al dueño (está en el secreto `P
 | Fase | Qué trae |
 |---|---|
 | ~~E3~~ | ✅ Web de pruebas en `…github.io/Laalameda-pruebas/`, publicada sola desde `staging` |
-| **E4** | Datos y usuarios de prueba, y el botón «Reiniciar pruebas» (programada, falta activarla) |
+| ~~E4~~ | ✅ Datos y usuarios de prueba, y el botón «Reiniciar pruebas» |
 | **E5** | Paso a producción automático con aprobación, y `main` protegida |
 | **E6** | Guía final y ensayo de restaurar una copia |
 
@@ -737,6 +737,7 @@ Se divide en **E1a** y **E1b** (E-D18).
 
 ### E4 — Datos de prueba
 
+- **✅ Cerrada (2026-11-09):** PR mezclado; el usuario lanzó `copiar-carta`, `crear-usuarios` y `reiniciar` sin errores (los correos `@prueba.test` se aceptaron) y comprobó los datos en la web de pruebas.
 - **Estado (2026-11-09):** plan aprobado con las recomendaciones (carta copiada de la pública; correos `@prueba.test`; sin ventas ficticias por ahora; `reiniciar` borra también los tickets pero no la carta ni los usuarios). Programado en la rama `e4-datos-prueba`:
   - `.github/workflows/pruebas-datos.yml` (manual, entorno `pruebas`): `copiar-carta`, `crear-usuarios` y `reiniciar`. Antes de nada comprueba que `PRUEBAS_DB_URL` y `VITE_SUPABASE_URL` son de PRUEBAS y no de producción.
   - `scripts/pruebas/carta-a-sql.mjs`: lee el `catalogo.json` público de la web real (sin claves: en el entorno `pruebas` los secretos tapan a los del repositorio con el mismo nombre, así que no se usan claves de producción) y genera SQL que **actualiza sin borrar** (lo que ya no está, se oculta). Limitación: la copia está tan al día como la última publicación de la web real.
@@ -797,3 +798,4 @@ Se divide en **E1a** y **E1b** (E-D18).
 - **2026-11-09** — Plan de E3 aprobado con las recomendaciones (E-D19: secretos de producción hasta E5). Workflow «Publicar web de pruebas» programado en `e3-web-pruebas`.
 - **2026-11-09** — **E3 cerrada:** web de pruebas publicada y comprobada por el usuario.
 - **2026-11-09** — Plan de E4 aprobado con las recomendaciones. Workflow «Datos de PRUEBAS» programado en `e4-datos-prueba`.
+- **2026-11-09** — **E4 cerrada:** datos y usuarios de prueba funcionando en la web de pruebas.
