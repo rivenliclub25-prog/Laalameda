@@ -8,7 +8,7 @@ Este documento es la propuesta para **separar las pruebas de los datos reales** 
 - No se programa ninguna fase hasta que estén 🟢 las decisiones de las que depende.
 - Antes de escribir código, se propone el plan de archivos de la fase y se espera aprobación.
 
-Última actualización: 2026-11-09 · Estado: **E0, E1 y E2 cerradas. E3 programada** (workflow «Publicar web de pruebas» en la rama `e3-web-pruebas`), pendiente de la parte del usuario y de la primera publicación.
+Última actualización: 2026-11-09 · Estado: **E0 a E3 cerradas.** La web de pruebas (`https://rivenliclub25-prog.github.io/Laalameda-pruebas/`) se publica sola desde `staging`. Siguiente: **E4** (datos y usuarios de prueba), plan pendiente de aprobar.
 
 ---
 
@@ -105,7 +105,7 @@ Hasta E4, **PRUEBAS no tiene datos**: la carta sale vacía y no hay mesas. Es no
 
 | Fase | Qué trae |
 |---|---|
-| **E3** | Web de pruebas en `…github.io/Laalameda-pruebas/`, publicada sola desde `staging` (programada, falta activarla) |
+| ~~E3~~ | ✅ Web de pruebas en `…github.io/Laalameda-pruebas/`, publicada sola desde `staging` |
 | **E4** | Datos y usuarios de prueba, y el botón «Reiniciar pruebas» |
 | **E5** | Paso a producción automático con aprobación, y `main` protegida |
 | **E6** | Guía final y ensayo de restaurar una copia |
@@ -708,6 +708,7 @@ Se divide en **E1a** y **E1b** (E-D18).
 
 ### E3 — Web de PRUEBAS
 
+- **✅ Cerrada (2026-11-09):** PR #7 mezclado; `staging` puesta al día con `main`; primera publicación correcta (rama `gh-pages` de `Laalameda-pruebas`); Pages activado por el usuario. La web de pruebas muestra la pastilla «Entorno de pruebas», «[PRUEBAS]» en el título y la carta vacía (sin datos hasta E4).
 - **Estado (2026-11-09):** plan aprobado con las recomendaciones (E-D19; se publica en cada push a `staging` y a mano; carta vacía hasta E4). Programado en la rama `e3-web-pruebas`:
   - `.github/workflows/deploy-pruebas.yml`: solo desde `staging`; comprueba que los secretos son los de PRUEBAS; copia de la carta desde PRUEBAS (si falla, la de la web de pruebas, nunca la de la real); construye con `VITE_APP_ENV=pruebas` y `--base=/Laalameda-pruebas/`; sube `dist` a `Laalameda-pruebas` (rama `gh-pages` rehecha en cada publicación, con `.nojekyll`). Probado en local: construye con la ruta `/Laalameda-pruebas/`, `noindex` y «[PRUEBAS]».
 
@@ -772,3 +773,4 @@ Se divide en **E1a** y **E1b** (E-D18).
 - **2026-11-09** — E1b: migración base completada a mano (trigger de `auth.users`, Realtime y `app_settings`), aplicada en PRUEBAS. `comparar` destapó que en PRUEBAS `anon` y `authenticated` tenían todos los permisos por defecto: migración nueva de permisos y regla de permisos explícitos en cada migración. `comparar` mejorado (sin orden, sin `rls_auto_enable`). **E1 cerrada:** «Iguales» y migración base marcada en producción.
 - **2026-11-09** — **E2 cerrada** (PR #5). Añadida la «Guía rápida para el equipo» al principio del documento.
 - **2026-11-09** — Plan de E3 aprobado con las recomendaciones (E-D19: secretos de producción hasta E5). Workflow «Publicar web de pruebas» programado en `e3-web-pruebas`.
+- **2026-11-09** — **E3 cerrada:** web de pruebas publicada y comprobada por el usuario.
