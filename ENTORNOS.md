@@ -303,6 +303,7 @@ Supabase apunta en cada proyecto qué migraciones ya tiene, así que cada una se
 
 - **Siempre compatibles con la versión anterior de la web:** primero se añade (columna, tabla, función nueva), y solo en una migración posterior se quita lo viejo. Así no se rompe nada entre que se migra la base de datos y se publica la web.
 - **Nada de borrar ni reescribir datos reales** en una migración sin una decisión explícita en este documento.
+- **Permisos explícitos en cada migración.** Supabase da por defecto **todos** los permisos a `anon` y `authenticated` sobre cada tabla, función o secuencia nueva de `public`. Cada migración que cree algo tiene que quitarlos y dar solo los necesarios (`revoke all … from anon, authenticated;` y luego los `grant` justos), como hacían los `.sql` antiguos. Lo descubrió `comparar` el 2026-11-09 (ver E1b).
 - **Nunca se cambia el esquema a mano en el panel de producción.** Un workflow semanal compara producción con las migraciones y avisa si alguien lo ha hecho.
 - **Cada migración se prueba aplicándola primero en el Supabase de PRUEBAS** (un Supabase real). Las pruebas de PGlite no se mantienen (E-D16, cambiada el 2026-11-08).
 
@@ -569,6 +570,11 @@ Se divide en **E1a** y **E1b** (E-D18).
   - Sin pruebas de PGlite (E-D16, cambiada).
 - **🙋 Usuario (al final, con aprobación explícita):** acción `marcar-produccion` (`supabase migration repair --status applied <fecha>`). **No ejecuta la migración:** solo apunta que producción ya la tiene.
 - **Hecha cuando:** PRUEBAS tiene exactamente la estructura de producción («Iguales» en `comparar`) y producción figura con la migración base aplicada.
+- **Avance (2026-11-09):**
+  - `leer-produccion` ✅: el resumen confirmó el trigger `on_auth_user_created` y las tablas de Realtime `order_items`, `orders` y `tickets`, que se añadieron a mano al final de la migración base, junto con la fila de `app_settings`.
+  - `aplicar-pruebas` ✅ y primer `comparar`: **184 líneas de diferencia**, todas de permisos. En PRUEBAS, `anon` y `authenticated` tenían todos los permisos por defecto de Supabase sobre tablas y funciones internas (en producción se quitaron con los `.sql` antiguos y el volcado no recoge lo quitado). Arreglo: migración nueva `20261109094300_permisos_como_produccion.sql`, generada a partir de la base: quita todo a `anon`/`authenticated` y devuelve exactamente lo de producción (20 tablas, 4 secuencias, 65 funciones). En producción no cambia nada.
+  - Diferencia que se acepta: `public.rls_auto_enable()`, que Supabase crea solo en los proyectos nuevos (activa RLS en las tablas nuevas). No es nuestra.
+  - **Para revisar más adelante (no se toca ahora):** en producción, `anon` y `authenticated` tienen `TRUNCATE` sobre `profiles` (permiso por defecto de Supabase que nunca se quitó). La API (PostgREST) no permite `TRUNCATE`, así que no se puede usar desde la web, pero conviene quitarlo con una migración cuando exista el paso a producción (E5).
 
 ### E2 — Web por entornos
 
