@@ -1,0 +1,115 @@
+# Publica la WEB DE PRUEBAS (ENTORNOS.md, fase E3) en
+# https://rivenliclub25-prog.github.io/Laalameda-pruebas/
+#
+# - Se lanza en cada push a la rama staging, y a mano (Run workflow, rama staging).
+# - Construye con el Supabase de PRUEBAS (VITE_APP_ENV=pruebas): la guarda de vite.config.ts
+#   impide construir si los secretos fueran los de producción.
+# - Sube la web construida al repositorio público Laalameda-pruebas (rama gh-pages), rehaciendo
+#   la rama: solo guarda la última versión. Nunca toca la web real.
+#
+# Secretos del entorno "pruebas" (Settings → Environments → pruebas):
+#   VITE_SUPABASE_URL       URL del Supabase de PRUEBAS (https://hrhhkzajweggpnupytms.supabase.co)
+#   VITE_SUPABASE_ANON_KEY  clave anon de PRUEBAS
+#   PRUEBAS_DEPLOY_KEY      clave privada de la deploy key con escritura en Laalameda-pruebas
+
+name: Publicar web de pruebas
+
+on:
+  push:
+    branches:
+      - staging
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: web-pruebas
+  cancel-in-progress: true
+
+env:
+  PRUEBAS_REPO: git@github.com:rivenliclub25-prog/Laalameda-pruebas.git
+  BASE: /Laalameda-pruebas/
+  PROYECTO_PRUEBAS: hrhhkzajweggpnupytms
+  PROYECTO_PRODUCCION: hinebaxynlpjisteuaus
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: pruebas
+      url: https://rivenliclub25-prog.github.io/Laalameda-pruebas/
+    steps:
+      - name: Solo desde staging
+        run: |
+          if [ "$GITHUB_REF_NAME" != "staging" ]; then
+            echo "::error::La web de pruebas se publica desde la rama staging (lanzado desde $GITHUB_REF_NAME)."
+            exit 1
+          fi
+
+      - name: Comprobar los secretos de PRUEBAS
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          PRUEBAS_DEPLOY_KEY: ${{ secrets.PRUEBAS_DEPLOY_KEY }}
+        run: |
+          set -euo pipefail
+          for nombre in VITE_SUPABASE_URL VITE_SUPABASE_ANON_KEY PRUEBAS_DEPLOY_KEY; do
+            [ -n "${!nombre}" ] || { echo "::error::Falta el secreto $nombre en el entorno pruebas."; exit 1; }
+          done
+          case "$VITE_SUPABASE_URL" in *"$PROYECTO_PRODUCCION"*) echo "::error::VITE_SUPABASE_URL del entorno pruebas es la de PRODUCCIÓN."; exit 1 ;; esac
+          case "$VITE_SUPABASE_URL" in *"$PROYECTO_PRUEBAS"*) ;; *) echo "::error::VITE_SUPABASE_URL no es la de PRUEBAS ($PROYECTO_PRUEBAS)."; exit 1 ;; esac
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      # Copia de la carta desde PRUEBAS. Si falla, la de la web de pruebas; nunca la de la web real.
+      - name: Generar copia de la carta (PRUEBAS)
+        run: npm run catalog-snapshot
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          CATALOG_FALLBACK_URL: https://rivenliclub25-prog.github.io/Laalameda-pruebas/catalogo.json
+
+      - name: Construir
+        run: npm run build -- --base="$BASE"
+        env:
+          VITE_APP_ENV: pruebas
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
+      - name: Publicar en Laalameda-pruebas
+        env:
+          PRUEBAS_DEPLOY_KEY: ${{ secrets.PRUEBAS_DEPLOY_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          printf '%s\n' "$PRUEBAS_DEPLOY_KEY" > ~/.ssh/pruebas
+          chmod 600 ~/.ssh/pruebas
+          ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts 2>/dev/null
+          export GIT_SSH_COMMAND="ssh -i ~/.ssh/pruebas -o IdentitiesOnly=yes"
+
+          cd dist
+          touch .nojekyll   # GitHub Pages sirve los archivos tal cual (sin Jekyll)
+          git init --quiet -b gh-pages
+          git config user.name "web-pruebas[bot]"
+          git config user.email "web-pruebas@users.noreply.github.com"
+          git add -A
+          git commit --quiet -m "Web de pruebas desde staging ${GITHUB_SHA::7}"
+          git push --quiet --force "$PRUEBAS_REPO" gh-pages
+          rm -f ~/.ssh/pruebas
+
+          {
+            echo "### Web de pruebas publicada"
+            echo ""
+            echo "- Desde \`staging\` (${GITHUB_SHA::7})"
+            echo "- https://rivenliclub25-prog.github.io/Laalameda-pruebas/ (tarda 1–2 minutos en verse)"
+          } >> "$GITHUB_STEP_SUMMARY"

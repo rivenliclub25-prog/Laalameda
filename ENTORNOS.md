@@ -8,7 +8,7 @@ Este documento es la propuesta para **separar las pruebas de los datos reales** 
 - No se programa ninguna fase hasta que estén 🟢 las decisiones de las que depende.
 - Antes de escribir código, se propone el plan de archivos de la fase y se espera aprobación.
 
-Última actualización: 2026-11-09 · Estado: **E0, E1 y E2 cerradas.** Hay copias nocturnas, un Supabase de PRUEBAS con la misma estructura que producción y una web que no puede tocar producción fuera de producción. Siguiente: **E3** (web de pruebas publicada desde `staging`).
+Última actualización: 2026-11-09 · Estado: **E0, E1 y E2 cerradas. E3 programada** (workflow «Publicar web de pruebas» en la rama `e3-web-pruebas`), pendiente de la parte del usuario y de la primera publicación.
 
 ---
 
@@ -63,7 +63,9 @@ Hasta E4, **PRUEBAS no tiene datos**: la carta sale vacía y no hay mesas. Es no
 1. `git switch main` → `git pull` → `git switch -c nombre-de-la-tarea`.
 2. Programa y prueba en local (todo va a PRUEBAS: puedes vender, cobrar o borrar sin miedo).
 3. Antes de subir: `npm run typecheck`, `npm run lint` y `npm run build`.
-4. `git push -u origin nombre-de-la-tarea` y abre un **PR a `main`**. Lo revisa y lo mezcla el dueño. (Desde E3, primero a `staging` para probarlo en la web de pruebas.)
+4. `git push -u origin nombre-de-la-tarea`.
+5. **Para probarlo en la web de pruebas** (móvil, tablet, TPV del bar): PR de tu rama a **`staging`**. Al mezclarlo, GitHub publica sola la web de pruebas en `https://rivenliclub25-prog.github.io/Laalameda-pruebas/` (1–2 minutos).
+6. **Para publicarlo de verdad:** PR a **`main`**. Lo revisa y lo mezcla el dueño.
 
 ### Cambios en la base de datos
 
@@ -88,6 +90,7 @@ Hasta E4, **PRUEBAS no tiene datos**: la carta sale vacía y no hay mesas. Es no
 | **Copia de seguridad** | Copia cifrada de producción en el repositorio privado `Laalameda-copias` (últimas 30) | Cada noche, solo (`COPIAS.md`) |
 | **Estructura de la base de datos** | `leer-produccion`, `aplicar-pruebas`, `comparar` y `marcar-produccion` | A mano |
 | **Deploy to GitHub Pages** | Publica la web real | Solo al mezclar en `main` |
+| **Publicar web de pruebas** | Construye con PRUEBAS y publica en `Laalameda-pruebas` | En cada push a `staging`, o a mano desde `staging` |
 
 ### Si algo falla
 
@@ -102,7 +105,7 @@ Hasta E4, **PRUEBAS no tiene datos**: la carta sale vacía y no hay mesas. Es no
 
 | Fase | Qué trae |
 |---|---|
-| **E3** | Web de pruebas en `…github.io/Laalameda-pruebas/`, publicada sola desde `staging` |
+| **E3** | Web de pruebas en `…github.io/Laalameda-pruebas/`, publicada sola desde `staging` (programada, falta activarla) |
 | **E4** | Datos y usuarios de prueba, y el botón «Reiniciar pruebas» |
 | **E5** | Paso a producción automático con aprobación, y `main` protegida |
 | **E6** | Guía final y ensayo de restaurar una copia |
@@ -579,6 +582,12 @@ Precios consultados el 2026-11-07, en dólares. **Comprobar en https://supabase.
 - **Consecuencia:** E1 se divide en **E1a** (solo el workflow, porque GitHub solo deja lanzar a mano workflows que ya están en `main`) y **E1b** (lo demás).
 - **Secretos:** `BACKUP_DB_URL` (del repositorio, ya existe) para leer producción; `PRUEBAS_DB_URL` en el entorno `pruebas` (sin revisores) para PRUEBAS.
 
+#### E-D19 — Secretos de producción hasta E5
+- **Estado:** 🟢 Decidida (2026-11-09)
+- **Decisión:** los secretos de la web real (`VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` de producción) **se quedan como secretos del repositorio** hasta E5. No se mueven al entorno `production` en E3, como decía la sección 5.
+- **Por qué:** `deploy.yml` usa el entorno `github-pages` (obligatorio para GitHub Pages); moverlos ahora rompería la publicación de la web real. En E5 se reorganiza junto con la aprobación.
+- Los de PRUEBAS sí van en el entorno `pruebas`: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `PRUEBAS_DEPLOY_KEY` y `PRUEBAS_DB_URL`.
+
 #### E-D17 — Push directo a `main` hasta E5
 - **Estado:** 🟡 Pendiente (recomendación de Claude, 2026-11-07)
 - **Propuesta:** hasta que `main` esté protegida (E5), **nadie hace push directo a `main`**: cada uno trabaja en su rama (`miguel`, `miguel2`, `e0-preparar`…) y entra en `main` con un PR que mezcla el usuario. Hay que avisar al compañero.
@@ -699,6 +708,9 @@ Se divide en **E1a** y **E1b** (E-D18).
 
 ### E3 — Web de PRUEBAS
 
+- **Estado (2026-11-09):** plan aprobado con las recomendaciones (E-D19; se publica en cada push a `staging` y a mano; carta vacía hasta E4). Programado en la rama `e3-web-pruebas`:
+  - `.github/workflows/deploy-pruebas.yml`: solo desde `staging`; comprueba que los secretos son los de PRUEBAS; copia de la carta desde PRUEBAS (si falla, la de la web de pruebas, nunca la de la real); construye con `VITE_APP_ENV=pruebas` y `--base=/Laalameda-pruebas/`; sube `dist` a `Laalameda-pruebas` (rama `gh-pages` rehecha en cada publicación, con `.nojekyll`). Probado en local: construye con la ruta `/Laalameda-pruebas/`, `noindex` y «[PRUEBAS]».
+
 - **🙋 Usuario:**
   - Crear el repositorio público `Laalameda-pruebas` y activar Pages (*Deploy from a branch → gh-pages*).
   - Deploy key con escritura en `Laalameda-pruebas`.
@@ -759,3 +771,4 @@ Se divide en **E1a** y **E1b** (E-D18).
 - **2026-11-08** — Plan de E1 aprobado con las recomendaciones (E-D18: workflow manual, E1a + E1b; secretos de PRUEBAS en el entorno `pruebas`). Cambiada E-D16: no se recuperan las pruebas de PGlite. Proyecto de PRUEBAS creado por el usuario (`hrhhkzajweggpnupytms`). E1a programado en `e1-pruebas`.
 - **2026-11-09** — E1b: migración base completada a mano (trigger de `auth.users`, Realtime y `app_settings`), aplicada en PRUEBAS. `comparar` destapó que en PRUEBAS `anon` y `authenticated` tenían todos los permisos por defecto: migración nueva de permisos y regla de permisos explícitos en cada migración. `comparar` mejorado (sin orden, sin `rls_auto_enable`). **E1 cerrada:** «Iguales» y migración base marcada en producción.
 - **2026-11-09** — **E2 cerrada** (PR #5). Añadida la «Guía rápida para el equipo» al principio del documento.
+- **2026-11-09** — Plan de E3 aprobado con las recomendaciones (E-D19: secretos de producción hasta E5). Workflow «Publicar web de pruebas» programado en `e3-web-pruebas`.
