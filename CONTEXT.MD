@@ -133,6 +133,7 @@ Ramas:
 - `club-clientes` y `admin-dashboard`: ramas históricas, ya incluidas en `main`.
 - **2026-11-05: todas las ramas subidas a GitHub y puestas al día con `main`** (`admin-dashboard`, `club-clientes`, `google-auth`, `tickets` y `pos` apuntan al mismo commit que `main`). **Un compañero empieza a trabajar desde otro ordenador**: la guía para arrancar está en `README.md` → «Empezar a trabajar desde otro ordenador». A partir de ahora, cada tarea nueva en su propia rama creada desde `main`, y `git pull` antes de empezar.
 - **El script de precios del Excel se retiró el 2026-11-07** (`ENTORNOS.md`, E-D8): la carta y los precios se editan solo en el panel. Antes de trabajar, ejecuta `git pull`.
+- **Mejoras del TPV (2026-11-10, ver `POS.md`):** entrega A (justificante de pago 80 mm, pestañas Mesas · Barra · Venta rápida, puestos de barra) y entrega B (pagar por separado en mesas y barra), por el flujo nuevo (rama → `staging` → `main` con aprobación).
 - **Separación de pruebas y producción en marcha:** ver `ENTORNOS.md`. E0 (copias nocturnas en `Laalameda-copias`) y E1 (Supabase de PRUEBAS `hrhhkzajweggpnupytms` con la misma estructura) cerradas. **La base de datos ya no se cambia pegando SQL:** las migraciones están en `supabase/migrations/` y los `.sql` antiguos en `supabase/legacy/`. Hasta E2, no se prueba nada que escriba datos en producción.
 
 ## Inicio de sesión con Google (rama `google-auth`): ✅ publicado (2026-10-28)

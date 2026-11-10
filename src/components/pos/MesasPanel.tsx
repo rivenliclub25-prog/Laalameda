@@ -30,6 +30,7 @@ import {
   type ItemPedido,
   type LineaCuenta,
   type Mesa,
+  type TipoMesa,
   type Metodo,
   type PromoVenta,
   type VentaResultado,
@@ -68,11 +69,14 @@ const ESTADO_LINEA: Record<LineaCuenta['estado'], { label: string; className: st
 
 /** Mesas del TPV: cuadrícula de mesas y la cuenta de la mesa elegida. */
 export function MesasPanel({
+  tipo,
   tabs,
   promos,
   catalogLoading,
   soundOn,
 }: {
+  /** «mesa» (pestaña Mesas) o «barra» (pestaña Barra: puestos Barra 1, Barra 2…). */
+  tipo: TipoMesa;
   tabs: MenuTab[];
   promos: PromoVenta[];
   catalogLoading: boolean;
@@ -132,7 +136,7 @@ export function MesasPanel({
   }, [load]);
 
   const cuentaPorMesa = useMemo(() => new Map(cuentas.map((c) => [c.mesa_id, c])), [cuentas]);
-  const visibles = mesas.filter((m) => m.activa || cuentaPorMesa.has(m.id));
+  const visibles = mesas.filter((m) => m.tipo === tipo && (m.activa || cuentaPorMesa.has(m.id)));
   const selected = mesas.find((m) => m.id === selectedId) ?? null;
 
   if (selected) {
@@ -157,9 +161,11 @@ export function MesasPanel({
   }
 
   return (
-    <section aria-label="Mesas">
+    <section aria-label={tipo === 'barra' ? 'Puestos de barra' : 'Mesas'}>
       <div className="flex items-center justify-between">
-        <p className="text-sm text-carbon/65">Toca una mesa para ver o abrir su cuenta.</p>
+        <p className="text-sm text-carbon/65">
+          {tipo === 'barra' ? 'Toca un puesto de barra para ver o abrir su cuenta.' : 'Toca una mesa para ver o abrir su cuenta.'}
+        </p>
         <button type="button" onClick={load} aria-label="Actualizar mesas" className={`flex h-10 w-10 items-center justify-center rounded-full text-carbon/60 hover:bg-carbon/10 ${focusRing}`}>
           <RefreshCw size={17} />
         </button>
@@ -176,8 +182,12 @@ export function MesasPanel({
         </div>
       ) : visibles.length === 0 ? (
         <div className="mt-4 rounded-r-lg border border-dashed border-piedra/70 bg-white/50 px-6 py-12 text-center">
-          <p className="font-display text-2xl font-semibold text-vino">No hay mesas</p>
-          <p className="mt-1 text-sm text-carbon/70">Un admin puede crearlas en Panel → Mesas.</p>
+          <p className="font-display text-2xl font-semibold text-vino">{tipo === 'barra' ? 'No hay puestos de barra' : 'No hay mesas'}</p>
+          <p className="mt-1 text-sm text-carbon/70">
+            {tipo === 'barra'
+              ? 'Un admin puede crearlos en Panel → Mesas (tipo «Barra»: Barra 1, Barra 2…).'
+              : 'Un admin puede crearlas en Panel → Mesas.'}
+          </p>
         </div>
       ) : (
         <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">

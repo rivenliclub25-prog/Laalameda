@@ -177,12 +177,16 @@ export function resumenVentas(ventas: Venta[]) {
 // Mesas y cuentas de mesa (P3, ver supabase/pos-mesas.sql)
 // ---------------------------------------------------------------------
 
+/** «mesa»: mesas con QR. «barra»: puestos de barra (Barra 1, Barra 2…), sin pedido desde el móvil. */
+export type TipoMesa = 'mesa' | 'barra';
+
 export interface Mesa {
   id: string;
   nombre: string;
   token: string;
   orden: number;
   activa: boolean;
+  tipo: TipoMesa;
 }
 
 export type EstadoLinea = 'pendiente' | 'aceptada' | 'servida' | 'anulada';
@@ -229,7 +233,7 @@ async function rpc<T>(fn: string, args: Record<string, unknown>): Promise<{ data
 }
 
 export async function fetchMesas(): Promise<{ mesas: Mesa[]; error: string | null }> {
-  const { data, error } = await supabase.from('mesas').select('id, nombre, token, orden, activa').order('orden').order('nombre');
+  const { data, error } = await supabase.from('mesas').select('id, nombre, token, orden, activa, tipo').order('orden').order('nombre');
   if (error) return { mesas: [], error: translateTicketError(error) };
   return { mesas: data as Mesa[], error: null };
 }
@@ -324,17 +328,21 @@ export function promosParaVender(promotions: Promotion[], states: Map<string, Pr
 
 // --- Admin: mesas y devoluciones ---
 
-export async function createMesa(nombre: string, orden: number): Promise<{ mesa: Mesa | null; error: string | null }> {
-  const { data, error } = await supabase.from('mesas').insert({ nombre, orden }).select('id, nombre, token, orden, activa').single();
+export async function createMesa(
+  nombre: string,
+  orden: number,
+  tipo: TipoMesa = 'mesa'
+): Promise<{ mesa: Mesa | null; error: string | null }> {
+  const { data, error } = await supabase.from('mesas').insert({ nombre, orden, tipo }).select('id, nombre, token, orden, activa, tipo').single();
   if (error) return { mesa: null, error: translateTicketError(error) };
   return { mesa: data as Mesa, error: null };
 }
 
 export async function updateMesa(
   id: string,
-  changes: Partial<Pick<Mesa, 'nombre' | 'orden' | 'activa'>>
+  changes: Partial<Pick<Mesa, 'nombre' | 'orden' | 'activa' | 'tipo'>>
 ): Promise<{ mesa: Mesa | null; error: string | null }> {
-  const { data, error } = await supabase.from('mesas').update(changes).eq('id', id).select('id, nombre, token, orden, activa').single();
+  const { data, error } = await supabase.from('mesas').update(changes).eq('id', id).select('id, nombre, token, orden, activa, tipo').single();
   if (error) return { mesa: null, error: translateTicketError(error) };
   return { mesa: data as Mesa, error: null };
 }

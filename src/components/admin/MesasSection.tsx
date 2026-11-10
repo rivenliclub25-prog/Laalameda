@@ -5,16 +5,20 @@ import { Notice, SubmitButton, Switch, TextField, focusRing } from '@/components
 import { Modal } from '@/components/club/Modal';
 import { reorder } from '@/lib/adminCatalog';
 import { useScrollLock } from '@/lib/useScrollLock';
-import { createMesa, fetchMesas, mesaQrUrl, regenerarQrMesa, updateMesa, type Mesa } from '@/lib/pos';
+import { createMesa, fetchMesas, mesaQrUrl, regenerarQrMesa, updateMesa, type Mesa, type TipoMesa } from '@/lib/pos';
 
 const iconButton = `flex h-9 w-9 items-center justify-center rounded-r-sm border border-carbon/15 bg-white text-carbon/70 transition-colors hover:border-vino hover:text-vino disabled:cursor-not-allowed disabled:opacity-30 ${focusRing}`;
 
-/** Pestaña "Mesas" del panel: crear, renombrar, ordenar, desactivar e imprimir sus QR. */
+/**
+ * Pestaña "Mesas" del panel: mesas (con QR para pedir desde el móvil) y puestos de barra (Barra 1,
+ * Barra 2…, solo para el TPV). Crear, renombrar, ordenar, desactivar e imprimir los QR de las mesas.
+ */
 export function MesasSection() {
   const [mesas, setMesas] = useState<Mesa[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [editing, setEditing] = useState<Mesa | 'new' | null>(null);
+  /** Una mesa para renombrar, o el tipo de la nueva que se va a crear. */
+  const [editing, setEditing] = useState<Mesa | TipoMesa | null>(null);
   const [qrMesa, setQrMesa] = useState<Mesa | null>(null);
   const [printing, setPrinting] = useState<Mesa[] | null>(null);
 
@@ -59,22 +63,27 @@ export function MesasSection() {
     }
   };
 
-  const activas = mesas.filter((m) => m.activa);
+  // Los QR son solo para las mesas: los puestos de barra no se piden desde el móvil.
+  const activas = mesas.filter((m) => m.activa && m.tipo === 'mesa');
 
   return (
     <>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="font-display text-2xl font-semibold text-vino">Mesas</h2>
+          <h2 className="font-display text-2xl font-semibold text-vino">Mesas y barra</h2>
           <p className="mt-1 text-sm text-carbon/70">
-            Cada mesa tiene su QR. Imprímelo y pégalo en la mesa: desde ahí los socios podrán pedir (próximamente).
+            Cada mesa tiene su QR: imprímelo y pégalo en la mesa para que los socios pidan desde el móvil. Los puestos de barra
+            (Barra 1, Barra 2…) salen en la pestaña «Barra» del TPV y no llevan QR.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button type="button" onClick={() => setPrinting(activas)} disabled={activas.length === 0} className={`btn-outline-vino disabled:opacity-50 ${focusRing}`}>
             <Printer size={16} aria-hidden="true" /> Imprimir QR
           </button>
-          <button type="button" onClick={() => setEditing('new')} className={`btn-vino ${focusRing}`}>
+          <button type="button" onClick={() => setEditing('barra')} className={`btn-outline-vino ${focusRing}`}>
+            <Plus size={16} aria-hidden="true" /> Puesto de barra
+          </button>
+          <button type="button" onClick={() => setEditing('mesa')} className={`btn-vino ${focusRing}`}>
             <Plus size={16} aria-hidden="true" /> Mesa
           </button>
         </div>
@@ -102,6 +111,7 @@ export function MesasSection() {
             <li key={m.id} className={`flex flex-wrap items-center justify-between gap-3 px-4 py-3 ${m.activa ? '' : 'opacity-60'}`}>
               <div className="min-w-0">
                 <span className="font-semibold text-carbon">{m.nombre}</span>
+                {m.tipo === 'barra' && <span className="recommend-badge ml-2">BARRA</span>}
                 {!m.activa && <span className="pend-badge ml-2">DESACTIVADA</span>}
               </div>
               <div className="flex items-center gap-2">
@@ -118,9 +128,11 @@ export function MesasSection() {
                 <button type="button" className={iconButton} onClick={() => setEditing(m)} aria-label={`Renombrar ${m.nombre}`}>
                   <Pencil size={15} />
                 </button>
-                <button type="button" onClick={() => setQrMesa(m)} className={`btn-outline-vino ${focusRing}`}>
-                  <QrCode size={16} aria-hidden="true" /> QR
-                </button>
+                {m.tipo === 'mesa' && (
+                  <button type="button" onClick={() => setQrMesa(m)} className={`btn-outline-vino ${focusRing}`}>
+                    <QrCode size={16} aria-hidden="true" /> QR
+                  </button>
+                )}
               </div>
             </li>
           ))}
@@ -161,7 +173,7 @@ function MesaEditor({
   onClose,
   onSaved,
 }: {
-  state: Mesa | 'new' | null;
+  state: Mesa | TipoMesa | null;
   nextOrden: number;
   onClose: () => void;
   onSaved: (m: Mesa, created: boolean) => void;
@@ -172,28 +184,31 @@ function MesaEditor({
 
   useEffect(() => {
     if (!state) return;
-    setNombre(state === 'new' ? '' : state.nombre);
+    setNombre(typeof state === 'string' ? '' : state.nombre);
     setError(null);
   }, [state]);
 
   if (!state) return null;
+  const nueva = typeof state === 'string';
+  const tipo: TipoMesa = typeof state === 'string' ? state : state.tipo;
+  const cosa = tipo === 'barra' ? 'puesto de barra' : 'mesa';
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!nombre.trim()) return setError('Escribe el nombre de la mesa.');
+    if (!nombre.trim()) return setError(tipo === 'barra' ? 'Escribe el nombre del puesto de barra.' : 'Escribe el nombre de la mesa.');
     setSaving(true);
-    const r = state === 'new' ? await createMesa(nombre.trim(), nextOrden) : await updateMesa(state.id, { nombre: nombre.trim() });
+    const r = typeof state === 'string' ? await createMesa(nombre.trim(), nextOrden, state) : await updateMesa(state.id, { nombre: nombre.trim() });
     setSaving(false);
-    if (r.mesa) onSaved(r.mesa, state === 'new');
+    if (r.mesa) onSaved(r.mesa, nueva);
     else setError(r.error);
   };
 
   return (
-    <Modal open title={state === 'new' ? 'Nueva mesa' : 'Renombrar mesa'} onClose={onClose} busy={saving} maxWidth="440px">
+    <Modal open title={nueva ? (tipo === 'barra' ? 'Nuevo puesto de barra' : 'Nueva mesa') : `Renombrar ${cosa}`} onClose={onClose} busy={saving} maxWidth="440px">
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
-        <TextField label="Nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Terraza 1" required />
+        <TextField label="Nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder={tipo === 'barra' ? 'Barra 1' : 'Terraza 1'} required />
         {error && <Notice kind="error">{error}</Notice>}
-        <SubmitButton loading={saving} loadingText="Guardando…">{state === 'new' ? 'Crear mesa' : 'Guardar'}</SubmitButton>
+        <SubmitButton loading={saving} loadingText="Guardando…">{nueva ? `Crear ${cosa}` : 'Guardar'}</SubmitButton>
       </form>
     </Modal>
   );

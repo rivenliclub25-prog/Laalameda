@@ -556,6 +556,13 @@ P6 se divide en dos partes, con pausa para probar entre ellas:
 - **Guía del camarero** (Claude Docs): «Guía del TPV para camareros · La Alameda» — https://claude.ai/artifact/CpcdTFzMfhbMginYvTxd3h
 - **Pendiente:** jornada piloto sin descuadres; copias de seguridad (P-7); revisar la wifi del bar; imprimir los QR de las mesas **desde la web publicada** (Panel → Mesas) para que apunten a la dirección real; dejar de usar el Excel de precios (la carta ya se edita en el panel).
 
+### Mejoras del TPV (2026-11-10): entrega A — justificante, venta rápida y puestos de barra
+
+- **Plan aprobado** (con las recomendaciones de Claude): justificante de pago (no es una factura) para ticketera de **80 mm**; dos entregas (A y B, «pagar por separado»).
+- **Justificante de pago** (`src/components/pos/Justificante.tsx`, `src/lib/justificante.ts`): bar, nº de venta, fecha, mesa/puesto/venta rápida, líneas con promos (ahorro y ticket), total, forma de pago y devoluciones. Al cobrar, la pantalla verde tiene **Justificante** (si se abre, ya no se cierra sola). También en «Últimas ventas» del TPV (ahora en las tres pestañas) y en Panel → Ventas. Impresión: solo el justificante, en página de 80 mm (`.ticket-80` en `index.css`; en el diálogo, elegir la ticketera y márgenes «Ninguno»).
+- **TPV con tres pestañas:** **Mesas** · **Barra** (puestos «Barra 1, Barra 2…», funcionan igual que las mesas: cuenta abierta, añadir, servir, cobrar al final) · **Venta rápida** (la antigua pestaña «Barra»: se anota y se cobra al momento). En ventas, informes y CSV, la venta rápida sale como «Venta rápida».
+- **Migración `20261110102117_mesas_tipo_barra.sql`:** `mesas.tipo` (`mesa` | `barra`, las existentes quedan `mesa`); `mesas_para_pedir()` solo lista mesas y `mesa_info()` da por no disponible un puesto de barra (los socios no piden desde el móvil en la barra). Panel → Mesas: «+ Puesto de barra», etiqueta BARRA y sin QR para los puestos.
+
 ### Respuestas al plan (2026-10-28)
 
 1. P1 se divide en **P1a y P1b**, con pausa para probar entre ellas.
