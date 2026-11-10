@@ -1,0 +1,84 @@
+# Vigila que nadie cambie PRODUCCIÓN a mano (ENTORNOS.md, fase E5).
+#
+# Cada lunes (y a mano):
+#   1. Comprueba que producción y PRUEBAS tienen aplicadas las migraciones del repositorio
+#      (en producción puede faltar alguna si hay una publicación esperando aprobación: solo avisa).
+#   2. Compara la estructura de las dos (scripts/comparar-estructuras.sh). Si hay diferencias,
+#      el workflow FALLA y GitHub avisa por correo.
+# Solo lee: no cambia nada en ninguna base de datos.
+
+name: Vigilar producción
+
+on:
+  schedule:
+    # Lunes a las 07:00 UTC (08:00 o 09:00 en Madrid).
+    - cron: '0 7 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PROYECTO_PRODUCCION: hinebaxynlpjisteuaus
+  PROYECTO_PRUEBAS: hrhhkzajweggpnupytms
+  SUPABASE_CLI: 2.122.0
+
+jobs:
+  vigilar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: pruebas
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Comprobar las conexiones
+        env:
+          BACKUP_DB_URL: ${{ secrets.BACKUP_DB_URL }}
+          PRUEBAS_DB_URL: ${{ secrets.PRUEBAS_DB_URL }}
+        run: |
+          set -euo pipefail
+          case "$BACKUP_DB_URL" in *"$PROYECTO_PRODUCCION"*) ;; *) echo "::error::BACKUP_DB_URL no es la de producción."; exit 1 ;; esac
+          case "$PRUEBAS_DB_URL" in *"$PROYECTO_PRUEBAS"*) ;; *) echo "::error::PRUEBAS_DB_URL no es la de PRUEBAS."; exit 1 ;; esac
+
+      - name: Migraciones aplicadas
+        env:
+          BACKUP_DB_URL: ${{ secrets.BACKUP_DB_URL }}
+          PRUEBAS_DB_URL: ${{ secrets.PRUEBAS_DB_URL }}
+        run: |
+          set -euo pipefail
+          ls supabase/migrations/*.sql | xargs -n1 basename | cut -d_ -f1 | sort > repo.txt
+          aplicadas() { psql "$1" -X -A -t -c "select version from supabase_migrations.schema_migrations order by 1"; }
+          aplicadas "$BACKUP_DB_URL" > produccion.txt
+          aplicadas "$PRUEBAS_DB_URL" > pruebas.txt
+          {
+            echo "### Migraciones"
+            for entorno in produccion pruebas; do
+              faltan=$(comm -23 repo.txt "$entorno.txt" | tr '\n' ' ')
+              sobran=$(comm -13 repo.txt "$entorno.txt" | tr '\n' ' ')
+              echo "- **$entorno:** $(wc -l < "$entorno.txt") aplicadas${faltan:+ · ⏳ pendientes: $faltan}${sobran:+ · ⚠️ aplicadas que no están en el repositorio: $sobran}"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "$(comm -13 repo.txt produccion.txt)" ]; then
+            echo "::error::Producción tiene migraciones que no están en el repositorio."
+            exit 1
+          fi
+          if [ -n "$(comm -23 repo.txt produccion.txt)" ]; then
+            echo "::warning::Hay migraciones pendientes en producción (¿una publicación esperando aprobación?)."
+          fi
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: ${{ env.SUPABASE_CLI }}
+
+      - name: Comparar las estructuras
+        env:
+          BACKUP_DB_URL: ${{ secrets.BACKUP_DB_URL }}
+          PRUEBAS_DB_URL: ${{ secrets.PRUEBAS_DB_URL }}
+        run: |
+          set -euo pipefail
+          supabase db dump --db-url "$BACKUP_DB_URL" -f produccion.sql
+          supabase db dump --db-url "$PRUEBAS_DB_URL" -f pruebas.sql
+          if ! bash scripts/comparar-estructuras.sh produccion.sql pruebas.sql; then
+            echo "::error::Producción y PRUEBAS no tienen la misma estructura. ¿Alguien ha cambiado algo a mano? Mira el resumen."
+            exit 1
+          fi

@@ -1,0 +1,113 @@
+# Comprobaciones de cada PR a staging o a main (ENTORNOS.md, fase E5).
+# La protección de main exige que «Typecheck, lint y build» y «Migraciones» estén en verde.
+#
+# En los PR a main, además, enseña en el resumen qué migraciones se aplicarían en PRODUCCIÓN
+# al publicar (solo lectura: no aplica nada).
+
+name: Comprobaciones
+
+on:
+  pull_request:
+    branches:
+      - main
+      - staging
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  PROYECTO_PRODUCCION: hinebaxynlpjisteuaus
+  SUPABASE_CLI: 2.122.0
+
+jobs:
+  web:
+    name: Typecheck, lint y build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      # Sin claves de Supabase: entorno local y el club desactivado. Solo comprueba que compila.
+      - run: npm run build
+
+  migraciones:
+    name: Migraciones
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Revisar las migraciones del PR
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+          git fetch --quiet origin "$BASE_REF"
+          cambios=$(git diff --name-status "origin/$BASE_REF...HEAD" -- supabase/migrations || true)
+          if [ -z "$cambios" ]; then
+            echo "Este PR no trae migraciones." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          fallos=0
+          echo "### Migraciones del PR" >> "$GITHUB_STEP_SUMMARY"
+          while IFS=$'\t' read -r estado archivo destino; do
+            [ -n "${destino:-}" ] && archivo="$destino"
+            nombre=$(basename "$archivo")
+            echo "- \`$estado\` $nombre" >> "$GITHUB_STEP_SUMMARY"
+            if [ "$estado" != "A" ]; then
+              echo "::error file=$archivo::Las migraciones ya aplicadas no se editan, renombran ni borran: crea una nueva que corrija."
+              fallos=1
+              continue
+            fi
+            if ! [[ "$nombre" =~ ^[0-9]{14}_[a-z0-9_]+\.sql$ ]]; then
+              echo "::error file=$archivo::Nombre no válido: AAAAMMDDHHMMSS_descripcion.sql (minúsculas, números y _)."
+              fallos=1
+            fi
+            # Supabase da todos los permisos a anon y authenticated sobre lo nuevo (ENTORNOS.md, sección 4).
+            if grep -qiE '^\s*create\s+(or\s+replace\s+)?(table|function|view|sequence|materialized\s+view)' "$archivo" \
+               && ! grep -qiE '^\s*revoke\s' "$archivo"; then
+              echo "::warning file=$archivo::Crea tablas o funciones y no quita permisos: añade «revoke all … from anon, authenticated;» y da solo los necesarios."
+            fi
+          done <<< "$cambios"
+          exit $fallos
+
+  produccion:
+    name: Qué cambiaría en producción
+    if: github.base_ref == 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: ${{ env.SUPABASE_CLI }}
+
+      - name: Migraciones pendientes en producción (solo lectura)
+        env:
+          BACKUP_DB_URL: ${{ secrets.BACKUP_DB_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "$BACKUP_DB_URL" ]; then
+            echo "Sin acceso a la conexión de producción (PR desde un fork): no se puede mostrar." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          case "$BACKUP_DB_URL" in *"$PROYECTO_PRODUCCION"*) ;; *) echo "::error::BACKUP_DB_URL no es la de producción."; exit 1 ;; esac
+          {
+            echo "### Al publicar, en PRODUCCIÓN se aplicaría"
+            echo '```'
+            supabase db push --db-url "$BACKUP_DB_URL" --include-all --dry-run 2>&1
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
