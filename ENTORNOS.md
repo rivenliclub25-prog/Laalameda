@@ -8,7 +8,7 @@ Este documento es la propuesta para **separar las pruebas de los datos reales** 
 - No se programa ninguna fase hasta que estén 🟢 las decisiones de las que depende.
 - Antes de escribir código, se propone el plan de archivos de la fase y se espera aprobación.
 
-Última actualización: 2026-11-09 · Estado: **E0 a E3 cerradas. E4 programada** (workflow «Datos de PRUEBAS» en la rama `e4-datos-prueba`), pendiente de la parte del usuario.
+Última actualización: 2026-11-10 · Estado: **E0 a E4 cerradas. E5 programada** (paso a producción controlado, rama `e5-produccion`), pendiente de la parte del usuario y del primer cambio real.
 
 ---
 
@@ -39,9 +39,9 @@ Las dos tienen **la misma estructura** (tablas, funciones, permisos). Solo cambi
 
 | Rama | Qué es | Quién escribe |
 |---|---|---|
-| `main` | La web real. Cada cambio aquí se publica solo | **Nadie hace push directo.** Entra por PR y lo mezcla el dueño |
-| `staging` | Lo que se está probando (desde E3 se publica en la web de pruebas) | Por PR o mezclando ramas de trabajo |
-| Ramas de trabajo (`miguel`, `e3-…`) | Una por tarea | Cada uno la suya |
+| `main` | La web real. Cada cambio aquí se publica (tras aprobarlo) | **Protegida:** solo por PR con las comprobaciones en verde |
+| `staging` | Lo que se está probando: se publica solo en la web de pruebas (y sus migraciones van a PRUEBAS) | Por PR desde las ramas de trabajo |
+| Ramas de trabajo (`miguel`, `e3-…`) | Una por tarea, creada desde `staging` | Cada uno la suya |
 
 ### El primer día
 
@@ -74,20 +74,31 @@ La contraseña de todos es la misma: pídesela al dueño (está en el secreto `P
 
 ### El día a día
 
-1. `git switch main` → `git pull` → `git switch -c nombre-de-la-tarea`.
+```
+rama de trabajo ──PR──► staging ─────────────────────► main ──[aprobación]──► PRODUCCIÓN
+                   │        │                            │                     1. migraciones
+             comprobaciones  1. migraciones a PRUEBAS     comprobaciones        2. web real
+                            2. web de pruebas            + qué cambiaría
+                                                         en producción
+```
+
+1. `git switch staging` → `git pull` → `git switch -c nombre-de-la-tarea`.
 2. Programa y prueba en local (todo va a PRUEBAS: puedes vender, cobrar o borrar sin miedo).
 3. Antes de subir: `npm run typecheck`, `npm run lint` y `npm run build`.
-4. `git push -u origin nombre-de-la-tarea`.
-5. **Para probarlo en la web de pruebas** (móvil, tablet, TPV del bar): PR de tu rama a **`staging`**. Al mezclarlo, GitHub publica sola la web de pruebas en `https://rivenliclub25-prog.github.io/Laalameda-pruebas/` (1–2 minutos).
-6. **Para publicarlo de verdad:** PR a **`main`**. Lo revisa y lo mezcla el dueño.
+4. `git push -u origin nombre-de-la-tarea` y abre un **PR a `staging`**. GitHub comprueba que compila y revisa las migraciones («Comprobaciones»).
+5. **Al mezclarlo en `staging`**, GitHub aplica las migraciones nuevas a PRUEBAS y publica la web de pruebas (`…github.io/Laalameda-pruebas/`, 1–2 minutos). Pruébalo ahí: móvil, tablet, TPV.
+6. **Para publicarlo:** PR de **`staging` a `main`**. En su resumen («Qué cambiaría en producción») se ve qué migraciones se aplicarían en producción.
+7. **Al mezclarlo en `main`**, la publicación **espera la aprobación** de un revisor (Actions → «Deploy to GitHub Pages» → *Review deployments* → *Approve*). Después aplica las migraciones a producción, publica la web real y pone `staging` al día con `main`.
+
+**`main` está protegida:** solo entra por PR con las comprobaciones en verde. Nadie puede subir directo.
 
 ### Cambios en la base de datos
 
 - **Nunca se pega SQL a mano**, ni en producción ni en PRUEBAS.
 - Cada cambio es un archivo **nuevo** en `supabase/migrations/` con fecha delante (`20261115100000_stock.sql`). Los ya aplicados no se editan; si algo falla, otra migración que lo arregle.
 - **Permisos explícitos:** Supabase da por defecto todos los permisos a `anon` y `authenticated` sobre todo lo nuevo. Cada migración los quita (`revoke all … from anon, authenticated;`) y da solo los necesarios.
-- Se aplica en PRUEBAS desde GitHub: **Actions → Estructura de la base de datos → Run workflow** → tu rama → `aplicar-pruebas`. Después, `comparar` enseña en qué se diferencia de producción.
-- **A producción todavía no llega ninguna migración nueva:** el paso automático y con aprobación es la fase E5. Hasta entonces, nada de cambios de base de datos que haya que publicar sin hablarlo antes.
+- **Se aplican solas:** a PRUEBAS al mezclar en `staging`, y a producción al mezclar en `main` y aprobarlo. Si una migración falla, no se publica la web. (Para probar una migración en PRUEBAS antes de mezclar: **Actions → Estructura de la base de datos** → tu rama → `aplicar-pruebas`.)
+- **Cada lunes** el workflow «Vigilar producción» comprueba que producción y PRUEBAS siguen iguales; si alguien tocó algo a mano, falla y avisa.
 - Los `.sql` antiguos están en `supabase/legacy/`, solo como historia.
 
 ### Lo que te protege
@@ -103,7 +114,9 @@ La contraseña de todos es la misma: pídesela al dueño (está en el secreto `P
 |---|---|---|
 | **Copia de seguridad** | Copia cifrada de producción en el repositorio privado `Laalameda-copias` (últimas 30) | Cada noche, solo (`COPIAS.md`) |
 | **Estructura de la base de datos** | `leer-produccion`, `aplicar-pruebas`, `comparar` y `marcar-produccion` | A mano |
-| **Deploy to GitHub Pages** | Publica la web real | Solo al mezclar en `main` |
+| **Comprobaciones** | Typecheck, lint, build y revisión de migraciones; en los PR a `main`, qué cambiaría en producción | En cada PR a `staging` o `main` |
+| **Deploy to GitHub Pages** | Espera aprobación, migra producción, publica la web real y pone `staging` al día | Al mezclar en `main` |
+| **Vigilar producción** | Compara producción con PRUEBAS y avisa si alguien tocó algo a mano | Cada lunes, solo |
 | **Publicar web de pruebas** | Construye con PRUEBAS y publica en `Laalameda-pruebas` | En cada push a `staging`, o a mano desde `staging` |
 | **Datos de PRUEBAS** | `copiar-carta`, `crear-usuarios` y `reiniciar` (solo PRUEBAS) | A mano |
 
@@ -121,8 +134,8 @@ La contraseña de todos es la misma: pídesela al dueño (está en el secreto `P
 | Fase | Qué trae |
 |---|---|
 | ~~E3~~ | ✅ Web de pruebas en `…github.io/Laalameda-pruebas/`, publicada sola desde `staging` |
-| **E4** | Datos y usuarios de prueba, y el botón «Reiniciar pruebas» (programada, falta activarla) |
-| **E5** | Paso a producción automático con aprobación, y `main` protegida |
+| ~~E4~~ | ✅ Datos y usuarios de prueba, y el botón «Reiniciar pruebas» |
+| **E5** | Paso a producción automático con aprobación, y `main` protegida (programada, falta activarla) |
 | **E6** | Guía final y ensayo de restaurar una copia |
 
 ---
@@ -591,6 +604,15 @@ Precios consultados el 2026-11-07, en dólares. **Comprobar en https://supabase.
 
 ### Pendientes
 
+#### E-D20 — Paso a producción (E5)
+- **Estado:** 🟢 Decidida (2026-11-10), con las recomendaciones de Claude.
+- **Decisiones:**
+  - Se pide aprobación en **cada** publicación de la web real, aunque no haya migraciones.
+  - Las migraciones de producción usan la misma conexión de las copias (`BACKUP_DB_URL`): un secreto aparte tendría el mismo valor; lo que protege es la aprobación.
+  - Qué cambiaría en producción se muestra en el **resumen** del PR (sin comentarios, sin más permisos).
+  - Al publicar, `staging` se pone al día con `main` automáticamente (si no tiene cambios propios).
+  - Primer cambio real: quitar a `anon`/`authenticated` los permisos sobrantes de `profiles` (`TRUNCATE`, `REFERENCES`, `TRIGGER`, `MAINTAIN`). **Va en un PR aparte, después de E5**, para que recorra el camino completo (si fuera en el PR de E5 llegaría a producción sin pasar por PRUEBAS).
+
 #### E-D18 — Cómo se trabaja con las bases de datos en E1
 - **Estado:** 🟢 Decidida (2026-11-08)
 - **Decisión:** las operaciones con bases de datos de E1 las hace un **workflow manual** de GitHub (`.github/workflows/estructura.yml`), no un ordenador: leer la estructura de producción necesita Docker y la contraseña de producción (solo está en GitHub), y `supabase link` exigiría un token personal que también da acceso a producción.
@@ -599,12 +621,12 @@ Precios consultados el 2026-11-07, en dólares. **Comprobar en https://supabase.
 
 #### E-D19 — Secretos de producción hasta E5
 - **Estado:** 🟢 Decidida (2026-11-09)
-- **Decisión:** los secretos de la web real (`VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` de producción) **se quedan como secretos del repositorio** hasta E5. No se mueven al entorno `production` en E3, como decía la sección 5.
+- **Decisión:** los secretos de la web real (`VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` de producción) **se quedan como secretos del repositorio**. No se mueven al entorno `production`, como decía la sección 5. **Confirmado en E5 (2026-11-10):** la construcción no puede usar a la vez el entorno `production` y el de GitHub Pages, y esas claves ya son públicas en la web; lo que protege producción es la aprobación del entorno `production` antes de migrar y publicar.
 - **Por qué:** `deploy.yml` usa el entorno `github-pages` (obligatorio para GitHub Pages); moverlos ahora rompería la publicación de la web real. En E5 se reorganiza junto con la aprobación.
 - Los de PRUEBAS sí van en el entorno `pruebas`: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `PRUEBAS_DEPLOY_KEY` y `PRUEBAS_DB_URL`.
 
 #### E-D17 — Push directo a `main` hasta E5
-- **Estado:** 🟡 Pendiente (recomendación de Claude, 2026-11-07)
+- **Estado:** 🟢 Resuelta en E5 (2026-11-10): `main` protegida (solo por PR con las comprobaciones en verde). Hasta que el usuario active la protección, sigue valiendo la recomendación de abajo.
 - **Propuesta:** hasta que `main` esté protegida (E5), **nadie hace push directo a `main`**: cada uno trabaja en su rama (`miguel`, `miguel2`, `e0-preparar`…) y entra en `main` con un PR que mezcla el usuario. Hay que avisar al compañero.
 - **Por qué:** el 2026-11-06 hubo un push directo a `main` desde otro ordenador (`28a7de8`), y cada push a `main` publica la web real.
 
@@ -737,6 +759,7 @@ Se divide en **E1a** y **E1b** (E-D18).
 
 ### E4 — Datos de prueba
 
+- **✅ Cerrada (2026-11-09):** PR mezclado; el usuario lanzó `copiar-carta`, `crear-usuarios` y `reiniciar` sin errores (los correos `@prueba.test` se aceptaron) y comprobó los datos en la web de pruebas.
 - **Estado (2026-11-09):** plan aprobado con las recomendaciones (carta copiada de la pública; correos `@prueba.test`; sin ventas ficticias por ahora; `reiniciar` borra también los tickets pero no la carta ni los usuarios). Programado en la rama `e4-datos-prueba`:
   - `.github/workflows/pruebas-datos.yml` (manual, entorno `pruebas`): `copiar-carta`, `crear-usuarios` y `reiniciar`. Antes de nada comprueba que `PRUEBAS_DB_URL` y `VITE_SUPABASE_URL` son de PRUEBAS y no de producción.
   - `scripts/pruebas/carta-a-sql.mjs`: lee el `catalogo.json` público de la web real (sin claves: en el entorno `pruebas` los secretos tapan a los del repositorio con el mismo nombre, así que no se usan claves de producción) y genera SQL que **actualiza sin borrar** (lo que ya no está, se oculta). Limitación: la copia está tan al día como la última publicación de la web real.
@@ -753,6 +776,14 @@ Se divide en **E1a** y **E1b** (E-D18).
 - **Hecha cuando:** se puede vender, cobrar, canjear y cerrar jornada en la web de pruebas, y «Reiniciar pruebas» lo deja todo como al principio.
 
 ### E5 — Paso a producción controlado
+
+- **Estado (2026-11-10):** plan aprobado con las recomendaciones (E-D20). Programado en la rama `e5-produccion`:
+  - `.github/workflows/ci.yml` («Comprobaciones», en PR a `staging` y `main`): «Typecheck, lint y build»; «Migraciones» (falla si se edita, renombra o borra una ya aplicada o si el nombre no es `AAAAMMDDHHMMSS_descripcion.sql`; avisa si crea tablas o funciones sin `revoke`); y en los PR a `main`, «Qué cambiaría en producción» (`db push --dry-run`, solo lectura). Probada en local la revisión de migraciones con un repositorio de ejemplo.
+  - `deploy-pruebas.yml`: `supabase db push` a PRUEBAS antes de construir; si falla, no publica.
+  - `deploy.yml` en cuatro trabajos: «Aprobar y migrar producción» (entorno `production`: espera aprobación; `db push` a producción; si falla, se para) → «Construir la web real» → «Publicar» (entorno `github-pages`) → «Poner staging al día». Ya no cancela un despliegue en marcha.
+  - `.github/workflows/vigilar-produccion.yml`: lunes 07:00 UTC y a mano; compara las migraciones aplicadas con las del repositorio y la estructura de producción con la de PRUEBAS; falla si alguien tocó producción a mano. (Mientras una publicación espera aprobación con una migración nueva, puede salir diferencia: es normal.)
+  - `scripts/comparar-estructuras.sh`: la comparación de `comparar`, compartida con la vigilancia.
+- **Orden de activación (importante):** el entorno `production` con revisores tiene que existir **antes** de mezclar el PR de E5. Si no existe, GitHub lo crea solo **sin protección** y publicaría sin pedir aprobación.
 
 - **🤖 Claude:**
   - `.github/workflows/ci.yml`: en cada PR, typecheck, lint, build y comprobación de entorno (sin PGlite, E-D16).
@@ -797,3 +828,5 @@ Se divide en **E1a** y **E1b** (E-D18).
 - **2026-11-09** — Plan de E3 aprobado con las recomendaciones (E-D19: secretos de producción hasta E5). Workflow «Publicar web de pruebas» programado en `e3-web-pruebas`.
 - **2026-11-09** — **E3 cerrada:** web de pruebas publicada y comprobada por el usuario.
 - **2026-11-09** — Plan de E4 aprobado con las recomendaciones. Workflow «Datos de PRUEBAS» programado en `e4-datos-prueba`.
+- **2026-11-09** — **E4 cerrada:** datos y usuarios de prueba funcionando en la web de pruebas.
+- **2026-11-10** — Plan de E5 aprobado con las recomendaciones (E-D20; E-D19 confirmada; E-D17 se resuelve con la protección de `main`). Programado en `e5-produccion`.

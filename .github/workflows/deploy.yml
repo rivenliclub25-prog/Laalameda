@@ -1,3 +1,16 @@
+# Publica la WEB REAL (rama main) en GitHub Pages, con el paso a producción controlado
+# (ENTORNOS.md, fase E5):
+#
+#   1. produccion  Espera la APROBACIÓN de un revisor del entorno «production» y aplica a la
+#                  base de datos de PRODUCCIÓN las migraciones nuevas. Si fallan, se para aquí y
+#                  la web real no cambia.
+#   2. build       Construye la web con VITE_APP_ENV=produccion.
+#   3. deploy      La publica en GitHub Pages.
+#   4. staging     Pone la rama staging al día con main (si staging no tiene cambios propios).
+#
+# Secretos del repositorio: VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY (los de producción, E-D19)
+# y BACKUP_DB_URL (Session pooler de producción, el mismo de las copias).
+
 name: Deploy to GitHub Pages
 
 on:
@@ -8,19 +21,55 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
+# No se cancela un despliegue en marcha: podría cortar una migración (aunque cada una es atómica).
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
+
+env:
+  PROYECTO_PRODUCCION: hinebaxynlpjisteuaus
+  SUPABASE_CLI: 2.122.0
 
 jobs:
-  build:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  produccion:
+    name: Aprobar y migrar producción
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Comprobar la conexión de producción
+        env:
+          BACKUP_DB_URL: ${{ secrets.BACKUP_DB_URL }}
+        run: |
+          set -euo pipefail
+          [ -n "$BACKUP_DB_URL" ] || { echo "::error::Falta el secreto BACKUP_DB_URL."; exit 1; }
+          case "$BACKUP_DB_URL" in *"$PROYECTO_PRODUCCION"*) ;; *) echo "::error::BACKUP_DB_URL no es la de producción."; exit 1 ;; esac
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: ${{ env.SUPABASE_CLI }}
+
+      - name: Aplicar las migraciones nuevas a PRODUCCIÓN
+        env:
+          BACKUP_DB_URL: ${{ secrets.BACKUP_DB_URL }}
+        run: |
+          set -euo pipefail
+          supabase db push --db-url "$BACKUP_DB_URL" --include-all --yes
+          {
+            echo "### Migraciones en PRODUCCIÓN"
+            echo '```'
+            supabase migration list --db-url "$BACKUP_DB_URL"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  build:
+    name: Construir la web real
+    needs: produccion
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -53,6 +102,43 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: dist
+
+  deploy:
+    name: Publicar
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
+
+  staging:
+    name: Poner staging al día
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Avanzar staging hasta main
+        run: |
+          set -euo pipefail
+          git fetch --quiet origin staging
+          if git merge-base --is-ancestor origin/staging HEAD; then
+            git push --quiet origin HEAD:staging
+            echo "✅ \`staging\` puesta al día con \`main\`." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::notice::staging tiene cambios que aún no están en main: no se toca. Mezcla main en staging a mano."
+            echo "ℹ️ \`staging\` tiene cambios que aún no están en \`main\`: no se ha tocado." >> "$GITHUB_STEP_SUMMARY"
+          fi
