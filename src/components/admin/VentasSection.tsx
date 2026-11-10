@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
-import { ChevronDown, Download, Loader2, RefreshCw, Ticket, Undo2 } from 'lucide-react';
+import { ChevronDown, Download, Loader2, Receipt, RefreshCw, Ticket, Undo2 } from 'lucide-react';
 import { Notice, SubmitButton, TextField, focusRing } from '@/components/club/FormControls';
 import { Modal } from '@/components/club/Modal';
 import { CierresView } from '@/components/admin/CierresView';
 import { InformesView } from '@/components/admin/InformesView';
 import { downloadVentasCsv } from '@/lib/informes';
+import { JustificanteModal } from '@/components/pos/Justificante';
+import { justificanteDeVenta, lugarDeVenta } from '@/lib/justificante';
 import { fetchAppSettings, jornadaInicio } from '@/lib/adminTickets';
 import { centsToInput } from '@/lib/adminCatalog';
 import { parseEurosToCents } from '@/lib/tickets';
@@ -49,9 +51,8 @@ function localDate(d: Date) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-function origenTexto(v: Venta) {
-  return v.orders?.origen === 'mesa' ? `Mesa · ${v.orders.mesas?.nombre ?? '—'}` : 'Barra';
-}
+/** Dónde se hizo la venta: mesa o puesto de barra (por su nombre) o «Venta rápida». */
+const origenTexto = lugarDeVenta;
 
 function detalleEvento(e: PosEvento): string {
   const d = e.detalle ?? {};
@@ -115,6 +116,7 @@ function VentasLista({ users }: { users: AdminUser[] }) {
   const [abierta, setAbierta] = useState<string | null>(null);
   const [eventos, setEventos] = useState<Record<string, PosEvento[]>>({});
   const [devolviendo, setDevolviendo] = useState<Venta | null>(null);
+  const [justificante, setJustificante] = useState<Venta | null>(null);
 
   const nombre = useMemo(() => {
     const map = new Map(users.map((u) => [u.id, u.nombre || u.email]));
@@ -257,7 +259,7 @@ function VentasLista({ users }: { users: AdminUser[] }) {
                 const open = abierta === v.id;
                 const devuelto = devueltoVenta(v);
                 const restante = v.total_centimos - devuelto;
-                const lineas = v.orders?.order_items ?? [];
+                const lineas = v.order_items ?? [];
                 return (
                   <li key={v.id}>
                     <button
@@ -347,11 +349,16 @@ function VentasLista({ users }: { users: AdminUser[] }) {
                           )}
                         </div>
 
-                        {restante > 0 && (
-                          <button type="button" onClick={() => setDevolviendo(v)} className={`btn-outline-vino ${focusRing}`}>
-                            <Undo2 size={16} aria-hidden="true" /> Devolver
+                        <div className="flex flex-wrap gap-2">
+                          <button type="button" onClick={() => setJustificante(v)} className={`btn-outline-vino ${focusRing}`}>
+                            <Receipt size={16} aria-hidden="true" /> Justificante
                           </button>
-                        )}
+                          {restante > 0 && (
+                            <button type="button" onClick={() => setDevolviendo(v)} className={`btn-outline-vino ${focusRing}`}>
+                              <Undo2 size={16} aria-hidden="true" /> Devolver
+                            </button>
+                          )}
+                        </div>
                       </div>
                     )}
                   </li>
@@ -361,6 +368,8 @@ function VentasLista({ users }: { users: AdminUser[] }) {
           )}
         </>
       )}
+
+      {justificante && <JustificanteModal datos={justificanteDeVenta(justificante)} onClose={() => setJustificante(null)} />}
 
       {devolviendo && (
         <DevolverModal

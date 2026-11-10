@@ -174,7 +174,7 @@ const ESTADOS: Record<string, string> = { pendiente: 'Pendiente', aceptada: 'Por
 /** Ventas con una fila por línea (los datos de la venta se repiten en cada línea). */
 export function downloadVentasCsv(ventas: Venta[], nombre: (id: string | null) => string, sufijo: string) {
   const header = [
-    'Venta nº', 'Fecha', 'Hora', 'Jornada', 'Origen', 'Mesa', 'Método', 'Cobrada por',
+    'Venta nº', 'Fecha', 'Hora', 'Jornada', 'Origen', 'Mesa o puesto', 'Método', 'Cobrada por',
     'Total venta (€)', 'Devuelto venta (€)', 'Producto o promo', 'Tipo', 'Cantidad', 'Precio unidad (€)',
     'Importe línea (€)', 'Ahorro (€)', 'Ticket', 'Estado línea', 'Notas',
   ];
@@ -185,14 +185,14 @@ export function downloadVentasCsv(ventas: Venta[], nombre: (id: string | null) =
       fecha.toLocaleDateString('es-ES'),
       fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
       v.jornada.split('-').reverse().join('/'),
-      v.orders?.origen === 'mesa' ? 'Mesa' : 'Barra',
+      v.orders?.origen === 'mesa' ? 'Cuenta' : 'Venta rápida',
       v.orders?.mesas?.nombre ?? '',
       METODOS[v.metodo],
       nombre(v.cobrado_por),
       csvEuros(v.total_centimos),
       csvEuros(devueltoVenta(v)),
     ];
-    const lineas = v.orders?.order_items ?? [];
+    const lineas = v.order_items ?? [];
     if (lineas.length === 0) return [[...base, '', '', '', '', '', '', '', '', '']];
     return lineas.map((l) => [
       ...base,

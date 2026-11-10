@@ -29,7 +29,7 @@ export type ItemPedido =
   | { product_id: number; cantidad: number; notas?: string | null }
   | { promo_id: string; cantidad: number; ticket_codigo?: string; notas?: string | null };
 
-/** Respuesta de pos_venta_barra() y pos_cobrar_cuenta() (ver supabase/pos-promos.sql). */
+/** Respuesta de pos_venta_barra(), pos_cobrar_cuenta() y pos_cobrar_parte(): la venta con SUS líneas. */
 export interface VentaResultado {
   sale_id: string;
   numero: number;
@@ -40,6 +40,8 @@ export interface VentaResultado {
   cobrado_at: string;
   /** true si ese mismo cobro ya se había registrado (doble toque o reintento). */
   repetida: boolean;
+  /** false si la cuenta sigue abierta (pago por separado con cosas aún sin cobrar). */
+  cuenta_cerrada?: boolean;
   lineas: {
     product_id: number | null;
     promo_id?: string | null;
@@ -100,6 +102,7 @@ export interface VentaLinea {
   tipo_linea: TipoLinea;
   ticket_codigo: string | null;
   descuento_centimos: number | null;
+  created_at: string;
 }
 
 export interface Venta {
@@ -113,20 +116,23 @@ export interface Venta {
   cobrado_por: string | null;
   cobrado_at: string;
   jornada: string;
-  orders: { origen: 'barra' | 'mesa'; mesas: { nombre: string } | null; order_items: VentaLinea[] } | null;
+  orders: { origen: 'barra' | 'mesa'; mesas: { nombre: string } | null } | null;
+  /** Las líneas cobradas en ESTA venta (una cuenta puede pagarse en varias ventas). */
+  order_items: VentaLinea[];
   sale_refunds: { id: string; importe_centimos: number; motivo: string; por: string | null; at: string }[];
 }
 
 const VENTA_COLS =
   'id, numero, order_id, bruto_centimos, descuentos_centimos, total_centimos, metodo, cobrado_por, cobrado_at, jornada, ' +
-  'orders(origen, mesas(nombre), order_items(nombre, cantidad, precio_unitario_centimos, estado, notas, tipo_linea, ticket_codigo, descuento_centimos)), ' +
+  'orders!sales_order_id_fkey(origen, mesas(nombre)), ' +
+  'order_items!order_items_sale_id_fkey(nombre, cantidad, precio_unitario_centimos, estado, notas, tipo_linea, ticket_codigo, descuento_centimos, created_at), ' +
   'sale_refunds(id, importe_centimos, motivo, por, at)';
 
 /** Últimas ventas (para el TPV). */
 export async function fetchUltimasVentas(limit = 10): Promise<{ ventas: Venta[]; error: string | null }> {
   const { data, error } = await supabase.from('sales').select(VENTA_COLS).order('cobrado_at', { ascending: false }).limit(limit);
   if (error) return { ventas: [], error: translateTicketError(error) };
-  return { ventas: data as unknown as Venta[], error: null };
+  return { ventas: ordenarLineas(data as unknown as Venta[]), error: null };
 }
 
 /** Ventas de un periodo (para el panel). */
@@ -139,7 +145,12 @@ export async function fetchVentas(desde: Date, hasta: Date): Promise<{ ventas: V
     .order('cobrado_at', { ascending: false })
     .limit(2000);
   if (error) return { ventas: [], error: translateTicketError(error) };
-  return { ventas: data as unknown as Venta[], error: null };
+  return { ventas: ordenarLineas(data as unknown as Venta[]), error: null };
+}
+
+function ordenarLineas(ventas: Venta[]): Venta[] {
+  for (const v of ventas) v.order_items = [...(v.order_items ?? [])].sort((a, b) => a.created_at.localeCompare(b.created_at));
+  return ventas;
 }
 
 export function devueltoVenta(v: Venta): number {
@@ -177,12 +188,16 @@ export function resumenVentas(ventas: Venta[]) {
 // Mesas y cuentas de mesa (P3, ver supabase/pos-mesas.sql)
 // ---------------------------------------------------------------------
 
+/** «mesa»: mesas con QR. «barra»: puestos de barra (Barra 1, Barra 2…), sin pedido desde el móvil. */
+export type TipoMesa = 'mesa' | 'barra';
+
 export interface Mesa {
   id: string;
   nombre: string;
   token: string;
   orden: number;
   activa: boolean;
+  tipo: TipoMesa;
 }
 
 export type EstadoLinea = 'pendiente' | 'aceptada' | 'servida' | 'anulada';
@@ -205,6 +220,8 @@ export interface LineaCuenta {
   pedido_por_nombre: string | null;
   /** Pedida eligiendo la mesa a mano, sin el QR (P6a): el camarero debe comprobarlo. */
   mesa_a_mano: boolean;
+  /** Venta en la que se cobró (pago por separado). null = aún sin cobrar. */
+  sale_id: string | null;
 }
 
 export interface CuentaMesa {
@@ -215,10 +232,15 @@ export interface CuentaMesa {
   order_items: LineaCuenta[];
 }
 
-/** Total que se cobraría: líneas aceptadas y servidas (las anuladas no cuentan). */
+/** Línea que todavía hay que cobrar: aceptada o servida y sin pagar. */
+export function lineaPorCobrar(l: LineaCuenta): boolean {
+  return (l.estado === 'aceptada' || l.estado === 'servida') && !l.sale_id;
+}
+
+/** Lo que falta por cobrar (lo ya pagado por separado y lo anulado no cuenta). */
 export function totalCuenta(cuenta: CuentaMesa): number {
   return cuenta.order_items
-    .filter((l) => l.estado === 'aceptada' || l.estado === 'servida')
+    .filter(lineaPorCobrar)
     .reduce((sum, l) => sum + l.precio_unitario_centimos * l.cantidad, 0);
 }
 
@@ -229,13 +251,13 @@ async function rpc<T>(fn: string, args: Record<string, unknown>): Promise<{ data
 }
 
 export async function fetchMesas(): Promise<{ mesas: Mesa[]; error: string | null }> {
-  const { data, error } = await supabase.from('mesas').select('id, nombre, token, orden, activa').order('orden').order('nombre');
+  const { data, error } = await supabase.from('mesas').select('id, nombre, token, orden, activa, tipo').order('orden').order('nombre');
   if (error) return { mesas: [], error: translateTicketError(error) };
   return { mesas: data as Mesa[], error: null };
 }
 
 const CUENTA_COLS =
-  'id, mesa_id, estado, created_at, order_items(id, product_id, promo_id, tipo_linea, ticket_codigo, descuento_centimos, nombre, precio_unitario_centimos, cantidad, notas, estado, created_at, ronda, pedido_por_nombre, mesa_a_mano)';
+  'id, mesa_id, estado, created_at, order_items!order_items_order_id_fkey(id, product_id, promo_id, tipo_linea, ticket_codigo, descuento_centimos, nombre, precio_unitario_centimos, cantidad, notas, estado, created_at, ronda, pedido_por_nombre, mesa_a_mano, sale_id)';
 
 export async function fetchCuentasAbiertas(): Promise<{ cuentas: CuentaMesa[]; error: string | null }> {
   const { data, error } = await supabase.from('orders').select(CUENTA_COLS).eq('origen', 'mesa').eq('estado', 'abierta');
@@ -262,6 +284,10 @@ export const anularLinea = (itemId: string, motivo: string) => rpc<null>('pos_an
 
 export const cobrarCuenta = (orderId: string, metodo: Metodo) =>
   rpc<VentaResultado>('pos_cobrar_cuenta', { p_order_id: orderId, p_metodo: metodo });
+
+/** Lo que paga una persona: líneas enteras o unidades sueltas de una línea (la cuenta sigue abierta). */
+export const cobrarParte = (orderId: string, items: { item_id: string; cantidad: number }[], metodo: Metodo, requestId: string) =>
+  rpc<VentaResultado>('pos_cobrar_parte', { p_order_id: orderId, p_items: items, p_metodo: metodo, p_client_request_id: requestId });
 
 export const cancelarCuenta = (orderId: string, motivo: string) =>
   rpc<null>('pos_cancelar_cuenta', { p_order_id: orderId, p_motivo: motivo });
@@ -324,17 +350,21 @@ export function promosParaVender(promotions: Promotion[], states: Map<string, Pr
 
 // --- Admin: mesas y devoluciones ---
 
-export async function createMesa(nombre: string, orden: number): Promise<{ mesa: Mesa | null; error: string | null }> {
-  const { data, error } = await supabase.from('mesas').insert({ nombre, orden }).select('id, nombre, token, orden, activa').single();
+export async function createMesa(
+  nombre: string,
+  orden: number,
+  tipo: TipoMesa = 'mesa'
+): Promise<{ mesa: Mesa | null; error: string | null }> {
+  const { data, error } = await supabase.from('mesas').insert({ nombre, orden, tipo }).select('id, nombre, token, orden, activa, tipo').single();
   if (error) return { mesa: null, error: translateTicketError(error) };
   return { mesa: data as Mesa, error: null };
 }
 
 export async function updateMesa(
   id: string,
-  changes: Partial<Pick<Mesa, 'nombre' | 'orden' | 'activa'>>
+  changes: Partial<Pick<Mesa, 'nombre' | 'orden' | 'activa' | 'tipo'>>
 ): Promise<{ mesa: Mesa | null; error: string | null }> {
-  const { data, error } = await supabase.from('mesas').update(changes).eq('id', id).select('id, nombre, token, orden, activa').single();
+  const { data, error } = await supabase.from('mesas').update(changes).eq('id', id).select('id, nombre, token, orden, activa, tipo').single();
   if (error) return { mesa: null, error: translateTicketError(error) };
   return { mesa: data as Mesa, error: null };
 }

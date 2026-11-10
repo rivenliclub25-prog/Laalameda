@@ -556,6 +556,21 @@ P6 se divide en dos partes, con pausa para probar entre ellas:
 - **Guía del camarero** (Claude Docs): «Guía del TPV para camareros · La Alameda» — https://claude.ai/artifact/CpcdTFzMfhbMginYvTxd3h
 - **Pendiente:** jornada piloto sin descuadres; copias de seguridad (P-7); revisar la wifi del bar; imprimir los QR de las mesas **desde la web publicada** (Panel → Mesas) para que apunten a la dirección real; dejar de usar el Excel de precios (la carta ya se edita en el panel).
 
+### Mejoras del TPV (2026-11-10): entrega A — justificante, venta rápida y puestos de barra
+
+- **Plan aprobado** (con las recomendaciones de Claude): justificante de pago (no es una factura) para ticketera de **80 mm**; dos entregas (A y B, «pagar por separado»).
+- **Justificante de pago** (`src/components/pos/Justificante.tsx`, `src/lib/justificante.ts`): bar, nº de venta, fecha, mesa/puesto/venta rápida, líneas con promos (ahorro y ticket), total, forma de pago y devoluciones. Al cobrar, la pantalla verde tiene **Justificante** (si se abre, ya no se cierra sola). También en «Últimas ventas» del TPV (ahora en las tres pestañas) y en Panel → Ventas. Impresión: solo el justificante, en página de 80 mm (`.ticket-80` en `index.css`; en el diálogo, elegir la ticketera y márgenes «Ninguno»).
+- **TPV con tres pestañas:** **Mesas** · **Barra** (puestos «Barra 1, Barra 2…», funcionan igual que las mesas: cuenta abierta, añadir, servir, cobrar al final) · **Venta rápida** (la antigua pestaña «Barra»: se anota y se cobra al momento). En ventas, informes y CSV, la venta rápida sale como «Venta rápida».
+- **Migración `20261110102117_mesas_tipo_barra.sql`:** `mesas.tipo` (`mesa` | `barra`, las existentes quedan `mesa`); `mesas_para_pedir()` solo lista mesas y `mesa_info()` da por no disponible un puesto de barra (los socios no piden desde el móvil en la barra). Panel → Mesas: «+ Puesto de barra», etiqueta BARRA y sin QR para los puestos.
+
+### Mejoras del TPV (2026-11-10): entrega B — pagar por separado
+
+- **Qué hace:** en una cuenta de mesa o de puesto de barra, **Cobrar por separado** abre una lista de lo que falta por cobrar. Se marca lo que paga una persona (líneas enteras o unidades sueltas: «1 de 3 cañas»), se elige cómo paga y se cobra. Cada pago es **una venta** con su número y su justificante. La cuenta sigue abierta con el resto; lo pagado se queda en la cuenta marcado **Pagada** y la cabecera dice «Queda por cobrar» y «Ya pagado: X € en N pagos». **Cobrar** cobra lo que queda. Cuando ya no queda nada por cobrar ni por aceptar, la cuenta **se cierra sola**.
+- **Reglas:** lo pagado no se anula (se devuelve desde Panel → Ventas). Si se paga una parte y se anula el resto, la cuenta se cierra como pagada. Cancelar una cuenta con pagos anula lo que falta y la cierra como pagada (lo cobrado se queda). Una promo con ahorro partida reparte el ahorro en proporción.
+- **Migración `20261110150000_pago_por_separado.sql`:** `order_items.sale_id` (en qué venta se cobró cada línea; se rellena en las ventas que ya existían), `sales.order_id` deja de ser único, `sales.client_request_id` (doble toque: se cobra una vez). Nueva RPC `pos_cobrar_parte`; cambian `_pos_crear_venta`, `_pos_venta_json`, `pos_cobrar_cuenta`, `pos_cancelar_cuenta`, `pos_anular_linea` y `admin_informe` (mismos parámetros). Cada venta muestra y cuenta **solo sus líneas** (resumen, justificante, ventas, CSV, informe y tickets).
+- **Frontend:** las consultas que unen ventas, cuentas y líneas nombran la relación (`orders!sales_order_id_fkey`, `order_items!order_items_sale_id_fkey`, …) porque ahora hay dos caminos entre esas tablas.
+- **Comprobado en local (PGlite):** 31 pruebas (ventas antiguas enlazadas, partir líneas, doble toque, errores, permisos, cierre automático, venta rápida igual, informe cuadra).
+
 ### Respuestas al plan (2026-10-28)
 
 1. P1 se divide en **P1a y P1b**, con pausa para probar entre ellas.
@@ -600,3 +615,4 @@ P6 se divide en dos partes, con pausa para probar entre ellas:
 - **2026-10-28** — POS en pausa para hacer el inicio de sesión con Google en la rama `google-auth` (se publicará antes que el POS). La fecha de publicación del POS queda sin decidir (no antes del 2026-11-02).
 - **2026-11-02** — POS publicado en `main` (plan A). SQL de limpieza de ventas de prueba y guía del camarero entregados. Prueba en el bar el 2026-11-03.
 - **2026-11-02** — P6b cerrada tras la prueba del usuario. Se mezcla `main` (Google) en `pos` y se pide el TPV a pantalla completa (portátil táctil). Prueba en el bar al día siguiente.
+- **2026-11-10** — Mejoras del TPV: entrega A (justificante 80 mm, Mesas · Barra · Venta rápida, puestos de barra) y entrega B (pagar por separado), a la espera de prueba en la web de pruebas.

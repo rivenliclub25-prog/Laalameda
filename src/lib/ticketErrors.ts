@@ -42,6 +42,10 @@ const messages: Record<string, string> = {
   PEDIDOS_PENDIENTES: 'Hay pedidos pendientes de aceptar.',
   LINEA_NO_EXISTE: 'Esa línea ya no existe.',
   LINEA_YA_ANULADA: 'Esa línea ya estaba anulada.',
+  // Pago por separado (20261110150000_pago_por_separado.sql)
+  LINEA_YA_PAGADA: 'Eso ya está pagado. Si hay que devolverlo, hazlo desde Panel → Ventas.',
+  LINEA_NO_COBRABLE: 'Eso no se puede cobrar todavía (está pendiente o anulado). Actualiza la pantalla.',
+  LINEA_REPETIDA: 'Hay una línea repetida en el pago.',
   NOTAS_DEMASIADO_LARGAS: 'La nota es demasiado larga (máximo 200 caracteres).',
   VENTA_NO_EXISTE: 'Esa venta no existe.',
   IMPORTE_SUPERA_VENTA: 'No se puede devolver más de lo que queda por devolver.',
@@ -64,6 +68,8 @@ const messages: Record<string, string> = {
 
 /** Errores donde el detalle es la promo o el ticket: se pone delante («Pack Partido»: …). */
 const detailFirst = new Set([
+  'LINEA_YA_PAGADA',
+  'LINEA_NO_COBRABLE',
   'PROMO_INACTIVA',
   'PROMO_FUERA_DE_HORARIO',
   'PROMO_SIN_PRECIO',
