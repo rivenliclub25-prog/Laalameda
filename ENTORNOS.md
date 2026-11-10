@@ -8,7 +8,7 @@ Este documento es la propuesta para **separar las pruebas de los datos reales** 
 - No se programa ninguna fase hasta que estén 🟢 las decisiones de las que depende.
 - Antes de escribir código, se propone el plan de archivos de la fase y se espera aprobación.
 
-Última actualización: 2026-11-10 · Estado: **E0 a E5 cerradas.** Todo cambio pasa por PRUEBAS y llega a producción solo con aprobación. Siguiente: **E6** (guía final y ensayo de restauración), plan pendiente de aprobar.
+Última actualización: 2026-11-10 · Estado: **E0 a E5 cerradas. E6 pospuesta** (a petición del usuario, 2026-11-10): ver «E6 — Documentar» para retomarla.
 
 ---
 
@@ -800,6 +800,11 @@ Se divide en **E1a** y **E1b** (E-D18).
 
 ### E6 — Documentar
 
+- **⚪ Pospuesta (2026-11-10)** a petición del usuario, para priorizar mejoras del TPV. Al retomarla, el plan propuesto (pendiente de aprobar) es:
+  - **Ensayo de restauración fuera de PRUEBAS:** restaurar una copia real en PRUEBAS metería datos reales (socios, ventas) en el proyecto de pruebas y chocaría con lo que ya tiene. Propuesta: workflow «Ensayar restauración» (manual y una vez al mes) que, dentro del runner de GitHub, descifra la última copia de `Laalameda-copias`, la restaura en un Supabase temporal vacío (`supabase start`, sin migraciones) con los comandos de `COPIAS.md` y enseña solo **recuentos** (socios, ventas, productos, tickets). Los datos no salen del runner.
+  - `COPIAS.md`: restauración con ese ensayo y qué hacer en una emergencia real (restaurar en producción solo con decisión escrita aquí).
+  - Guía del equipo como guía definitiva; `CONTEXT.MD`, `POS.md` y `TICKETS.md` con el flujo nuevo (rama desde `staging`, migraciones, aprobación) y lo de pegar SQL marcado como historia; README con el día a día.
+
 - **🤖 Claude:** guía paso a paso del día a día en este documento y en `README.md`; actualizar `CONTEXT.MD` (estado y ramas) y `POS.md`; quitar de `TICKETS.md` y `POS.md` lo que diga que se pega SQL a mano en producción.
 - **🙋 Usuario:** ensayar la restauración de una copia **en PRUEBAS** siguiendo `COPIAS.md`.
 - **Hecha cuando:** la restauración funciona en PRUEBAS y la guía basta para trabajar sin preguntar.
@@ -832,3 +837,4 @@ Se divide en **E1a** y **E1b** (E-D18).
 - **2026-11-09** — **E4 cerrada:** datos y usuarios de prueba funcionando en la web de pruebas.
 - **2026-11-10** — Plan de E5 aprobado con las recomendaciones (E-D20; E-D19 confirmada; E-D17 se resuelve con la protección de `main`). Programado en `e5-produccion`.
 - **2026-11-10** — **E5 cerrada:** protección activada y primer cambio real (permisos de `profiles`) llevado de rama a producción con aprobación. Vigilancia: iguales.
+- **2026-11-10** — E6 pospuesta por el usuario (prioridad: justificantes, pagos por separado y barra en el TPV). Plan de E6 apuntado en su sección para retomarlo.
