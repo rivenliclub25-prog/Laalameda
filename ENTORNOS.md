@@ -8,7 +8,7 @@ Este documento es la propuesta para **separar las pruebas de los datos reales** 
 - No se programa ninguna fase hasta que estén 🟢 las decisiones de las que depende.
 - Antes de escribir código, se propone el plan de archivos de la fase y se espera aprobación.
 
-Última actualización: 2026-11-10 · Estado: **E0 a E4 cerradas. E5 programada** (paso a producción controlado, rama `e5-produccion`), pendiente de la parte del usuario y del primer cambio real.
+Última actualización: 2026-11-10 · Estado: **E0 a E5 cerradas. E6 pospuesta** (a petición del usuario, 2026-11-10): ver «E6 — Documentar» para retomarla.
 
 ---
 
@@ -135,7 +135,7 @@ rama de trabajo ──PR──► staging ────────────�
 |---|---|
 | ~~E3~~ | ✅ Web de pruebas en `…github.io/Laalameda-pruebas/`, publicada sola desde `staging` |
 | ~~E4~~ | ✅ Datos y usuarios de prueba, y el botón «Reiniciar pruebas» |
-| **E5** | Paso a producción automático con aprobación, y `main` protegida (programada, falta activarla) |
+| ~~E5~~ | ✅ Paso a producción automático con aprobación, y `main` protegida |
 | **E6** | Guía final y ensayo de restaurar una copia |
 
 ---
@@ -626,7 +626,7 @@ Precios consultados el 2026-11-07, en dólares. **Comprobar en https://supabase.
 - Los de PRUEBAS sí van en el entorno `pruebas`: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `PRUEBAS_DEPLOY_KEY` y `PRUEBAS_DB_URL`.
 
 #### E-D17 — Push directo a `main` hasta E5
-- **Estado:** 🟢 Resuelta en E5 (2026-11-10): `main` protegida (solo por PR con las comprobaciones en verde). Hasta que el usuario active la protección, sigue valiendo la recomendación de abajo.
+- **Estado:** 🟢 Resuelta en E5 (2026-11-10): `main` protegida (solo por PR con las comprobaciones en verde), activada por el usuario.
 - **Propuesta:** hasta que `main` esté protegida (E5), **nadie hace push directo a `main`**: cada uno trabaja en su rama (`miguel`, `miguel2`, `e0-preparar`…) y entra en `main` con un PR que mezcla el usuario. Hay que avisar al compañero.
 - **Por qué:** el 2026-11-06 hubo un push directo a `main` desde otro ordenador (`28a7de8`), y cada push a `main` publica la web real.
 
@@ -777,6 +777,7 @@ Se divide en **E1a** y **E1b** (E-D18).
 
 ### E5 — Paso a producción controlado
 
+- **✅ Cerrada (2026-11-10):** entorno `production` creado con revisores (solo `main`) antes de mezclar; PR #9 mezclado y aprobado (aplicó en producción `20261109094300_permisos_como_produccion.sql`, sin cambios); `staging` puesta al día sola. `main` protegida: PR obligatorio (sin aprobaciones requeridas, para poder trabajar solo) y comprobaciones «Typecheck, lint y build» y «Migraciones». **Primer cambio real**, `20261110092745_profiles_sin_permisos_sobrantes.sql`: rama `profiles-permisos` → PR a `staging` → aplicada en PRUEBAS → PR `staging`→`main` («Qué cambiaría» mostró solo esa) → aprobación → producción. «Vigilar producción» lanzado a mano: iguales.
 - **Estado (2026-11-10):** plan aprobado con las recomendaciones (E-D20). Programado en la rama `e5-produccion`:
   - `.github/workflows/ci.yml` («Comprobaciones», en PR a `staging` y `main`): «Typecheck, lint y build»; «Migraciones» (falla si se edita, renombra o borra una ya aplicada o si el nombre no es `AAAAMMDDHHMMSS_descripcion.sql`; avisa si crea tablas o funciones sin `revoke`); y en los PR a `main`, «Qué cambiaría en producción» (`db push --dry-run`, solo lectura). Probada en local la revisión de migraciones con un repositorio de ejemplo.
   - `deploy-pruebas.yml`: `supabase db push` a PRUEBAS antes de construir; si falla, no publica.
@@ -798,6 +799,11 @@ Se divide en **E1a** y **E1b** (E-D18).
 - **Hecha cuando:** un cambio pequeño recorre todo el camino (rama → `staging` → PRUEBAS → PR → aprobación → producción) sin tocar los datos.
 
 ### E6 — Documentar
+
+- **⚪ Pospuesta (2026-11-10)** a petición del usuario, para priorizar mejoras del TPV. Al retomarla, el plan propuesto (pendiente de aprobar) es:
+  - **Ensayo de restauración fuera de PRUEBAS:** restaurar una copia real en PRUEBAS metería datos reales (socios, ventas) en el proyecto de pruebas y chocaría con lo que ya tiene. Propuesta: workflow «Ensayar restauración» (manual y una vez al mes) que, dentro del runner de GitHub, descifra la última copia de `Laalameda-copias`, la restaura en un Supabase temporal vacío (`supabase start`, sin migraciones) con los comandos de `COPIAS.md` y enseña solo **recuentos** (socios, ventas, productos, tickets). Los datos no salen del runner.
+  - `COPIAS.md`: restauración con ese ensayo y qué hacer en una emergencia real (restaurar en producción solo con decisión escrita aquí).
+  - Guía del equipo como guía definitiva; `CONTEXT.MD`, `POS.md` y `TICKETS.md` con el flujo nuevo (rama desde `staging`, migraciones, aprobación) y lo de pegar SQL marcado como historia; README con el día a día.
 
 - **🤖 Claude:** guía paso a paso del día a día en este documento y en `README.md`; actualizar `CONTEXT.MD` (estado y ramas) y `POS.md`; quitar de `TICKETS.md` y `POS.md` lo que diga que se pega SQL a mano en producción.
 - **🙋 Usuario:** ensayar la restauración de una copia **en PRUEBAS** siguiendo `COPIAS.md`.
@@ -830,3 +836,5 @@ Se divide en **E1a** y **E1b** (E-D18).
 - **2026-11-09** — Plan de E4 aprobado con las recomendaciones. Workflow «Datos de PRUEBAS» programado en `e4-datos-prueba`.
 - **2026-11-09** — **E4 cerrada:** datos y usuarios de prueba funcionando en la web de pruebas.
 - **2026-11-10** — Plan de E5 aprobado con las recomendaciones (E-D20; E-D19 confirmada; E-D17 se resuelve con la protección de `main`). Programado en `e5-produccion`.
+- **2026-11-10** — **E5 cerrada:** protección activada y primer cambio real (permisos de `profiles`) llevado de rama a producción con aprobación. Vigilancia: iguales.
+- **2026-11-10** — E6 pospuesta por el usuario (prioridad: justificantes, pagos por separado y barra en el TPV). Plan de E6 apuntado en su sección para retomarlo.

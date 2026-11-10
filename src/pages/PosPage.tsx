@@ -7,6 +7,7 @@ import {
   Minimize2,
   Minus,
   Plus,
+  Receipt,
   RefreshCw,
   ShoppingBag,
   Ticket,
@@ -20,6 +21,8 @@ import { Notice, focusRing } from '@/components/club/FormControls';
 import { ProductPicker } from '@/components/pos/ProductPicker';
 import { MesasPanel } from '@/components/pos/MesasPanel';
 import { VentaHecha } from '@/components/pos/VentaHecha';
+import { JustificanteModal } from '@/components/pos/Justificante';
+import { justificanteDeVenta, lugarDeVenta } from '@/lib/justificante';
 import { CierreJornadaModal } from '@/components/pos/CierreJornada';
 import { TicketPromoModal, type TicketElegido } from '@/components/pos/TicketPromoModal';
 import { useCatalog, type MenuItem, type MenuTab } from '@/lib/catalog';
@@ -42,7 +45,14 @@ import {
   type VentaResultado,
 } from '@/lib/pos';
 
-type Modo = 'mesas' | 'barra';
+/** Mesas y Barra: cuentas abiertas que se cobran al final. Venta rápida: se anota y se cobra al momento. */
+type Modo = 'mesas' | 'barra' | 'rapida';
+
+const MODOS: { id: Modo; label: string }[] = [
+  { id: 'mesas', label: 'Mesas' },
+  { id: 'barra', label: 'Barra' },
+  { id: 'rapida', label: 'Venta rápida' },
+];
 
 interface CartLine {
   /** Producto: "p:15". Promo: "promo:<id>", o "promo:<id>:<ticket>" si es de club. */
@@ -69,7 +79,10 @@ export function PosPage() {
   const tabs = useMemo(() => catalog?.menuTabs ?? [], [catalog]);
   const { states } = usePromoStates();
   const promos = useMemo(() => promosParaVender(catalog?.promotions ?? [], states), [catalog, states]);
-  const [modo, setModo] = useState<Modo>(() => (getHashParams().get('modo') === 'barra' ? 'barra' : 'mesas'));
+  const [modo, setModo] = useState<Modo>(() => {
+    const m = getHashParams().get('modo');
+    return m === 'barra' || m === 'rapida' ? m : 'mesas';
+  });
   const [soundOn, setSoundOn] = useState(loadSoundEnabled);
   const [cerrando, setCerrando] = useState(false);
   // Pantalla completa (portátil táctil en la barra): sin el menú ni el pie de la web, a todo el ancho
@@ -143,8 +156,8 @@ export function PosPage() {
   );
 
   const pestanas = (
-    <div role="tablist" aria-label="Modo del TPV" className={`grid grid-cols-2 rounded-r-sm bg-piedra-suave p-1 ${completa ? 'w-[300px]' : 'mt-4 max-w-[360px]'}`}>
-      {(['mesas', 'barra'] as Modo[]).map((m) => (
+    <div role="tablist" aria-label="Modo del TPV" className={`grid grid-cols-3 rounded-r-sm bg-piedra-suave p-1 ${completa ? 'w-[420px] max-w-full' : 'mt-4 max-w-[480px]'}`}>
+      {MODOS.map(({ id: m, label }) => (
         <button
           key={m}
           type="button"
@@ -155,7 +168,7 @@ export function PosPage() {
             modo === m ? 'bg-vino text-white shadow-sm' : 'text-carbon/70 hover:text-vino'
           }`}
         >
-          {m === 'mesas' ? 'Mesas' : 'Barra'}
+          {label}
         </button>
       ))}
     </div>
@@ -174,9 +187,17 @@ export function PosPage() {
       )}
 
       {modo === 'mesas' ? (
-        <MesasPanel tabs={tabs} promos={promos} catalogLoading={!catalog} soundOn={soundOn} />
+        <>
+          <MesasPanel key="mesa" tipo="mesa" tabs={tabs} promos={promos} catalogLoading={!catalog} soundOn={soundOn} />
+          <UltimasVentas />
+        </>
+      ) : modo === 'barra' ? (
+        <>
+          <MesasPanel key="barra" tipo="barra" tabs={tabs} promos={promos} catalogLoading={!catalog} soundOn={soundOn} />
+          <UltimasVentas />
+        </>
       ) : (
-        <BarraPanel tabs={tabs} promos={promos} catalogLoading={!catalog} soundOn={soundOn} completa={completa} />
+        <VentaRapidaPanel tabs={tabs} promos={promos} catalogLoading={!catalog} soundOn={soundOn} completa={completa} />
       )}
     </>
   );
@@ -213,10 +234,10 @@ export function PosPage() {
 }
 
 // ---------------------------------------------------------------------
-// Barra: venta rápida ya pagada (P2)
+// Venta rápida: se anota y se cobra al momento (la antigua pestaña «Barra», P2)
 // ---------------------------------------------------------------------
 
-function BarraPanel({
+function VentaRapidaPanel({
   tabs,
   promos,
   catalogLoading,
@@ -238,20 +259,11 @@ function BarraPanel({
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<{ venta: VentaResultado; clientTotal: number } | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [ultimas, setUltimas] = useState<Venta[]>([]);
+  const [recargaUltimas, setRecargaUltimas] = useState(0);
   const chargingRef = useRef(false);
 
   useScrollLock(sheetOpen);
   const closeDone = useCallback(() => setDone(null), []);
-
-  const loadUltimas = useCallback(async () => {
-    const { ventas } = await fetchUltimasVentas(8);
-    setUltimas(ventas);
-  }, []);
-
-  useEffect(() => {
-    loadUltimas();
-  }, [loadUltimas]);
 
   const total = cart.reduce((sum, l) => sum + l.priceCents * l.qty, 0);
   const units = cart.reduce((sum, l) => sum + l.qty, 0);
@@ -324,7 +336,7 @@ function BarraPanel({
     setCart([]);
     setMetodo(null);
     setRequestId(newRequestId());
-    loadUltimas();
+    setRecargaUltimas((n) => n + 1);
   };
 
   const cartPanel = (
@@ -355,7 +367,7 @@ function BarraPanel({
             onAddPromo={addPromo}
             promoQty={promoQty}
           />
-          <UltimasVentas ventas={ultimas} onRefresh={loadUltimas} />
+          <UltimasVentas recarga={recargaUltimas} />
         </section>
         <aside className={`hidden lg:sticky lg:block ${completa ? 'lg:top-3' : 'lg:top-24'}`} aria-label="Pedido">
           {cartPanel}
@@ -402,7 +414,7 @@ function BarraPanel({
         />
       )}
 
-      {done && <VentaHecha venta={done.venta} clientTotal={done.clientTotal} titulo="Barra" onClose={closeDone} />}
+      {done && <VentaHecha venta={done.venta} clientTotal={done.clientTotal} titulo="Venta rápida" onClose={closeDone} />}
     </div>
   );
 }
@@ -526,12 +538,25 @@ function CartPanel({
   );
 }
 
-function UltimasVentas({ ventas, onRefresh }: { ventas: Venta[]; onRefresh: () => void }) {
+/** Últimas ventas de todo el TPV, con su justificante (para reimprimirlo). `recarga` cambia tras cobrar. */
+function UltimasVentas({ recarga = 0 }: { recarga?: number }) {
+  const [ventas, setVentas] = useState<Venta[]>([]);
+  const [justificante, setJustificante] = useState<Venta | null>(null);
+
+  const load = useCallback(async () => {
+    const { ventas: rows } = await fetchUltimasVentas(8);
+    setVentas(rows);
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load, recarga]);
+
   return (
     <section aria-labelledby="ultimas-title" className="mt-8">
       <div className="flex items-center justify-between">
         <h2 id="ultimas-title" className="font-display text-xl font-semibold text-vino">Últimas ventas</h2>
-        <button type="button" onClick={onRefresh} aria-label="Actualizar últimas ventas" className={`flex h-9 w-9 items-center justify-center rounded-full text-carbon/60 hover:bg-carbon/10 ${focusRing}`}>
+        <button type="button" onClick={load} aria-label="Actualizar últimas ventas" className={`flex h-9 w-9 items-center justify-center rounded-full text-carbon/60 hover:bg-carbon/10 ${focusRing}`}>
           <RefreshCw size={16} />
         </button>
       </div>
@@ -544,14 +569,23 @@ function UltimasVentas({ ventas, onRefresh }: { ventas: Venta[]; onRefresh: () =
               <span className="text-carbon/60 tabular-nums">
                 {new Date(v.cobrado_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })} · nº {v.numero}
               </span>
-              <span className="text-carbon/60">
-                {v.orders?.origen === 'mesa' ? (v.orders.mesas?.nombre ?? 'Mesa') : 'Barra'} · {METODOS[v.metodo]}
+              <span className="min-w-0 flex-1 truncate text-carbon/60">
+                {lugarDeVenta(v)} · {METODOS[v.metodo]}
               </span>
               <span className="font-semibold tabular-nums">{formatEuros(v.total_centimos)}</span>
+              <button
+                type="button"
+                onClick={() => setJustificante(v)}
+                aria-label={`Justificante de la venta nº ${v.numero}`}
+                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-carbon/20 text-carbon/70 hover:border-vino hover:text-vino ${focusRing}`}
+              >
+                <Receipt size={17} aria-hidden="true" />
+              </button>
             </li>
           ))}
         </ul>
       )}
+      {justificante && <JustificanteModal datos={justificanteDeVenta(justificante)} onClose={() => setJustificante(null)} />}
     </section>
   );
 }
