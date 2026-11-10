@@ -52,6 +52,9 @@ export function VentaHecha({
           {formatEuros(venta.total_centimos)}
         </p>
         <p className="mt-2 text-lg opacity-90">{METODOS[venta.metodo]}</p>
+        {venta.cuenta_cerrada === false && (
+          <p className="mt-4 rounded-r-sm bg-white/15 px-3 py-2 text-sm">Pago por separado: la cuenta sigue abierta con lo que falta.</p>
+        )}
         {venta.repetida && (
           <p className="mt-4 rounded-r-sm bg-white/15 px-3 py-2 text-sm">Esta venta ya estaba registrada: no se ha cobrado dos veces.</p>
         )}

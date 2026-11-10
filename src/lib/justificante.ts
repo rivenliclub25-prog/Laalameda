@@ -42,7 +42,7 @@ export function justificanteDeResultado(v: VentaResultado, lugar: string): Datos
 
 /** Justificante de una venta ya guardada (lista de ventas del TPV o del panel). */
 export function justificanteDeVenta(v: Venta): DatosJustificante {
-  const lineas = (v.orders?.order_items ?? []).filter((l) => l.estado !== 'anulada');
+  const lineas = v.order_items ?? [];
   return {
     numero: v.numero,
     fecha: v.cobrado_at,

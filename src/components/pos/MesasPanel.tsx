@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
-import { ArrowLeft, ArrowRightLeft, Ban, Check, CheckCheck, Loader2, Minus, Plus, RefreshCw, Ticket, Trash2, XCircle } from 'lucide-react';
+import { ArrowLeft, ArrowRightLeft, Ban, Check, CheckCheck, Loader2, Minus, Plus, RefreshCw, Split, Ticket, Trash2, XCircle } from 'lucide-react';
 import { Notice, SubmitButton, focusRing } from '@/components/club/FormControls';
 import { Modal } from '@/components/club/Modal';
 import { ProductPicker } from '@/components/pos/ProductPicker';
@@ -17,9 +17,11 @@ import {
   cambiarMesa,
   cancelarCuenta,
   cobrarCuenta,
+  cobrarParte,
   fetchCuentasAbiertas,
   fetchMesas,
   formatEuros,
+  lineaPorCobrar,
   newRequestId,
   servirLineas,
   aceptarRonda,
@@ -277,8 +279,13 @@ function CuentaView({
   const lineas = (cuenta?.order_items ?? []).filter((l) => l.estado !== 'pendiente');
   const total = cuenta ? totalCuenta(cuenta) : 0;
   const porServir = lineas.filter((l) => l.estado === 'aceptada');
-  const haySevidas = lineas.some((l) => l.estado === 'servida');
-  const activas = lineas.filter((l) => l.estado !== 'anulada');
+  // Pago por separado: lo ya pagado se queda en la cuenta (marcado) hasta que se cobra todo.
+  const porCobrar = lineas.filter(lineaPorCobrar);
+  const pagadas = lineas.filter((l) => l.sale_id);
+  const yaPagado = pagadas.reduce((sum, l) => sum + l.precio_unitario_centimos * l.cantidad, 0);
+  const pagos = new Set(pagadas.map((l) => l.sale_id)).size;
+  const haySevidas = porCobrar.some((l) => l.estado === 'servida');
+  const [separando, setSeparando] = useState(false);
 
   /** Ejecuta una acción, muestra su error y refresca la mesa. */
   const run = async (action: () => Promise<{ error: string | null }>) => {
@@ -317,11 +324,13 @@ function CuentaView({
     setDone({ venta: data, clientTotal });
   };
 
+  // Tras un pago por separado la cuenta sigue abierta: se vuelve a ella, no a la lista de mesas.
+  const sigueAbierta = done?.venta.cuenta_cerrada === false;
   const closeDone = useCallback(() => {
     setDone(null);
     onChanged();
-    onBack();
-  }, [onBack, onChanged]);
+    if (!sigueAbierta) onBack();
+  }, [onBack, onChanged, sigueAbierta]);
 
   return (
     <section aria-labelledby="cuenta-title">
@@ -335,8 +344,16 @@ function CuentaView({
       <div className="mt-3 rounded-r-lg border border-piedra/50 bg-white shadow-md">
         <header className="flex flex-wrap items-center justify-between gap-3 border-b border-carbon/10 px-4 py-3">
           <h2 id="cuenta-title" className="font-display text-2xl font-semibold text-vino">{mesa.nombre}</h2>
-          <span className="font-display text-3xl font-bold text-vino tabular-nums">{formatEuros(total)}</span>
+          <span className="text-right">
+            {pagadas.length > 0 && <span className="block text-xs font-semibold uppercase tracking-wider text-carbon/55">Queda por cobrar</span>}
+            <span className="font-display text-3xl font-bold text-vino tabular-nums">{formatEuros(total)}</span>
+          </span>
         </header>
+        {pagadas.length > 0 && (
+          <p className="border-b border-carbon/10 bg-[#2f6b3f]/5 px-4 py-2 text-sm text-[#1f4a2b]">
+            Ya pagado: <strong className="tabular-nums">{formatEuros(yaPagado)}</strong> en {pagos === 1 ? '1 pago' : `${pagos} pagos`}
+          </p>
+        )}
 
         {/* Rondas pedidas por socios desde la mesa, pendientes de aceptar */}
         {rondas.length > 0 && cuenta && (
@@ -391,7 +408,7 @@ function CuentaView({
         ) : (
           <ul className="divide-y divide-carbon/10">
             {lineas.map((l) => (
-              <li key={l.id} className={`flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5 ${l.estado === 'anulada' ? 'opacity-55' : ''}`}>
+              <li key={l.id} className={`flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5 ${l.estado === 'anulada' ? 'opacity-55' : l.sale_id ? 'bg-[#2f6b3f]/5' : ''}`}>
                 <div className="min-w-[160px] flex-1">
                   <p className={`text-sm font-semibold ${l.estado === 'anulada' ? 'line-through' : 'text-carbon'}`}>
                     {l.cantidad} × {l.nombre}
@@ -403,6 +420,9 @@ function CuentaView({
                 <span className={`inline-flex rounded-full border px-2 py-0.5 text-[0.68rem] font-semibold ${ESTADO_LINEA[l.estado].className}`}>
                   {ESTADO_LINEA[l.estado].label}
                 </span>
+                {l.sale_id && (
+                  <span className="inline-flex rounded-full border border-[#2f6b3f] bg-[#2f6b3f] px-2 py-0.5 text-[0.68rem] font-semibold text-white">Pagada</span>
+                )}
                 <span className="w-16 text-right text-sm font-semibold tabular-nums">{formatEuros(l.precio_unitario_centimos * l.cantidad)}</span>
                 {l.estado !== 'anulada' && (
                   <div className="flex gap-1.5">
@@ -411,9 +431,11 @@ function CuentaView({
                         <Check size={18} />
                       </button>
                     )}
-                    <button type="button" disabled={busy} onClick={() => setAnulando(l)} aria-label={`Anular ${l.nombre}`} className={`flex h-10 w-10 items-center justify-center rounded-full border border-carbon/20 text-carbon/60 hover:border-vino hover:text-vino ${focusRing}`}>
-                      <Ban size={17} />
-                    </button>
+                    {!l.sale_id && (
+                      <button type="button" disabled={busy} onClick={() => setAnulando(l)} aria-label={`Anular ${l.nombre}`} className={`flex h-10 w-10 items-center justify-center rounded-full border border-carbon/20 text-carbon/60 hover:border-vino hover:text-vino ${focusRing}`}>
+                        <Ban size={17} />
+                      </button>
+                    )}
                   </div>
                 )}
               </li>
@@ -439,7 +461,7 @@ function CuentaView({
         </div>
       )}
 
-      {cuenta && activas.length > 0 && (
+      {cuenta && porCobrar.length > 0 && (
         <div className="mt-4 rounded-r-lg border border-piedra/50 bg-white p-4 shadow-sm">
           <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-carbon/60">Cobrar · cómo paga</h3>
           {rondas.length > 0 && (
@@ -456,7 +478,10 @@ function CuentaView({
           </div>
           <button type="button" onClick={cobrar} disabled={busy || !metodo} aria-busy={busy} className={`btn-vino mt-3 min-h-14 w-full text-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:bg-vino ${focusRing}`}>
             {busy ? <Loader2 size={20} className="animate-spin" aria-hidden="true" /> : null}
-            {metodo ? `Cobrar ${formatEuros(total)}` : 'Elige cómo paga'}
+            {metodo ? (pagadas.length > 0 ? `Cobrar lo que queda: ${formatEuros(total)}` : `Cobrar ${formatEuros(total)}`) : 'Elige cómo paga'}
+          </button>
+          <button type="button" onClick={() => setSeparando(true)} disabled={busy} className={`btn-outline-vino mt-2 min-h-12 w-full ${focusRing}`}>
+            <Split size={18} aria-hidden="true" /> Cobrar por separado
           </button>
         </div>
       )}
@@ -530,7 +555,13 @@ function CuentaView({
       {cancelando && (
         <MotivoModal
           title={`Cancelar la cuenta de ${mesa.nombre}`}
-          texto={haySevidas ? 'Hay consumiciones servidas: anúlalas antes (con su motivo) o cobra la cuenta.' : 'La cuenta se cierra sin cobrar y la mesa queda libre.'}
+          texto={
+            haySevidas
+              ? 'Hay consumiciones servidas sin cobrar: anúlalas antes (con su motivo) o cobra la cuenta.'
+              : pagadas.length > 0
+                ? 'Lo que falta se anula, lo ya pagado se queda cobrado y la mesa queda libre.'
+                : 'La cuenta se cierra sin cobrar y la mesa queda libre.'
+          }
           sugerencias={['Se fueron sin pedir', 'Mesa abierta por error']}
           confirmLabel="Cancelar cuenta"
           disabled={haySevidas}
@@ -570,8 +601,159 @@ function CuentaView({
         </Modal>
       )}
 
+      {separando && cuenta && (
+        <PagoSeparadoModal
+          lineas={porCobrar}
+          mesaNombre={mesa.nombre}
+          onClose={() => setSeparando(false)}
+          onPaid={(venta, clientTotal) => {
+            setSeparando(false);
+            playFeedback('ok', soundOn);
+            setDone({ venta, clientTotal });
+          }}
+          onError={() => {
+            playFeedback('error', soundOn);
+            return onChanged();
+          }}
+          cobrar={(items, metodoParte, requestId) => cobrarParte(cuenta.id, items, metodoParte, requestId)}
+        />
+      )}
+
       {done && <VentaHecha venta={done.venta} clientTotal={done.clientTotal} titulo={mesa.nombre} onClose={closeDone} />}
     </section>
+  );
+}
+
+// ---------------------------------------------------------------------
+// Cobrar por separado: lo que paga una persona
+// ---------------------------------------------------------------------
+
+function PagoSeparadoModal({
+  lineas,
+  mesaNombre,
+  onClose,
+  onPaid,
+  onError,
+  cobrar,
+}: {
+  lineas: LineaCuenta[];
+  mesaNombre: string;
+  onClose: () => void;
+  onPaid: (venta: VentaResultado, clientTotal: number) => void;
+  onError: () => Promise<void> | void;
+  cobrar: (items: { item_id: string; cantidad: number }[], metodo: Metodo, requestId: string) => Promise<{ data: VentaResultado | null; error: string | null }>;
+}) {
+  /** Unidades elegidas de cada línea (0 = no la paga esta persona). */
+  const [elegidas, setElegidas] = useState<Record<string, number>>({});
+  const [metodo, setMetodo] = useState<Metodo | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  // Un mismo id para los reintentos de este pago: si llega dos veces, se cobra una.
+  const [requestId] = useState(newRequestId);
+  const busyRef = useRef(false);
+
+  const cant = (l: LineaCuenta) => Math.min(elegidas[l.id] ?? 0, l.cantidad);
+  const set = (l: LineaCuenta, n: number) => setElegidas((e) => ({ ...e, [l.id]: Math.max(0, Math.min(l.cantidad, n)) }));
+  const items = lineas.filter((l) => cant(l) > 0).map((l) => ({ item_id: l.id, cantidad: cant(l) }));
+  const importe = lineas.reduce((sum, l) => sum + l.precio_unitario_centimos * cant(l), 0);
+  const todas = lineas.length > 0 && lineas.every((l) => cant(l) === l.cantidad);
+
+  const pagar = async () => {
+    if (!metodo || items.length === 0 || busyRef.current) return;
+    busyRef.current = true;
+    setBusy(true);
+    setError(null);
+    const { data, error: err } = await cobrar(items, metodo, requestId);
+    busyRef.current = false;
+    setBusy(false);
+    if (!data) {
+      setError(err);
+      await onError();
+      return;
+    }
+    onPaid(data, importe);
+  };
+
+  return (
+    <Modal open title={`Cobrar por separado · ${mesaNombre}`} onClose={onClose} busy={busy} maxWidth="560px">
+      <p className="text-sm text-carbon/70">Marca lo que paga esta persona. El resto se queda en la cuenta.</p>
+      <div className="mt-3 flex justify-end">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => setElegidas(todas ? {} : Object.fromEntries(lineas.map((l) => [l.id, l.cantidad])))}
+          className={`text-sm font-semibold text-vino underline-offset-2 hover:underline ${focusRing}`}
+        >
+          {todas ? 'Quitar todo' : 'Marcar todo'}
+        </button>
+      </div>
+      <ul className="mt-1 divide-y divide-carbon/10 rounded-r-md border border-carbon/10">
+        {lineas.map((l) => {
+          const n = cant(l);
+          return (
+            <li key={l.id} className={`flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2.5 ${n > 0 ? 'bg-vino/5' : ''}`}>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => set(l, n > 0 ? 0 : l.cantidad)}
+                aria-pressed={n > 0}
+                className={`flex min-w-[160px] flex-1 items-center gap-3 text-left ${focusRing}`}
+              >
+                <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-r-sm border-2 ${n > 0 ? 'border-vino bg-vino text-white' : 'border-carbon/30 bg-white'}`}>
+                  {n > 0 && <Check size={16} aria-hidden="true" />}
+                </span>
+                <span>
+                  <span className="block text-sm font-semibold text-carbon">
+                    {l.cantidad} × {l.nombre}
+                  </span>
+                  <span className="block text-xs text-carbon/60">{formatEuros(l.precio_unitario_centimos)} c/u</span>
+                </span>
+              </button>
+              {l.cantidad > 1 && (
+                <div className="flex items-center gap-1.5" role="group" aria-label={`Unidades de ${l.nombre} que paga`}>
+                  <button type="button" disabled={busy || n === 0} onClick={() => set(l, n - 1)} aria-label={`Una ${l.nombre} menos`} className={`flex h-10 w-10 items-center justify-center rounded-full border border-carbon/25 disabled:opacity-40 ${focusRing}`}>
+                    <Minus size={16} />
+                  </button>
+                  <span className="w-12 text-center text-sm font-bold tabular-nums">
+                    {n}/{l.cantidad}
+                  </span>
+                  <button type="button" disabled={busy || n === l.cantidad} onClick={() => set(l, n + 1)} aria-label={`Una ${l.nombre} más`} className={`flex h-10 w-10 items-center justify-center rounded-full border border-carbon/25 disabled:opacity-40 ${focusRing}`}>
+                    <Plus size={16} />
+                  </button>
+                </div>
+              )}
+              <span className="w-16 text-right text-sm font-semibold tabular-nums">{formatEuros(l.precio_unitario_centimos * n)}</span>
+            </li>
+          );
+        })}
+      </ul>
+
+      <h3 className="mb-2 mt-4 text-xs font-semibold uppercase tracking-wider text-carbon/60">Cómo paga</h3>
+      <div className="grid grid-cols-3 gap-2">
+        {(Object.keys(METODOS) as Metodo[]).map((m) => (
+          <button key={m} type="button" aria-pressed={metodo === m} onClick={() => setMetodo(m)} disabled={busy} className={`min-h-12 rounded-r-sm border text-sm font-semibold transition-colors ${focusRing} ${metodo === m ? 'border-vino bg-vino text-white' : 'border-carbon/25 bg-white text-carbon/75 hover:border-vino'}`}>
+            {METODOS[m]}
+          </button>
+        ))}
+      </div>
+
+      {error && (
+        <div className="mt-3">
+          <Notice kind="error">{error}</Notice>
+        </div>
+      )}
+
+      <button
+        type="button"
+        onClick={pagar}
+        disabled={busy || !metodo || items.length === 0}
+        aria-busy={busy}
+        className={`btn-vino mt-4 min-h-14 w-full text-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:bg-vino ${focusRing}`}
+      >
+        {busy ? <Loader2 size={20} className="animate-spin" aria-hidden="true" /> : null}
+        {items.length === 0 ? 'Marca lo que paga' : !metodo ? 'Elige cómo paga' : `Cobrar ${formatEuros(importe)}`}
+      </button>
+    </Modal>
   );
 }
 

@@ -259,7 +259,7 @@ function VentasLista({ users }: { users: AdminUser[] }) {
                 const open = abierta === v.id;
                 const devuelto = devueltoVenta(v);
                 const restante = v.total_centimos - devuelto;
-                const lineas = v.orders?.order_items ?? [];
+                const lineas = v.order_items ?? [];
                 return (
                   <li key={v.id}>
                     <button

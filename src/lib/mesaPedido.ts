@@ -77,7 +77,7 @@ export interface MiPedido {
 export async function fetchMisPedidos(mesaId: string): Promise<{ pedidos: MiPedido[]; error: string | null }> {
   const { data, error } = await supabase
     .from('order_items')
-    .select('id, nombre, promo_id, tipo_linea, ticket_codigo, cantidad, precio_unitario_centimos, notas, estado, ronda, created_at, orders!inner(mesa_id, estado)')
+    .select('id, nombre, promo_id, tipo_linea, ticket_codigo, cantidad, precio_unitario_centimos, notas, estado, ronda, created_at, orders!order_items_order_id_fkey!inner(mesa_id, estado)')
     .eq('orders.mesa_id', mesaId)
     .eq('orders.estado', 'abierta')
     .order('created_at', { ascending: true });

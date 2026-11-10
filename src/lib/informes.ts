@@ -192,7 +192,7 @@ export function downloadVentasCsv(ventas: Venta[], nombre: (id: string | null) =
       csvEuros(v.total_centimos),
       csvEuros(devueltoVenta(v)),
     ];
-    const lineas = v.orders?.order_items ?? [];
+    const lineas = v.order_items ?? [];
     if (lineas.length === 0) return [[...base, '', '', '', '', '', '', '', '', '']];
     return lineas.map((l) => [
       ...base,
