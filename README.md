@@ -67,18 +67,18 @@ Crea el archivo `.env` a partir del ejemplo (en Windows con PowerShell: `Copy-It
 npm run dev
 ```
 
-Abre `http://localhost:5173`. Para probar el club o el TPV, regístrate con tu email y pide al dueño que te dé el rol de **admin** o el permiso de **camarero** (Panel → Socios).
+Abre `http://localhost:5173`. Para probar el club o el TPV, entra con los usuarios de prueba (`admin@prueba.test`, `camarero@prueba.test`, `socio1@prueba.test`, `socio2@prueba.test`; la contraseña te la da el dueño) o regístrate con tu email en PRUEBAS.
 
 ### 3. Forma de trabajar
 
 1. **Cada vez que empieces**, trae lo último:
 
    ```sh
-   git switch main
+   git switch staging
    git pull
    ```
 
-2. **Cada tarea en su propia rama**, creada desde `main`:
+2. **Cada tarea en su propia rama**, creada desde `staging`:
 
    ```sh
    git switch -c nombre-de-la-tarea
@@ -100,12 +100,13 @@ Abre `http://localhost:5173`. Para probar el club o el TPV, regístrate con tu e
    git push -u origin nombre-de-la-tarea
    ```
 
-5. **Publicar = mezclar en `main`**. Cada push a `main` publica la web real automáticamente, así que se hace solo cuando la tarea está probada y **avisando al dueño**.
+5. **Probar en la web de pruebas:** en GitHub abre un PR de tu rama a **`staging`**. Al mezclarlo, las migraciones se aplican solas a PRUEBAS y se publica la web de pruebas. Pruébalo ahí.
+6. **Publicar en la web real:** PR de `staging` a **`main`** (deben pasar «Typecheck, lint y build» y «Migraciones»; mira en «Qué cambiaría en producción» qué migraciones se aplicarán). Al mezclarlo, en **Actions** el despliegue espera a que el dueño lo apruebe (**Review deployments → Approve and deploy**). Nunca se sube nada directamente a `main`.
 
 **Importante:**
 
-- **La base de datos es la real** (no hay una de pruebas): lo que hagas en local (ventas en el TPV, socios, tickets) queda en la de verdad. Prueba con cuidado y borra lo que crees.
-- **Cambios en la base de datos**: siempre en un archivo `.sql` **nuevo** dentro de `supabase/` (los ya ejecutados no se modifican), y avisando al dueño, que es quien lo ejecuta en Supabase.
+- **En local trabajas contra PRUEBAS** (`hrhhkzajweggpnupytms`), con datos inventados: se puede romper sin miedo. Si pones la URL de producción en el `.env`, la web no arranca. Los datos de producción no se tocan nunca para probar.
+- **Cambios en la base de datos**: siempre una **migración nueva** en `supabase/migrations/` (las ya aplicadas no se modifican, y cada una quita los permisos por defecto a `anon` y `authenticated`). Nunca se pega SQL a mano. Detalles en `ENTORNOS.md` → «Guía rápida para el equipo».
 - **La carta y los precios se editan en el Panel → Carta y Panel → Promos.** El antiguo Excel de precios y su script se retiraron (`ENTORNOS.md`, E0).
 - Si los dos tocáis la misma rama, haced `git pull` antes de empezar y antes de subir.
 
