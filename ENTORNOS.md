@@ -8,7 +8,7 @@ Este documento es la propuesta para **separar las pruebas de los datos reales** 
 - No se programa ninguna fase hasta que estén 🟢 las decisiones de las que depende.
 - Antes de escribir código, se propone el plan de archivos de la fase y se espera aprobación.
 
-Última actualización: 2026-11-10 · Estado: **E0 a E5 cerradas. E6 pospuesta** (a petición del usuario, 2026-11-10): ver «E6 — Documentar» para retomarla.
+Última actualización: 2026-11-12 · Estado: **E0 a E5 cerradas. E6 pospuesta** (a petición del usuario, 2026-11-10): ver «E6 — Documentar» para retomarla. El flujo ya se ha usado dos veces de punta a punta (permisos de `profiles` y mejoras del TPV).
 
 ---
 
@@ -811,8 +811,9 @@ Se divide en **E1a** y **E1b** (E-D18).
 
 ### Mientras tanto: el POS y los tickets
 
-- Hasta E2, **no se desarrolla nada nuevo** que haya que probar con datos. Si hay un arreglo urgente en producción, se hace con el flujo de siempre y con mucho cuidado.
-- Las ramas `pos`, `tickets`, `miguel` y `miguel2` se integran en este flujo cuando exista `staging`: las ramas de trabajo nuevas salen de `staging`.
+- Desde E5, **todo cambio nuevo del POS y de los tickets sigue este flujo**: rama desde `staging` → PR a `staging` (migraciones a PRUEBAS y web de pruebas) → prueba del usuario → PR de `staging` a `main` → aprobación en el entorno `production`.
+- **Ejemplo real (2026-11-10): mejoras del TPV.** Rama `tpv-entrega-b` con dos migraciones (`mesas_tipo_barra` y `pago_por_separado`) → PR #12 a `staging` → probado en la web de pruebas → PR #13 a `main` → «Qué cambiaría en producción» listó solo esas dos migraciones → despliegue aprobado → comprobado en producción.
+- Las ramas antiguas (`pos`, `tickets`, `miguel`, `miguel2`) son historia: las ramas de trabajo nuevas salen de `staging`.
 
 **Forma de trabajar** (como en `POS.md`): una fase cada vez, plan de archivos antes de programar, pausa al final para probar y actualizar este documento.
 
@@ -838,3 +839,5 @@ Se divide en **E1a** y **E1b** (E-D18).
 - **2026-11-10** — Plan de E5 aprobado con las recomendaciones (E-D20; E-D19 confirmada; E-D17 se resuelve con la protección de `main`). Programado en `e5-produccion`.
 - **2026-11-10** — **E5 cerrada:** protección activada y primer cambio real (permisos de `profiles`) llevado de rama a producción con aprobación. Vigilancia: iguales.
 - **2026-11-10** — E6 pospuesta por el usuario (prioridad: justificantes, pagos por separado y barra en el TPV). Plan de E6 apuntado en su sección para retomarlo.
+- **2026-11-10** — Segundo cambio por el flujo completo: mejoras del TPV (PR #12 a `staging`, PR #13 a `main`, dos migraciones aplicadas a producción con aprobación).
+- **2026-11-12** — El usuario confirma las mejoras del TPV en producción. Actualizada la sección «Mientras tanto: el POS y los tickets» con el flujo actual.
