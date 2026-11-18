@@ -1,31 +1,39 @@
 import { useState } from 'react';
-import { FileUp, Wheat } from 'lucide-react';
+import { ChefHat, FileUp, Settings2, Wheat } from 'lucide-react';
 import { focusRing } from '@/components/club/FormControls';
+import { ProductosView } from '@/components/admin/rentabilidad/ProductosView';
 import { IngredientesView } from '@/components/admin/rentabilidad/IngredientesView';
 import { ImportarView } from '@/components/admin/rentabilidad/ImportarView';
+import { AjustesView } from '@/components/admin/rentabilidad/AjustesView';
 
-type Vista = 'ingredientes' | 'importar';
+type Vista = 'productos' | 'ingredientes' | 'importar' | 'ajustes';
 
 const VISTAS: { id: Vista; label: string; icon: typeof Wheat }[] = [
+  { id: 'productos', label: 'Productos', icon: ChefHat },
   { id: 'ingredientes', label: 'Ingredientes', icon: Wheat },
   { id: 'importar', label: 'Importar Excel', icon: FileUp },
+  { id: 'ajustes', label: 'Ajustes', icon: Settings2 },
 ];
 
 /**
- * Pestaña "Rentabilidad" del panel (RENTABILIDAD.md). R1: ingredientes con su coste e importación
- * del Excel. Productos, márgenes y resumen llegan en R2 y R3. Solo admins.
+ * Pestaña "Rentabilidad" del panel (RENTABILIDAD.md): productos con su margen y etiqueta, recetas,
+ * ingredientes con su coste, importación del Excel y ajustes. Solo admins.
  */
 export function RentabilidadSection() {
-  const [vista, setVista] = useState<Vista>('ingredientes');
-  // Al terminar una importación se vuelve a la lista, que se recarga.
+  const [vista, setVista] = useState<Vista>('productos');
+  // Al terminar una importación se va a la lista correspondiente, que se recarga.
   const [recarga, setRecarga] = useState(0);
+  const ir = (v: Vista) => {
+    setRecarga((n) => n + 1);
+    setVista(v);
+  };
 
   return (
     <>
       <div>
         <h2 className="font-display text-2xl font-semibold text-vino">Rentabilidad</h2>
         <p className="mt-1 text-sm text-carbon/70">
-          Lo que cuesta cada ingrediente (precios de compra <strong>sin IVA</strong>). Solo lo ven los administradores.
+          Coste, margen y etiqueta de cada producto, calculados con los precios de compra <strong>sin IVA</strong>. Solo lo ven los administradores.
         </p>
       </div>
 
@@ -46,15 +54,10 @@ export function RentabilidadSection() {
       </div>
 
       <div className="mt-5">
+        {vista === 'productos' && <ProductosView key={recarga} />}
         {vista === 'ingredientes' && <IngredientesView key={recarga} />}
-        {vista === 'importar' && (
-          <ImportarView
-            onTerminado={() => {
-              setRecarga((n) => n + 1);
-              setVista('ingredientes');
-            }}
-          />
-        )}
+        {vista === 'importar' && <ImportarView onIngredientes={() => ir('ingredientes')} onRecetas={() => ir('productos')} />}
+        {vista === 'ajustes' && <AjustesView />}
       </div>
     </>
   );

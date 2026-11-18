@@ -20,6 +20,23 @@ import {
   type ProductRow,
   type SectionRow,
 } from '@/lib/adminCatalog';
+import { EtiquetaBadge, EtiquetaPunto } from '@/components/admin/rentabilidad/Etiqueta';
+import {
+  AJUSTES_POR_DEFECTO,
+  ETIQUETAS,
+  calcularMargen,
+  fetchAjustes,
+  fetchRentabilidad,
+  formatEur,
+  formatPct,
+  type Ajustes,
+} from '@/lib/rentabilidad';
+
+/** Coste de cada producto (Rentabilidad) y ajustes, para el punto de color y el margen en directo. */
+interface InfoCostes {
+  costes: Map<number, number | null>;
+  ajustes: Ajustes;
+}
 
 const byOrder = <T extends { orden: number; id: string | number }>(a: T, b: T) =>
   a.orden - b.orden || String(a.id).localeCompare(String(b.id), undefined, { numeric: true });
@@ -44,11 +61,14 @@ export function CartaSection() {
   const [productEditor, setProductEditor] = useState<ProductEditorState | null>(null);
   const [sectionEditor, setSectionEditor] = useState<SectionEditorState | null>(null);
   const [categoryEditor, setCategoryEditor] = useState<CategoryEditorState | null>(null);
+  const [info, setInfo] = useState<InfoCostes>({ costes: new Map(), ajustes: AJUSTES_POR_DEFECTO });
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const data = await fetchCarta();
+    // La rentabilidad es un extra: si falla, la carta se ve igual (sin puntos de color).
+    const [data, rent, aj] = await Promise.all([fetchCarta(), fetchRentabilidad(), fetchAjustes()]);
+    if (!rent.error) setInfo({ costes: new Map(rent.productos.map((p) => [p.product_id, p.coste])), ajustes: aj.ajustes });
     setCategories(data.categories);
     setSections(data.sections);
     setProducts(data.products);
@@ -233,6 +253,7 @@ export function CartaSection() {
                   onPatch={patchProduct}
                   onMove={(i, d) => move('products', loose, i, d)}
                   onEdit={(row) => setProductEditor({ mode: 'edit', row })}
+                  info={info}
                 />
 
                 {catSections.map((sec, si) => {
@@ -271,6 +292,7 @@ export function CartaSection() {
                         onPatch={patchProduct}
                         onMove={(i, d) => move('products', secProducts, i, d)}
                         onEdit={(row) => setProductEditor({ mode: 'edit', row })}
+                        info={info}
                       />
                     </div>
                   );
@@ -286,6 +308,7 @@ export function CartaSection() {
         categories={sortedCategories}
         sections={sections}
         products={products}
+        info={info}
         onClose={() => setProductEditor(null)}
         onSaved={(row, created) => {
           setProducts((prev) => (created ? [...prev, row] : prev.map((p) => (p.id === row.id ? row : p))));
@@ -325,12 +348,14 @@ function ProductList({
   onPatch,
   onMove,
   onEdit,
+  info,
 }: {
   rows: ProductRow[];
   busyKey: string | null;
   onPatch: (row: ProductRow, changes: Partial<ProductRow>, label: string) => void;
   onMove: (index: number, direction: -1 | 1) => void;
   onEdit: (row: ProductRow) => void;
+  info: InfoCostes;
 }) {
   if (rows.length === 0) return <p className="px-4 py-3 text-xs text-carbon/45 sm:px-5">Sin productos.</p>;
   return (
@@ -345,6 +370,7 @@ function ProductList({
               <span className={`font-semibold ${row.activo ? 'text-carbon' : 'text-carbon/50 line-through'}`}>{row.nombre}</span>
               {!row.activo && <span className="pend-badge">NO SALE</span>}
               {!row.disponible && <span className="pend-badge">AGOTADO</span>}
+              {info.costes.has(row.id) && <PuntoMargen precio={row.precio_centimos} coste={info.costes.get(row.id) ?? null} ajustes={info.ajustes} />}
             </div>
             {row.descripcion && <p className="mt-0.5 text-xs text-carbon/60">{row.descripcion}</p>}
           </div>
@@ -382,6 +408,36 @@ function ProductList({
         </li>
       ))}
     </ul>
+  );
+}
+
+/** Punto de color con la etiqueta de margen (Rentabilidad). Se recalcula al cambiar el precio. */
+function PuntoMargen({ precio, coste, ajustes }: { precio: number | null; coste: number | null; ajustes: Ajustes }) {
+  const c = calcularMargen(precio, coste, ajustes);
+  const titulo = c.margen !== null ? `Margen ${formatPct(c.margen)} · ${ETIQUETAS[c.etiqueta].texto}` : ETIQUETAS[c.etiqueta].texto;
+  return <EtiquetaPunto etiqueta={c.etiqueta} titulo={titulo} />;
+}
+
+/** Línea «Coste · Margen · Ganancia · Etiqueta» bajo el precio, en directo mientras se escribe. */
+function MargenEnDirecto({ precio, coste, ajustes }: { precio: string; coste: number | null; ajustes: Ajustes }) {
+  if (coste === null) {
+    return <p className="-mt-2 text-xs text-carbon/55">Sin receta: añádela en Rentabilidad → Productos para ver su margen.</p>;
+  }
+  const cents = parseEurosToCents(precio);
+  const c = calcularMargen(cents === undefined ? null : cents, coste, ajustes);
+  return (
+    <p className="-mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-carbon/70" aria-live="polite">
+      <span>Coste {formatEur(coste)}</span>
+      {c.margen !== null && c.ganancia !== null && (
+        <>
+          <span aria-hidden="true">·</span>
+          <span>Margen {formatPct(c.margen)}</span>
+          <span aria-hidden="true">·</span>
+          <span>Ganancia {formatEur(c.ganancia)}</span>
+        </>
+      )}
+      <EtiquetaBadge etiqueta={c.etiqueta} />
+    </p>
   );
 }
 
@@ -452,6 +508,7 @@ function ProductEditor({
   categories,
   sections,
   products,
+  info,
   onClose,
   onSaved,
 }: {
@@ -459,6 +516,7 @@ function ProductEditor({
   categories: CategoryRow[];
   sections: SectionRow[];
   products: ProductRow[];
+  info: InfoCostes;
   onClose: () => void;
   onSaved: (row: ProductRow, created: boolean) => void;
 }) {
@@ -534,6 +592,9 @@ function ProductEditor({
         <TextField label="Nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} required />
         <TextField label="Descripción (opcional)" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} hint="Por ejemplo: «Estrella, 25cl»." />
         <TextField label="Precio (€)" value={precio} onChange={(e) => setPrecio(e.target.value)} inputMode="decimal" placeholder="2,50" hint="Vacío = sin precio en la carta." />
+        {state.mode === 'edit' && info.costes.has(state.row.id) && (
+          <MargenEnDirecto precio={precio} coste={info.costes.get(state.row.id) ?? null} ajustes={info.ajustes} />
+        )}
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="prod-categoria" className="mb-1 block text-xs font-semibold text-carbon/80">Categoría</label>
