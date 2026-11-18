@@ -8,7 +8,7 @@ Este documento es la especificación viva del **módulo de costes y rentabilidad
 - No se programa ninguna fase hasta que estén 🟢 las decisiones de las que depende.
 - Cada fase: plan de archivos → aprobación → código → prueba en PRUEBAS → producción con aprobación (flujo de `ENTORNOS.md`).
 
-Última actualización: 2026-11-19 (v4.5) · Estado: **R1 y R2 en producción** (2026-11-18). **R3 (resumen, margen de las promos y «Descargar Excel») programada en la rama `rentabilidad-r3`, pendiente de prueba.**
+Última actualización: 2026-11-19 (v4.6) · Estado: **R1 y R2 en producción** (2026-11-18). **R3 (resumen, margen de las promos y «Descargar Excel») programada en la rama `rentabilidad-r3` y ⏸️ EN PAUSA:** el usuario la consulta con el equipo y hace sus pruebas antes de seguir. **No se sube a `main`** hasta que el usuario lo diga, y **R4 no empieza** hasta entonces.
 
 > **Datos reales fuera del repositorio (R-D13).** El repositorio es **público**. Los costes, márgenes y ventas reales del bar (la antigua sección 15) están en una página **privada** de Claude Docs: **«Rentabilidad: datos reales · La Alameda»** — https://claude.ai/artifact/UguZQzuyRZ2MNBojT7Cupr. Sus números son los casos de prueba de R2. El Excel de costes (`Costes.xlsx`) tampoco se sube nunca (`*.xlsx` está en `.gitignore`). En este documento solo hay ejemplos ilustrativos.
 
@@ -301,7 +301,9 @@ descuento_real = 1 − precio_promo / precio_normal
 - **Comprobado en local (PGlite + el Excel real, fuera del repositorio):** 38 pruebas. Entre ellas: con las dosis corregidas y los precios de la página privada, **los 35 márgenes y etiquetas comprobados salen idénticos**, y también los costes comprobados (los números, solo en la página privada); el cálculo en directo del panel da lo mismo que el servidor en todos los productos; la Jarra creada a mano sale con el margen y la etiqueta de la página privada; subir el barril o el precio cambia el margen al momento; reimportar igual no cambia nada y conserva la merma; errores de importación; camarero, socio y sin sesión no ven nada; `products` sigue sin columnas de coste.
 - **Prueba del usuario en la web de pruebas:** Importar Excel → **2. Recetas** → `Costes.xlsx` → revisar «Tercio» (dejar «No está en la carta») → pulsar «Copas: pasar el destilado de 60 a 75 ml» → «Actualizar previsualización» (0 errores) → confirmar. Después: **Productos** → crear la receta de la **Jarra** (450 ml de barril) → comparar márgenes y etiquetas con la página privada (con los precios que tenga PRUEBAS) → cambiar un precio en **Carta** y ver el margen en directo y el punto de color.
 
-### Estado de R3 (2026-11-19): 🟡 programada, pendiente de prueba
+### Estado de R3 (2026-11-19): ⏸️ programada y en pausa
+
+- **En pausa (decisión del usuario, 2026-11-19):** antes de seguir, el usuario lo consulta con el equipo y hace sus pruebas. El código está terminado en la rama `rentabilidad-r3` (sin mezclar en `main`). **No se sube a `main`** hasta que el usuario lo indique; **R4 no se empieza** hasta entonces. Al retomar: preguntar el resultado de la consulta y de las pruebas, aplicar los cambios que pida el equipo en la misma rama y seguir el flujo (PR a `staging` → prueba → PR a `main` → aprobar).
 
 - **Rama:** `rentabilidad-r3` (desde `staging`).
 - **Migración `20261119100000_costes_resumen.sql`:** solo funciones (`_etiqueta_de_margen`, `_coste_promo`, `rentabilidad_promos`, `rentabilidad_resumen`), solo admin y permisos explícitos. Sin tablas nuevas.
@@ -384,3 +386,4 @@ descuento_real = 1 − precio_promo / precio_normal
 - **2026-11-18 (v4.3)** — R1 probada en PRUEBAS por el usuario (PR #17). Plan de R2 aprobado con R-D15 (IVA solo general) y R-D16 (R1 y R2 juntas a producción). **R2 programada** en `rentabilidad-r2`.
 - **2026-11-18 (v4.4)** — R2 probada en PRUEBAS. **R1 y R2 publicadas en producción** (PR #18 y #19, con aprobación). Siguiente: R3.
 - **2026-11-19 (v4.5)** — Plan de R3 aprobado con R-D17 a R-D20. **R3 programada** en `rentabilidad-r3`.
+- **2026-11-19 (v4.6)** — **R3 en pausa** a petición del usuario: la consulta con el equipo y hace pruebas antes de seguir. No se sube a `main` y R4 no empieza hasta que lo diga.
