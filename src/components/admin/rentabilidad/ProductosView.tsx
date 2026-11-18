@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useId, useMemo, useState } from 'react';
-import { ChefHat, Loader2, RefreshCw, Search } from 'lucide-react';
+import { ChefHat, Download, Loader2, RefreshCw, Search } from 'lucide-react';
 import { Notice, Switch, focusRing } from '@/components/club/FormControls';
 import { EtiquetaBadge } from '@/components/admin/rentabilidad/Etiqueta';
 import { RecetaModal } from '@/components/admin/rentabilidad/RecetaModal';
+import { descargarRentabilidad } from '@/lib/exportarRentabilidad';
 import {
   AJUSTES_POR_DEFECTO,
   ETIQUETAS,
@@ -31,6 +32,7 @@ export function ProductosView() {
   const [orden, setOrden] = useState<Orden>('carta');
   const [abierto, setAbierto] = useState<ProductoRentabilidad | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
+  const [descargando, setDescargando] = useState(false);
   const idBuscar = useId();
   const idCategoria = useId();
   const idOrden = useId();
@@ -138,6 +140,19 @@ export function ProductosView() {
             <option value="ganancia">Más ganancia (30 días)</option>
           </select>
         </div>
+        <button
+          type="button"
+          onClick={async () => {
+            setDescargando(true);
+            const e = await descargarRentabilidad(null);
+            setDescargando(false);
+            if (e) setError(e);
+          }}
+          disabled={descargando || loading}
+          className={`btn-outline-vino h-11 disabled:opacity-60 ${focusRing}`}
+        >
+          {descargando ? <Loader2 size={16} className="animate-spin" aria-hidden="true" /> : <Download size={16} aria-hidden="true" />} Excel
+        </button>
         <button type="button" onClick={load} disabled={loading} aria-label="Actualizar" className={`btn-outline-vino h-11 disabled:opacity-60 ${focusRing}`}>
           <RefreshCw size={16} className={loading ? 'animate-spin' : ''} aria-hidden="true" />
         </button>
