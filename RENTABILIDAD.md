@@ -8,7 +8,7 @@ Este documento es la especificación viva del **módulo de costes y rentabilidad
 - No se programa ninguna fase hasta que estén 🟢 las decisiones de las que depende.
 - Cada fase: plan de archivos → aprobación → código → prueba en PRUEBAS → producción con aprobación (flujo de `ENTORNOS.md`).
 
-Última actualización: 2026-11-18 (v4.3) · Estado: **R1 probada en PRUEBAS (en `staging`). R2 (recetas, margen y etiqueta) programada en la rama `rentabilidad-r2`, pendiente de prueba. R1 y R2 irán juntas a producción (R-D16).**
+Última actualización: 2026-11-18 (v4.4) · Estado: **R1 y R2 en producción** (2026-11-18, PR #18 a `staging` y PR #19 a `main`, despliegue aprobado). Cada producto tiene su coste, margen y etiqueta en Panel → Rentabilidad y en la Carta. **Siguiente: R3** (resumen, exportar a Excel y margen de las promos).
 
 > **Datos reales fuera del repositorio (R-D13).** El repositorio es **público**. Los costes, márgenes y ventas reales del bar (la antigua sección 15) están en una página **privada** de Claude Docs: **«Rentabilidad: datos reales · La Alameda»** — https://claude.ai/artifact/UguZQzuyRZ2MNBojT7Cupr. Sus números son los casos de prueba de R2. El Excel de costes (`Costes.xlsx`) tampoco se sube nunca (`*.xlsx` está en `.gitignore`). En este documento solo hay ejemplos ilustrativos.
 
@@ -269,8 +269,8 @@ descuento_real = 1 − precio_promo / precio_normal
 | Fase | Contenido | Hecha cuando… |
 |---|---|---|
 | **R0** Decisiones | Este documento aprobado | ✅ R-D1, R-D5, R-D10 a R-D14 decididas (18/11) |
-| **R1** Ingredientes e importación | `insumos`, `insumo_precios`, `costes_importaciones`; importación de «Materias Primas»; pestaña Ingredientes | Los 67 ingredientes cargados con su coste; un camarero o un socio no ven nada |
-| **R2** Recetas y margen | `recetas` + importación de «Coste_Unitario» con emparejamiento, ajustes, `producto_precios`, `rentabilidad_productos()`; pestañas Productos y Ajustes; margen en directo en Carta | Cambiar un precio o un ingrediente cambia el margen al momento; los números de la página privada salen idénticos |
+| **R1** ✅ Ingredientes e importación | `insumos`, `insumo_precios`, `costes_importaciones`; importación de «Materias Primas»; pestaña Ingredientes | Los 67 ingredientes cargados con su coste; un camarero o un socio no ven nada |
+| **R2** ✅ Recetas y margen | `recetas` + importación de «Coste_Unitario» con emparejamiento, ajustes, `producto_precios`, `rentabilidad_productos()`; pestañas Productos y Ajustes; margen en directo en Carta | Cambiar un precio o un ingrediente cambia el margen al momento; los números de la página privada salen idénticos |
 | **R3** Panel y promos | `rentabilidad_resumen()`, Resumen, exportar a Excel, margen de promos | El resumen cuadra con un cálculo a mano |
 | **R4** Margen real de lo vendido | Coste copiado en cada venta (tabla aparte), margen real en Ventas e Informes | El margen real de una semana cuadra con un cálculo a mano |
 | **R5** Futuro | Escala por familia, compras y stock, subrecetas, mínimo con bloqueo si se pide, varios locales | — |
@@ -279,7 +279,7 @@ descuento_real = 1 − precio_promo / precio_normal
 - **R1 + R2 ya dan lo que se pide:** cada producto con su margen y su etiqueta, actualizados solos.
 - **Aviso de dirección:** este módulo no vende más. Las decisiones de precio urgentes (comida, vinos) se toman ya con el análisis de la página privada; el desarrollo no debe quitar horas al sprint comercial.
 
-### Estado de R1 (2026-11-18): ✅ probada en PRUEBAS por el usuario · a producción junto con R2
+### Estado de R1 (2026-11-18): ✅ en producción (junto con R2)
 
 - **Rama:** `rentabilidad-r1` (desde `staging`).
 - **Migración `20261118120000_costes_insumos.sql`:** tablas `insumos` (con `coste_unitario` calculado), `insumo_precios` (histórico automático e inmutable) y `costes_importaciones`; RLS solo admin; `admin_importar_insumos()`; permisos explícitos (solo las columnas editables; el coste y el código no se pueden fijar a mano; no se puede borrar).
@@ -287,7 +287,9 @@ descuento_real = 1 − precio_promo / precio_normal
 - **Comprobado en local (PGlite, fuera del repositorio):** 34 pruebas, entre ellas: el coste por unidad de los 67 ingredientes coincide con la columna «Costo por» del Excel; camarero, socio y sin sesión no ven nada; previsualizar no escribe; con un error no se aplica nada; el histórico se crea solo y no se puede tocar; reimportar con un precio cambiado añade una línea. El lector del Excel, probado con el archivo real, lee las 67 filas igual que la referencia.
 - **Prueba del usuario en la web de pruebas:** entrar como admin → Panel → Rentabilidad → Importar Excel → `Costes.xlsx` → revisar la previsualización (67 nuevos, 0 errores) → confirmar → revisar la lista, editar un precio y ver su histórico. Con `camarero@prueba.test` la pestaña no existe y las tablas no devuelven nada. **Hecho: todo bien** (PR #17 a `staging`).
 
-### Estado de R2 (2026-11-18): 🟡 programada, pendiente de prueba
+### Estado de R2 (2026-11-18): ✅ en producción
+
+- **Publicación:** rama `rentabilidad-r2` → PR #18 a `staging` (probado por el usuario en la web de pruebas) → PR #19 a `main` → despliegue aprobado: se aplicaron `20261118120000_costes_insumos` y `20261118180000_costes_recetas`. El usuario confirma que todo salió sin errores.
 
 - **Rama:** `rentabilidad-r2` (desde `staging`, que ya tiene R1).
 - **Migración `20261118180000_costes_recetas.sql`:** ajustes (IVA y escala), `recetas`, `costes_emparejamientos`, `producto_precios` (trigger en `products` + precio inicial), `_coste_producto`, `_margen_etiqueta`, `rentabilidad_productos`, `admin_guardar_receta`, `admin_importar_recetas`; RLS solo admin y permisos explícitos. **Nada en `products`** salvo el trigger del histórico.
@@ -364,3 +366,4 @@ descuento_real = 1 − precio_promo / precio_normal
 - **2026-11-18 (v4.1)** — R-D1 cambiada: **solo el admin** edita precios, ingredientes y recetas. Se quita el permiso de encargado (pospuesto como R-P6).
 - **2026-11-18 (v4.2)** — Revisión de Claude Code contra el código, aprobada por el usuario: R-D12 (coste fuera de `products`, margen calculado al leer), R-D13 (datos reales en una página privada de Claude Docs; la sección 15 sale del repositorio), R-D14 (precios de compra sin IVA), R-D5 (lector propio). Ajustes e importación de recetas pasan a R2. **R0 cerrada; R1 programada** en `rentabilidad-r1`.
 - **2026-11-18 (v4.3)** — R1 probada en PRUEBAS por el usuario (PR #17). Plan de R2 aprobado con R-D15 (IVA solo general) y R-D16 (R1 y R2 juntas a producción). **R2 programada** en `rentabilidad-r2`.
+- **2026-11-18 (v4.4)** — R2 probada en PRUEBAS. **R1 y R2 publicadas en producción** (PR #18 y #19, con aprobación). Siguiente: R3.
