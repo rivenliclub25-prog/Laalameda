@@ -120,7 +120,7 @@ Por último, añade un apartado aparte, para hacerlo más adelante, sobre cómo 
 
 ---
 
-# Estado actual (actualizado 2026-11-12)
+# Estado actual (actualizado 2026-11-18)
 
 **Proyecto de Supabase en uso: `hinebaxynlpjisteuaus`.** Es el de `.env` y el de los GitHub Secrets, y el de la web publicada (comprobado el 2026-10-23). El otro proyecto (`eisuyvozingpasbqvrdx`) no se usa: tenerlo mezclado con el bueno dio `401 Invalid API key`.
 
@@ -134,6 +134,7 @@ Ramas:
 - **2026-11-05: todas las ramas subidas a GitHub y puestas al día con `main`** (`admin-dashboard`, `club-clientes`, `google-auth`, `tickets` y `pos` apuntan al mismo commit que `main`). **Un compañero empieza a trabajar desde otro ordenador**: la guía para arrancar está en `README.md` → «Empezar a trabajar desde otro ordenador». A partir de ahora, cada tarea nueva en su propia rama creada desde `main`, y `git pull` antes de empezar.
 - **El script de precios del Excel se retiró el 2026-11-07** (`ENTORNOS.md`, E-D8): la carta y los precios se editan solo en el panel. Antes de trabajar, ejecuta `git pull`.
 - **Mejoras del TPV: ✅ en producción desde el 2026-11-10** (ver `POS.md`). Entrega A: justificante de pago para ticketera de 80 mm, pestañas Mesas · Barra · Venta rápida y puestos de barra (Barra 1, Barra 2…, se crean en Panel → Mesas). Entrega B: «Cobrar por separado» en mesas y puestos de barra (cada pago es una venta con su justificante; la cuenta se cierra sola al pagarlo todo). Llevadas por el flujo nuevo: rama `tpv-entrega-b` → PR #12 a `staging` → PR #13 a `main` → aprobación. Comprobadas por el usuario en producción el 2026-11-12. Guía del camarero actualizada el mismo día.
+- **Costes y rentabilidad (2026-11-18, ver `RENTABILIDAD.md`): R1 ✅ probada en PRUEBAS (en `staging`, PR #17); 🟡 R2 programada** en la rama `rentabilidad-r2` (recetas, emparejamiento con la carta, margen y etiqueta en Rentabilidad → Productos y en la Carta, ajustes de IVA y escala), pendiente de prueba. R1 y R2 irán juntas a producción. Ingredientes con su coste (precios de compra sin IVA) e histórico, importación de la hoja «Materias Primas» de `Costes.xlsx` desde Panel → Rentabilidad, solo para admins. **El repositorio es público:** los costes, márgenes y ventas reales están en una página privada de Claude Docs (https://claude.ai/artifact/UguZQzuyRZ2MNBojT7Cupr) y el Excel nunca se sube (`*.xlsx` en `.gitignore`). Siguiente: probar R2 en PRUEBAS → producción (R1 + R2) → R3 (resumen, exportar a Excel y margen de las promos).
 - **Separación de pruebas y producción: E0–E5 cerradas, E6 pospuesta** (ver `ENTORNOS.md`). Copias nocturnas cifradas en `Laalameda-copias`; Supabase de PRUEBAS `hrhhkzajweggpnupytms` con la misma estructura que producción; web de pruebas desde `staging`; datos y usuarios de prueba; CI y paso a producción con aprobación. **La base de datos ya no se cambia pegando SQL:** las migraciones están en `supabase/migrations/` y los `.sql` antiguos en `supabase/legacy/`. **Forma de trabajar:** rama desde `staging` → PR a `staging` (se prueba en la web de pruebas) → PR de `staging` a `main` → aprobar el despliegue en Actions. Producción no se toca para probar.
 
 ## Inicio de sesión con Google (rama `google-auth`): ✅ publicado (2026-10-28)

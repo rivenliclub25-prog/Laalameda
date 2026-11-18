@@ -4,6 +4,17 @@ import type { PostgrestError } from '@supabase/supabase-js';
 const messages: Record<string, string> = {
   NO_AUTENTICADO: 'Tu sesión ha caducado. Vuelve a iniciar sesión.',
   NO_ES_ADMIN: 'Esta acción es solo para administradores.',
+  // Rentabilidad (20261118120000_costes_insumos.sql)
+  IMPORTACION_VACIA: 'El archivo no tiene ingredientes que importar.',
+  IMPORTACION_DEMASIADO_GRANDE: 'El archivo tiene demasiadas filas (máximo 2.000).',
+  HISTORICO_INMUTABLE: 'El histórico de precios no se puede modificar.',
+  RECETA_INVALIDA: 'La receta no es válida.',
+  RECETA_DEMASIADO_LARGA: 'Una receta puede tener como máximo 50 ingredientes.',
+  INSUMO_NO_EXISTE: 'Uno de los ingredientes ya no existe. Recarga la página.',
+  INSUMO_REPETIDO: 'Hay un ingrediente repetido en la receta.',
+  MERMA_INVALIDA: 'La merma va de 0 a 99 %.',
+  NOTA_DEMASIADO_LARGA: 'La nota es demasiado larga (máximo 200 caracteres).',
+  EMPAREJAMIENTOS_INVALIDOS: 'El emparejamiento con la carta no es válido. Vuelve a elegir el archivo.',
   NO_ES_CAMARERO: 'Solo el personal del bar puede canjear tickets.',
   PROMO_NO_EXISTE: 'Esta promo ya no existe.',
   PROMO_NO_CLUB: 'Esta promo no necesita ticket: pídela directamente en la barra.',
