@@ -11,13 +11,45 @@ import {
   type InformeImportacion,
 } from '@/lib/costes';
 import { ErrorExcel, leerExcel } from '@/lib/xlsx';
+import { ImportarRecetas } from '@/components/admin/rentabilidad/ImportarRecetas';
+
+type Que = 'ingredientes' | 'recetas';
+
+/** Importar del Excel de costes: primero los ingredientes y después las recetas. */
+export function ImportarView({ onIngredientes, onRecetas }: { onIngredientes: () => void; onRecetas: () => void }) {
+  const [que, setQue] = useState<Que>('ingredientes');
+  return (
+    <>
+      <div className="mb-4 flex flex-wrap gap-2" role="group" aria-label="Qué importar">
+        {(
+          [
+            ['ingredientes', '1. Ingredientes («Materias Primas»)'],
+            ['recetas', '2. Recetas («Coste_Unitario»)'],
+          ] as const
+        ).map(([id, texto]) => (
+          <button
+            key={id}
+            type="button"
+            aria-pressed={que === id}
+            onClick={() => setQue(id)}
+            className={`min-h-10 rounded-r-sm border px-3 text-sm font-semibold ${focusRing} ${
+              que === id ? 'border-carbon bg-carbon text-white' : 'border-carbon/20 bg-white text-carbon/75 hover:border-carbon'
+            }`}
+          >
+            {texto}
+          </button>
+        ))}
+      </div>
+      {que === 'ingredientes' ? <ImportarIngredientes onTerminado={onIngredientes} /> : <ImportarRecetas onTerminado={onRecetas} />}
+    </>
+  );
+}
 
 /**
- * Importar la hoja «Materias Primas» del Excel de costes: se lee en el navegador, el servidor
- * devuelve qué pasaría con cada fila (nuevo, cambia de precio, sin cambios, error) y, si no hay
- * errores, se confirma todo de una vez. Las recetas («Coste_Unitario») se importan en R2.
+ * Importar la hoja «Materias Primas»: se lee en el navegador, el servidor devuelve qué pasaría con
+ * cada fila (nuevo, cambia de precio, sin cambios, error) y, si no hay errores, se confirma todo de una vez.
  */
-export function ImportarView({ onTerminado }: { onTerminado: () => void }) {
+function ImportarIngredientes({ onTerminado }: { onTerminado: () => void }) {
   const [archivo, setArchivo] = useState<string | null>(null);
   const [filas, setFilas] = useState<FilaImportacion[] | null>(null);
   const [informe, setInforme] = useState<InformeImportacion | null>(null);
@@ -102,8 +134,8 @@ export function ImportarView({ onTerminado }: { onTerminado: () => void }) {
       <div className="rounded-r-lg border border-piedra/50 bg-white p-4 shadow-sm sm:p-5">
         <p className="text-sm text-carbon/75">
           Elige tu Excel de costes (<strong>.xlsx</strong>). Se lee la hoja <strong>«Materias Primas»</strong>: nombre, tamaño, unidad y precio de
-          compra <strong>sin IVA</strong>. El archivo se lee en este navegador y no se sube: solo se envían esos datos. Las recetas se importan en la
-          siguiente fase.
+          compra <strong>sin IVA</strong>. El archivo se lee en este navegador y no se sube: solo se envían esos datos. Después, importa las
+          recetas en «2. Recetas».
         </p>
         <p className="mt-2 text-sm text-carbon/75">
           Puedes volver a importarlo cuando cambien los precios: los ingredientes se reconocen por el nombre y los cambios quedan en su histórico.
