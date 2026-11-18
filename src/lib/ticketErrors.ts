@@ -14,6 +14,7 @@ const messages: Record<string, string> = {
   INSUMO_REPETIDO: 'Hay un ingrediente repetido en la receta.',
   MERMA_INVALIDA: 'La merma va de 0 a 99 %.',
   NOTA_DEMASIADO_LARGA: 'La nota es demasiado larga (máximo 200 caracteres).',
+  PERIODO_INVALIDO: 'Elige un periodo válido (como mucho 400 días).',
   EMPAREJAMIENTOS_INVALIDOS: 'El emparejamiento con la carta no es válido. Vuelve a elegir el archivo.',
   NO_ES_CAMARERO: 'Solo el personal del bar puede canjear tickets.',
   PROMO_NO_EXISTE: 'Esta promo ya no existe.',

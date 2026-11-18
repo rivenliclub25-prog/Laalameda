@@ -252,3 +252,121 @@ export async function importarRecetas(
   if (error) return { informe: null, error: mensaje(error) };
   return { informe: data as InformeRecetas, error: null };
 }
+
+// ---------------------------------------------------------------------
+// R3: promos y resumen de lo vendido (migración 20261119100000_costes_resumen.sql)
+// ---------------------------------------------------------------------
+
+export interface PromoRentabilidad {
+  promo_id: string;
+  nombre: string;
+  tipo: 'pack' | 'obsequio' | 'sorteo';
+  publicada: boolean;
+  activa: boolean;
+  precio_centimos: number | null;
+  descuento_anunciado_pct: number | null;
+  productos: number;
+  sin_receta: string[];
+  precio_normal_centimos: number | null;
+  descuento_real_pct: number | null;
+  aviso_descuento: boolean;
+  coste: number | null;
+  margen_pct: number | null;
+  ganancia: number | null;
+  etiqueta: Etiqueta;
+  vendidas_30d: number;
+  ganancia_30d: number | null;
+}
+
+export async function fetchRentabilidadPromos(): Promise<{ promos: PromoRentabilidad[]; error: string | null }> {
+  const { data, error } = await supabase.rpc('rentabilidad_promos');
+  if (error) return { promos: [], error: mensaje(error) };
+  const promos = (data as PromoRentabilidad[]).map((p) => ({
+    ...p,
+    descuento_real_pct: n(p.descuento_real_pct),
+    coste: n(p.coste),
+    margen_pct: n(p.margen_pct),
+    ganancia: n(p.ganancia),
+    ganancia_30d: n(p.ganancia_30d),
+    sin_receta: p.sin_receta ?? [],
+  }));
+  return { promos, error: null };
+}
+
+/**
+ * Mismo cálculo que rentabilidad_promos() para el editor de Promos (en directo): precio normal,
+ * descuento real, coste, margen y aviso si el descuento anunciado no cuadra (más de 2 puntos).
+ */
+export function calcularPromo(
+  precioCentimos: number | null,
+  descuentoAnunciado: number | null,
+  items: { cantidad: number; precio_centimos: number | null; coste: number | null; nombre: string }[],
+  a: Ajustes
+) {
+  const precioNormal = items.length === 0 || items.some((i) => i.precio_centimos === null)
+    ? null
+    : items.reduce((s, i) => s + i.precio_centimos! * i.cantidad, 0);
+  const sinReceta = items.filter((i) => i.coste === null).map((i) => i.nombre);
+  const coste = items.length === 0 || sinReceta.length > 0 ? null : items.reduce((s, i) => s + i.coste! * i.cantidad, 0);
+  const descuentoReal =
+    precioNormal && precioNormal > 0 && precioCentimos !== null ? Math.round((1 - precioCentimos / precioNormal) * 1000) / 10 : null;
+  const aviso = descuentoAnunciado !== null && descuentoReal !== null && Math.abs(descuentoAnunciado - descuentoReal) > 2;
+  return { precioNormal, descuentoReal, aviso, coste, sinReceta, ...calcularMargen(precioCentimos, coste, a) };
+}
+
+export interface ResumenRentabilidad {
+  desde: string;
+  hasta: string;
+  iva_pct: number;
+  totales: {
+    ventas_sin_iva: number;
+    ventas_con_coste: number;
+    coste: number;
+    ganancia: number;
+    unidades: number;
+    margen_pct: number | null;
+    etiqueta: Etiqueta;
+    ventas_sin_coste: number;
+    pct_sin_coste: number | null;
+    devuelto: number;
+  };
+  por_categoria: {
+    id: string;
+    nombre: string;
+    unidades: number;
+    ventas_sin_iva: number;
+    pct_venta: number | null;
+    ganancia: number | null;
+    margen_pct: number | null;
+    etiqueta: Etiqueta;
+    ventas_sin_coste: number;
+  }[];
+  productos: {
+    clase: 'producto' | 'promo';
+    id: string;
+    nombre: string;
+    categoria: string;
+    unidades: number;
+    ventas_sin_iva: number;
+    ganancia: number | null;
+    margen_pct: number | null;
+    etiqueta: Etiqueta;
+  }[];
+  ingredientes: {
+    insumo_id: number;
+    nombre: string;
+    unidad: UnidadBase;
+    fecha: string;
+    antes: number;
+    despues: number;
+    variacion_pct: number | null;
+    productos: number;
+  }[];
+  precios_carta: { product_id: number; nombre: string; fecha: string; antes: number | null; despues: number | null }[];
+}
+
+export async function fetchResumen(desde: string, hasta: string): Promise<{ resumen: ResumenRentabilidad | null; error: string | null }> {
+  const { data, error } = await supabase.rpc('rentabilidad_resumen', { p_desde: desde, p_hasta: hasta });
+  if (error) return { resumen: null, error: mensaje(error) };
+  return { resumen: data as ResumenRentabilidad, error: null };
+}
