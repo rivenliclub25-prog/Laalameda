@@ -4,6 +4,10 @@ import type { PostgrestError } from '@supabase/supabase-js';
 const messages: Record<string, string> = {
   NO_AUTENTICADO: 'Tu sesión ha caducado. Vuelve a iniciar sesión.',
   NO_ES_ADMIN: 'Esta acción es solo para administradores.',
+  // Rentabilidad (20261118120000_costes_insumos.sql)
+  IMPORTACION_VACIA: 'El archivo no tiene ingredientes que importar.',
+  IMPORTACION_DEMASIADO_GRANDE: 'El archivo tiene demasiadas filas (máximo 2.000).',
+  HISTORICO_INMUTABLE: 'El histórico de precios no se puede modificar.',
   NO_ES_CAMARERO: 'Solo el personal del bar puede canjear tickets.',
   PROMO_NO_EXISTE: 'Esta promo ya no existe.',
   PROMO_NO_CLUB: 'Esta promo no necesita ticket: pídela directamente en la barra.',
