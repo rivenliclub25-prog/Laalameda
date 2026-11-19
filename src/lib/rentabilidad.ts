@@ -23,14 +23,14 @@ export const ETIQUETAS: Record<Etiqueta, { texto: string; clase: string; punto: 
 
 export const ORDEN_ETIQUETAS: Etiqueta[] = ['bajo', 'bueno', 'muy_bueno', 'excelente', 'sin_coste', 'sin_precio'];
 
+/** Escala de etiquetas. (El IVA no se usa: el % de ganancia va con el precio tal cual; queda para R6.) */
 export interface Ajustes {
-  iva_defecto_pct: number;
   escala_bueno_pct: number;
   escala_muy_bueno_pct: number;
   escala_excelente_pct: number;
 }
 
-export const AJUSTES_POR_DEFECTO: Ajustes = { iva_defecto_pct: 10, escala_bueno_pct: 60, escala_muy_bueno_pct: 70, escala_excelente_pct: 80 };
+export const AJUSTES_POR_DEFECTO: Ajustes = { escala_bueno_pct: 60, escala_muy_bueno_pct: 70, escala_excelente_pct: 80 };
 
 export interface ProductoRentabilidad {
   product_id: number;
@@ -43,7 +43,6 @@ export interface ProductoRentabilidad {
   precio_centimos: number | null;
   lineas: number;
   coste: number | null;
-  precio_sin_iva: number | null;
   margen_pct: number | null;
   ganancia: number | null;
   etiqueta: Etiqueta;
@@ -68,17 +67,20 @@ function mensaje(error: PostgrestError): string {
 
 const n = (v: unknown) => (v === null || v === undefined ? null : Number(v));
 
-/** Mismo cálculo que _margen_etiqueta() en el servidor (para verlo en directo). */
+/**
+ * Mismo cálculo que _margen() en el servidor (para verlo en directo): % de ganancia sobre el precio
+ * TAL CUAL, como en el Excel: (precio − coste) / precio, redondeado a 1 decimal.
+ */
 export function calcularMargen(precioCentimos: number | null, coste: number | null, a: Ajustes) {
   if (precioCentimos === null || precioCentimos <= 0) {
-    return { precioSinIva: null, margen: null, ganancia: null, etiqueta: (coste === null ? 'sin_coste' : 'sin_precio') as Etiqueta };
+    return { precio: null, margen: null, ganancia: null, etiqueta: (coste === null ? 'sin_coste' : 'sin_precio') as Etiqueta };
   }
-  const precioSinIva = precioCentimos / 100 / (1 + a.iva_defecto_pct / 100);
-  if (coste === null) return { precioSinIva, margen: null, ganancia: null, etiqueta: 'sin_coste' as Etiqueta };
-  const margen = Math.round(((precioSinIva - coste) / precioSinIva) * 1000) / 10;
+  const precio = precioCentimos / 100;
+  if (coste === null) return { precio, margen: null, ganancia: null, etiqueta: 'sin_coste' as Etiqueta };
+  const margen = Math.round(((precio - coste) / precio) * 1000) / 10;
   const etiqueta: Etiqueta =
     margen < a.escala_bueno_pct ? 'bajo' : margen < a.escala_muy_bueno_pct ? 'bueno' : margen < a.escala_excelente_pct ? 'muy_bueno' : 'excelente';
-  return { precioSinIva, margen, ganancia: precioSinIva - coste, etiqueta };
+  return { precio, margen, ganancia: precio - coste, etiqueta };
 }
 
 /** Coste de una receta: Σ cantidad × coste por unidad / (1 − merma). null si no tiene líneas. */
@@ -102,7 +104,6 @@ export async function fetchRentabilidad(): Promise<{ productos: ProductoRentabil
   const productos = (data as ProductoRentabilidad[]).map((p) => ({
     ...p,
     coste: n(p.coste),
-    precio_sin_iva: n(p.precio_sin_iva),
     margen_pct: n(p.margen_pct),
     ganancia: n(p.ganancia),
     ganancia_30d: n(p.ganancia_30d),
@@ -113,13 +114,12 @@ export async function fetchRentabilidad(): Promise<{ productos: ProductoRentabil
 export async function fetchAjustes(): Promise<{ ajustes: Ajustes; error: string | null }> {
   const { data, error } = await supabase
     .from('app_settings')
-    .select('iva_defecto_pct, escala_bueno_pct, escala_muy_bueno_pct, escala_excelente_pct')
+    .select('escala_bueno_pct, escala_muy_bueno_pct, escala_excelente_pct')
     .maybeSingle();
   if (error) return { ajustes: AJUSTES_POR_DEFECTO, error: mensaje(error) };
   if (!data) return { ajustes: AJUSTES_POR_DEFECTO, error: null };
   return {
     ajustes: {
-      iva_defecto_pct: Number(data.iva_defecto_pct),
       escala_bueno_pct: Number(data.escala_bueno_pct),
       escala_muy_bueno_pct: Number(data.escala_muy_bueno_pct),
       escala_excelente_pct: Number(data.escala_excelente_pct),
@@ -130,7 +130,7 @@ export async function fetchAjustes(): Promise<{ ajustes: Ajustes; error: string 
 
 export async function updateAjustes(a: Ajustes): Promise<{ error: string | null }> {
   const { error } = await supabase.from('app_settings').update(a).eq('id', true);
-  if (error?.code === '23514') return { error: 'Los cortes tienen que ir de menor a mayor (y por debajo de 100) y el IVA entre 0 y 30 %.' };
+  if (error?.code === '23514') return { error: 'Los cortes tienen que ir de menor a mayor y por debajo de 100.' };
   return { error: error ? mensaje(error) : null };
 }
 
@@ -162,7 +162,7 @@ export async function fetchEmparejamientos(): Promise<{ guardados: Map<string, n
 }
 
 // ---------------------------------------------------------------------
-// Importación de recetas (hoja «Coste_Unitario»)
+// Importación de productos: recetas («Coste_Unitario») y precios («Precio_venta»)
 // ---------------------------------------------------------------------
 
 export interface FilaReceta {
@@ -173,26 +173,54 @@ export interface FilaReceta {
   insumo: string;
   cantidad: number | null;
   medida: string;
+  /** Código del producto en la carta (lo trae el Excel descargado del panel). */
+  codigo?: number | null;
 }
 
-export interface InformeRecetas {
+export interface FilaPrecio {
+  fila: number;
+  familia: string | null;
+  producto: string;
+  /** Precio en carta del Excel, en euros, tal cual. */
+  precio: number | null;
+  /** Coste que trae el Excel (solo para avisar si no cuadra con el calculado). */
+  coste: number | null;
+  /** Código del producto en la carta (lo trae el Excel descargado del panel). */
+  codigo?: number | null;
+}
+
+/** Destino de cada producto del Excel: productos de la carta, uno nuevo o [] = no está en la carta. */
+export type Emparejamiento =
+  | { producto: string; product_ids: number[]; precio: boolean }
+  | { producto: string; nuevo: { nombre: string; categoria_id: string }; precio: boolean };
+
+export interface InformeProductos {
   total_filas: number;
+  total_precios: number;
   productos: {
-    product_id: number;
+    product_id: number | null;
+    nuevo: boolean;
     nombre: string;
+    categoria_id: string;
     producto_excel: string;
-    estado: 'nueva' | 'cambia' | 'igual';
+    estado_receta: 'nueva' | 'cambia' | 'igual' | 'no_viene';
+    precio_carta: number | null;
+    precio_excel: number | null;
+    cambia_precio: boolean;
     precio_centimos: number | null;
-    coste_antes: number | null;
     coste: number | null;
+    coste_excel: number | null;
+    aviso_coste: boolean;
     margen_pct: number | null;
     ganancia: number | null;
     etiqueta: Etiqueta;
     lineas: { insumo_id: number; insumo: string; cantidad: number; unidad: UnidadBase }[];
   }[];
   sin_carta: string[];
-  errores: { fila: number | null; producto: string | null; motivo: string }[];
+  errores: { fila: number | null; hoja?: string; producto: string | null; motivo: string }[];
   aplicada: boolean;
+  productos_creados?: number;
+  precios_corregidos?: number;
   recetas_cambiadas?: number;
 }
 
@@ -211,6 +239,7 @@ export function leerCosteUnitario(libro: LibroExcel): { filas: FilaReceta[]; err
   const cCantidad = col('cantidad a usar') ?? col('cantidad');
   const cMedida = col('medida');
   const cFamilia = col('nombre en carta');
+  const cCodigo = col('codigo');
   if (!cProducto || !cInsumo || !cCantidad || !cMedida) {
     return { filas: [], error: 'Faltan columnas en «Coste_Unitario»: Producto, Materia Prima, Cantidad a usar y Medida.' };
   }
@@ -227,6 +256,7 @@ export function leerCosteUnitario(libro: LibroExcel): { filas: FilaReceta[]; err
       insumo,
       cantidad: parseNumero(f.celdas[cCantidad]),
       medida: (f.celdas[cMedida] ?? '').trim(),
+      codigo: cCodigo ? parseNumero(f.celdas[cCodigo]) : null,
     });
   }
   if (out.length === 0) return { filas: [], error: 'La hoja «Coste_Unitario» no tiene recetas.' };
@@ -237,18 +267,208 @@ export function leerCosteUnitario(libro: LibroExcel): { filas: FilaReceta[]; err
 export const esCopaA60 = (f: FilaReceta) =>
   !!f.familia && sinAcentos(f.familia).startsWith('copas') && sinAcentos(f.medida) === 'ml' && f.cantidad === 60;
 
-export async function importarRecetas(
+/**
+ * Lee la hoja «Precio_venta»: Producto, Precio_carta (o Precio) y el coste del Excel (Cos_To_Est o Coste),
+ * por sus títulos. Las demás columnas (receta en texto, precio sugerido, ganancia, %…) no se usan.
+ */
+export function leerPrecioVenta(libro: LibroExcel): { filas: FilaPrecio[]; error: string | null } {
+  const hoja = libro.hojas.find((h) => sinAcentos(h).replace(/[\s_]+/g, ' ') === 'precio venta');
+  if (!hoja) return { filas: [], error: `No encuentro la hoja «Precio_venta». Hojas del archivo: ${libro.hojas.join(', ')}.` };
+  const filas = libro.filas(hoja);
+  const norm = (v: string) => sinAcentos(v).replace(/[\s_]+/g, ' ');
+  const titulo = filas.find((f) => Object.values(f.celdas).some((v) => norm(v) === 'producto'));
+  if (!titulo) return { filas: [], error: 'En «Precio_venta» no encuentro la columna «Producto».' };
+  const col = (...prefijos: string[]) => {
+    for (const p of prefijos) {
+      const c = Object.entries(titulo.celdas).find(([, v]) => norm(v).startsWith(p))?.[0];
+      if (c) return c;
+    }
+    return null;
+  };
+  const cProducto = col('producto');
+  const cPrecio = col('precio carta', 'precio venta', 'precio de venta', 'precio');
+  const cCoste = col('cos to est', 'coste', 'costo');
+  const cFamilia = col('nombre en carta');
+  const cCodigo = col('codigo');
+  if (!cProducto || !cPrecio) return { filas: [], error: 'Faltan columnas en «Precio_venta»: Producto y Precio_carta.' };
+  const out: FilaPrecio[] = [];
+  for (const f of filas) {
+    if (f.numero <= titulo.numero) continue;
+    const producto = (f.celdas[cProducto] ?? '').replace(/\s+/g, ' ').trim();
+    if (!producto) continue;
+    out.push({
+      fila: f.numero,
+      familia: (cFamilia && f.celdas[cFamilia]?.trim()) || null,
+      producto,
+      precio: parseNumero(f.celdas[cPrecio]),
+      coste: cCoste ? parseNumero(f.celdas[cCoste]) : null,
+      codigo: cCodigo ? parseNumero(f.celdas[cCodigo]) : null,
+    });
+  }
+  if (out.length === 0) return { filas: [], error: 'La hoja «Precio_venta» no tiene productos.' };
+  return { filas: out, error: null };
+}
+
+/** Código de cada producto del Excel, si lo trae (Excel descargado del panel). */
+export function codigosDelExcel(filas: { producto: string; codigo?: number | null }[]): Map<string, number> {
+  const m = new Map<string, number>();
+  for (const f of filas) if (f.codigo !== null && f.codigo !== undefined && Number.isInteger(f.codigo)) m.set(f.producto, f.codigo);
+  return m;
+}
+
+/** Categoría de la carta propuesta para un producto nuevo según la familia del Excel (Cervezas, Copas_Ginebra…). */
+export function categoriaSugerida(familia: string | null, categorias: { id: string; nombre: string }[]): string | null {
+  if (!familia) return null;
+  const f = sinAcentos(familia).replace(/[_\s]+/g, ' ');
+  const reglas: [RegExp, string[]][] = [
+    [/^cervez/, ['cervezas']],
+    [/^caf/, ['cafeteria', 'cafes']],
+    [/^(copas|chupitos|licor)/, ['copas']],
+    [/^(vino|vermut)/, ['vinos']],
+    [/^(refresco|zumo|agua)/, ['refrescos']],
+    [/^(comida|tapa|pincho)/, ['pinchos', 'comida']],
+    [/^montadito/, ['montaditos']],
+  ];
+  for (const [re, ids] of reglas) {
+    if (re.test(f)) {
+      const c = categorias.find((x) => ids.includes(x.id) || ids.some((i) => sinAcentos(x.nombre).startsWith(i)));
+      if (c) return c.id;
+    }
+  }
+  return categorias.find((c) => sinAcentos(c.nombre).startsWith(f.split(' ')[0]))?.id ?? null;
+}
+
+export async function importarProductos(
   archivo: string,
   filas: FilaReceta[],
-  emparejamientos: { producto: string; product_ids: number[] }[],
+  precios: FilaPrecio[],
+  emparejamientos: Emparejamiento[],
   confirmar: boolean
-): Promise<{ informe: InformeRecetas | null; error: string | null }> {
-  const { data, error } = await supabase.rpc('admin_importar_recetas', {
+): Promise<{ informe: InformeProductos | null; error: string | null }> {
+  const { data, error } = await supabase.rpc('admin_importar_productos', {
     p_archivo: archivo,
     p_filas: filas.map(({ fila, producto, insumo, cantidad, medida }) => ({ fila, producto, insumo, cantidad, medida })),
+    p_precios: precios.map(({ fila, producto, precio, coste }) => ({ fila, producto, precio, coste })),
     p_emparejamientos: emparejamientos,
     p_confirmar: confirmar,
   });
   if (error) return { informe: null, error: mensaje(error) };
-  return { informe: data as InformeRecetas, error: null };
+  return { informe: data as InformeProductos, error: null };
+}
+
+// ---------------------------------------------------------------------
+// R3: promos y resumen de lo vendido (migración 20261119100000_costes_resumen.sql)
+// ---------------------------------------------------------------------
+
+export interface PromoRentabilidad {
+  promo_id: string;
+  nombre: string;
+  tipo: 'pack' | 'obsequio' | 'sorteo';
+  publicada: boolean;
+  activa: boolean;
+  precio_centimos: number | null;
+  descuento_anunciado_pct: number | null;
+  productos: number;
+  sin_receta: string[];
+  precio_normal_centimos: number | null;
+  descuento_real_pct: number | null;
+  aviso_descuento: boolean;
+  coste: number | null;
+  margen_pct: number | null;
+  ganancia: number | null;
+  etiqueta: Etiqueta;
+  vendidas_30d: number;
+  ganancia_30d: number | null;
+}
+
+export async function fetchRentabilidadPromos(): Promise<{ promos: PromoRentabilidad[]; error: string | null }> {
+  const { data, error } = await supabase.rpc('rentabilidad_promos');
+  if (error) return { promos: [], error: mensaje(error) };
+  const promos = (data as PromoRentabilidad[]).map((p) => ({
+    ...p,
+    descuento_real_pct: n(p.descuento_real_pct),
+    coste: n(p.coste),
+    margen_pct: n(p.margen_pct),
+    ganancia: n(p.ganancia),
+    ganancia_30d: n(p.ganancia_30d),
+    sin_receta: p.sin_receta ?? [],
+  }));
+  return { promos, error: null };
+}
+
+/**
+ * Mismo cálculo que rentabilidad_promos() para el editor de Promos (en directo): precio normal,
+ * descuento real, coste, margen y aviso si el descuento anunciado no cuadra (más de 2 puntos).
+ */
+export function calcularPromo(
+  precioCentimos: number | null,
+  descuentoAnunciado: number | null,
+  items: { cantidad: number; precio_centimos: number | null; coste: number | null; nombre: string }[],
+  a: Ajustes
+) {
+  const precioNormal = items.length === 0 || items.some((i) => i.precio_centimos === null)
+    ? null
+    : items.reduce((s, i) => s + i.precio_centimos! * i.cantidad, 0);
+  const sinReceta = items.filter((i) => i.coste === null).map((i) => i.nombre);
+  const coste = items.length === 0 || sinReceta.length > 0 ? null : items.reduce((s, i) => s + i.coste! * i.cantidad, 0);
+  const descuentoReal =
+    precioNormal && precioNormal > 0 && precioCentimos !== null ? Math.round((1 - precioCentimos / precioNormal) * 1000) / 10 : null;
+  const aviso = descuentoAnunciado !== null && descuentoReal !== null && Math.abs(descuentoAnunciado - descuentoReal) > 2;
+  return { precioNormal, descuentoReal, aviso, coste, sinReceta, ...calcularMargen(precioCentimos, coste, a) };
+}
+
+export interface ResumenRentabilidad {
+  desde: string;
+  hasta: string;
+  totales: {
+    ventas: number;
+    ventas_con_coste: number;
+    coste: number;
+    ganancia: number;
+    unidades: number;
+    margen_pct: number | null;
+    etiqueta: Etiqueta;
+    ventas_sin_coste: number;
+    pct_sin_coste: number | null;
+    devuelto: number;
+  };
+  por_categoria: {
+    id: string;
+    nombre: string;
+    unidades: number;
+    ventas: number;
+    pct_venta: number | null;
+    ganancia: number | null;
+    margen_pct: number | null;
+    etiqueta: Etiqueta;
+    ventas_sin_coste: number;
+  }[];
+  productos: {
+    clase: 'producto' | 'promo';
+    id: string;
+    nombre: string;
+    categoria: string;
+    unidades: number;
+    ventas: number;
+    ganancia: number | null;
+    margen_pct: number | null;
+    etiqueta: Etiqueta;
+  }[];
+  ingredientes: {
+    insumo_id: number;
+    nombre: string;
+    unidad: UnidadBase;
+    fecha: string;
+    antes: number;
+    despues: number;
+    variacion_pct: number | null;
+    productos: number;
+  }[];
+  precios_carta: { product_id: number; nombre: string; fecha: string; antes: number | null; despues: number | null }[];
+}
+
+export async function fetchResumen(desde: string, hasta: string): Promise<{ resumen: ResumenRentabilidad | null; error: string | null }> {
+  const { data, error } = await supabase.rpc('rentabilidad_resumen', { p_desde: desde, p_hasta: hasta });
+  if (error) return { resumen: null, error: mensaje(error) };
+  return { resumen: data as ResumenRentabilidad, error: null };
 }

@@ -1,15 +1,19 @@
 import { useState } from 'react';
-import { ChefHat, FileUp, Settings2, Wheat } from 'lucide-react';
+import { BarChart3, ChefHat, FileUp, Gift, Settings2, Wheat } from 'lucide-react';
 import { focusRing } from '@/components/club/FormControls';
+import { ResumenView } from '@/components/admin/rentabilidad/ResumenView';
 import { ProductosView } from '@/components/admin/rentabilidad/ProductosView';
+import { PromosView } from '@/components/admin/rentabilidad/PromosView';
 import { IngredientesView } from '@/components/admin/rentabilidad/IngredientesView';
 import { ImportarView } from '@/components/admin/rentabilidad/ImportarView';
 import { AjustesView } from '@/components/admin/rentabilidad/AjustesView';
 
-type Vista = 'productos' | 'ingredientes' | 'importar' | 'ajustes';
+type Vista = 'resumen' | 'productos' | 'promos' | 'ingredientes' | 'importar' | 'ajustes';
 
 const VISTAS: { id: Vista; label: string; icon: typeof Wheat }[] = [
+  { id: 'resumen', label: 'Resumen', icon: BarChart3 },
   { id: 'productos', label: 'Productos', icon: ChefHat },
+  { id: 'promos', label: 'Promos', icon: Gift },
   { id: 'ingredientes', label: 'Ingredientes', icon: Wheat },
   { id: 'importar', label: 'Importar Excel', icon: FileUp },
   { id: 'ajustes', label: 'Ajustes', icon: Settings2 },
@@ -20,7 +24,7 @@ const VISTAS: { id: Vista; label: string; icon: typeof Wheat }[] = [
  * ingredientes con su coste, importación del Excel y ajustes. Solo admins.
  */
 export function RentabilidadSection() {
-  const [vista, setVista] = useState<Vista>('productos');
+  const [vista, setVista] = useState<Vista>('resumen');
   // Al terminar una importación se va a la lista correspondiente, que se recarga.
   const [recarga, setRecarga] = useState(0);
   const ir = (v: Vista) => {
@@ -33,7 +37,7 @@ export function RentabilidadSection() {
       <div>
         <h2 className="font-display text-2xl font-semibold text-vino">Rentabilidad</h2>
         <p className="mt-1 text-sm text-carbon/70">
-          Coste, margen y etiqueta de cada producto, calculados con los precios de compra <strong>sin IVA</strong>. Solo lo ven los administradores.
+          Coste, precio de venta y <strong>% de ganancia</strong> de cada producto, con los precios tal como vienen en el Excel. Solo lo ven los administradores.
         </p>
       </div>
 
@@ -54,7 +58,9 @@ export function RentabilidadSection() {
       </div>
 
       <div className="mt-5">
+        {vista === 'resumen' && <ResumenView key={recarga} />}
         {vista === 'productos' && <ProductosView key={recarga} />}
+        {vista === 'promos' && <PromosView key={recarga} />}
         {vista === 'ingredientes' && <IngredientesView key={recarga} />}
         {vista === 'importar' && <ImportarView onIngredientes={() => ir('ingredientes')} onRecetas={() => ir('productos')} />}
         {vista === 'ajustes' && <AjustesView />}

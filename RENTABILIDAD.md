@@ -8,7 +8,7 @@ Este documento es la especificación viva del **módulo de costes y rentabilidad
 - No se programa ninguna fase hasta que estén 🟢 las decisiones de las que depende.
 - Cada fase: plan de archivos → aprobación → código → prueba en PRUEBAS → producción con aprobación (flujo de `ENTORNOS.md`).
 
-Última actualización: 2026-11-18 (v4.3) · Estado: **R1 probada en PRUEBAS (en `staging`). R2 (recetas, margen y etiqueta) programada en la rama `rentabilidad-r2`, pendiente de prueba. R1 y R2 irán juntas a producción (R-D16).**
+Última actualización: 2026-11-19 (v4.7) · Estado: **R1 y R2 en producción** (2026-11-18). **R3 en `staging` (PR #21), no en `main`.** Tras la consulta con el equipo (19/11) se programa **R3b** en la rama `rentabilidad-r3b`: **sin IVA** (el % de ganancia va con el precio tal cual, como en el Excel), **receta al crear o editar un producto en la Carta**, **importación de productos y precios** (hojas Coste_Unitario y Precio_venta, con creación de productos nuevos) y **exportar con el mismo formato** del Excel. Pendiente de prueba; R3 y R3b irán juntas a `main`. El IVA queda para **R6**.
 
 > **Datos reales fuera del repositorio (R-D13).** El repositorio es **público**. Los costes, márgenes y ventas reales del bar (la antigua sección 15) están en una página **privada** de Claude Docs: **«Rentabilidad: datos reales · La Alameda»** — https://claude.ai/artifact/UguZQzuyRZ2MNBojT7Cupr. Sus números son los casos de prueba de R2. El Excel de costes (`Costes.xlsx`) tampoco se sube nunca (`*.xlsx` está en `.gitignore`). En este documento solo hay ejemplos ilustrativos.
 
@@ -71,21 +71,19 @@ Si en el futuro se quiere un mínimo con bloqueo, se añade encima sin rehacer n
 
 ---
 
-## 4. Cómo se calcula el margen
+## 4. Cómo se calcula el % de ganancia
 
-**Precios de la carta con IVA; costes sin IVA. Para comparar se quita el IVA del precio** (R-D11). Los precios de compra del Excel son **sin IVA** (confirmado, R-D14).
+**Decisión del equipo (R-D21, 19/11): el IVA no se tiene en cuenta por ahora.** Se trabaja con los precios **tal como vienen en el Excel**: el precio de la carta tal cual y el precio de compra tal cual. Es el mismo cálculo que la columna «% ganancia» de la hoja «Precio_venta» (comprobado producto a producto). El IVA queda para la fase **R6**.
 
 ```
-coste_unitario_ingrediente = precio_compra_sin_iva / (cantidad_total_formato × rendimiento_pct/100)
+coste_unitario_ingrediente = precio_compra / (cantidad_total_formato × rendimiento_pct/100)
 coste_producto             = Σ (cantidad_receta × coste_unitario_ingrediente / (1 − merma_pct/100))
 
-precio_sin_iva = precio_carta / (1 + iva_pct/100)
-margen_pct     = (precio_sin_iva − coste_producto) / precio_sin_iva × 100
-ganancia_€     = precio_sin_iva − coste_producto
+ganancia_€        = precio_carta − coste_producto
+porcentaje_ganancia = (precio_carta − coste_producto) / precio_carta × 100
 ```
 
-- **IVA:** 10 % por defecto (servicio de bar, alcohol incluido), configurable por categoría y producto. Confirmar con la gestoría si hay noches o ventas con otro tipo (R-D4).
-- **Por qué sin IVA:** el IVA no es del bar, se paga a Hacienda. Calcular con IVA infla el margen entre 3 y 6 puntos.
+- **Antes (R1–R3, hasta el 19/11):** se quitaba el 10 % de IVA del precio antes de calcular. Con el criterio nuevo los % suben entre 3 y 6 puntos. La columna `iva_defecto_pct` de `app_settings` se queda guardada, sin usar, para R6.
 - **Rendimiento y merma:** opcionales (100 % y 0 % por defecto). El rendimiento es lo aprovechable de lo comprado (espuma del barril); la merma, lo que se pierde al servir.
 - **Margen ≠ recargo:** «poner un 60 %» sobre el coste (2 € → 3,20 €) da un margen del 37,5 %, no del 60 %. El sistema solo habla de **margen sobre venta**.
 
@@ -93,7 +91,7 @@ ganancia_€     = precio_sin_iva − coste_producto
 
 ## 5. La escala de etiquetas
 
-**Decidida (R-D11, 18/11):** la escala del propio Excel («Precio_venta»), **una sola para toda la carta**, calculada **sin IVA**.
+**Decidida (R-D11, 18/11):** la escala del propio Excel («Precio_venta»), **una sola para toda la carta**, sobre el **% de ganancia con el precio tal cual** (R-D21).
 
 | Margen | Etiqueta | Color |
 |---|---|---|
@@ -166,7 +164,9 @@ Cambios en tablas existentes (solo se añade, compatible con la web actual):
 - **R2 ✅** `rentabilidad_productos()`: cada producto con precio, coste, margen, ganancia por unidad, etiqueta, vendidos en 30 días y ganancia de esos 30 días (con el coste de hoy; el coste real de cada venta es R4).
 - **R2 ✅** `admin_guardar_receta(producto, líneas)`: guarda la receta entera de una vez (`[]` = sin receta).
 - **R2 ✅** `admin_importar_recetas(archivo, filas, emparejamientos, confirmar)`: previsualiza o aplica la hoja «Coste_Unitario». Al reimportar conserva la merma ya guardada de cada ingrediente.
-- **R3** `_coste_promo(promo_id)`.
+- **R3 ✅** `_coste_promo(promo_id)`: coste de una promo con los productos que lleva (`promotion_items`); `null` si no lleva ninguno o alguno no tiene receta. `_etiqueta_de_margen(margen)`: la etiqueta de un margen ya calculado.
+- **R3 ✅** `rentabilidad_promos()`: precio, precio normal (los productos sueltos), descuento real, aviso si el anunciado no cuadra (más de 2 puntos), coste, margen, etiqueta, qué productos no tienen receta, vendidas y ganancia en 30 días.
+- **R3 ✅** `rentabilidad_resumen(desde, hasta)`: lo vendido en esas jornadas (como mucho 400 días) **con el coste de hoy**: totales (ventas sin IVA, coste, ganancia, margen medio ponderado y etiqueta, vendido sin coste, devoluciones aparte), por categoría (las promos son su propio grupo), por producto o promo, ingredientes que han cambiado de precio (con su % y cuántos productos usan) y cambios de precio en la carta.
 - **R3** `rentabilidad_resumen(desde, hasta)`: resumen del panel (sección 9), con ventas del TPV.
 
 ---
@@ -215,16 +215,18 @@ Los nombres del Excel y de la carta no coinciden («Caña_Estrella» → Caña, 
 ### Pestaña «Rentabilidad» (`#/admin?seccion=rentabilidad`)
 
 1. **Ingredientes (R1 ✅):** lista buscable (nombre, proveedor o código) y por categoría, con formato, precio de compra, coste por unidad, fecha y variación del último cambio. Crear, editar (coste en directo e histórico de precios del ingrediente) y dar de baja (no se borra).
-2. **Importar Excel (R1 ✅):** sección 8. En R3 se añade «Descargar Excel».
+2. **Importar Excel (R1 ✅):** sección 8.
+2b. **Descargar Excel (R3 ✅):** en Resumen y en Productos. Un `.xlsx` generado en el navegador **sin librerías** (`src/lib/xlsxEscribir.ts`: ZIP sin comprimir + XML, números de verdad, títulos en negrita y fijos, formatos € y %), con las hojas Resumen y Vendido por producto (si se descarga desde Resumen, del periodo elegido), Productos, Promos, Ingredientes y Recetas.
 3. **Productos (R2 ✅, la primera sub-pestaña):** contadores por etiqueta (pulsables para filtrar), búsqueda, categoría, orden (carta, menor margen, más ganancia) y «ver también los que no salen en la carta». Cada producto: precio, coste, margen y etiqueta, ganancia por unidad, vendidos y ganancia de 30 días. Al tocarlo se abre su **receta** (`RecetaModal`): ingredientes por categoría, cantidad en ml/cl/l, g/kg o ud, merma, coste y margen en directo.
-4. **Resumen (R3):** margen medio ponderado por ventas de 30 días, lo que más y menos dinero deja, ingredientes que han subido y productos afectados.
+4. **Resumen (R3 ✅, la primera sub-pestaña):** periodo (7 días, 30 días, este mes o fechas); cifras de ventas sin IVA, ganancia, margen medio con etiqueta y vendido sin coste; **barras por categoría** (parte de la venta, una sola serie en el vino de la marca validado) con su margen y ganancia; lo que más dinero deja y lo que menos margen tiene de lo que se vende; ingredientes que han cambiado de precio y cambios de precio en la carta.
+4b. **Promos (R3 ✅):** cada promo con precio, precio normal, descuento real frente al anunciado (con aviso), coste, margen y etiqueta; las que no llevan productos o tienen alguno sin receta lo dicen.
 5. **Ajustes (R2 ✅):** IVA de la carta y cortes de la escala, con la escala de ejemplo en directo.
 
 ### Cambios en lo que ya existe
 
 - **Carta → editar producto (R2 ✅):** bajo el precio aparece en directo «Coste · Margen · Ganancia · **Etiqueta**» (o «Sin receta…»). No bloquea nada.
 - **Carta → lista (R2 ✅):** un punto de color con la etiqueta de cada producto (el texto sale al pasar por encima y para lectores de pantalla). Se recalcula al cambiar el precio en la fila.
-- **Promos → editor (R3):** precio normal, precio de la promo, descuento real, coste, margen y etiqueta.
+- **Promos → editor (R3 ✅):** bajo «Productos de la carta que lleva», en directo: precio normal, descuento real, coste, ganancia y etiqueta (o «lo que cuesta regalarla» en obsequios y sorteos), qué productos no tienen receta y aviso si el «−X %» anunciado no cuadra. No bloquea nada.
 
 Móvil primero, reutilizando `Modal`, `Switch`, `FormControls` y las barras de `StatsSection`.
 
@@ -232,7 +234,7 @@ Móvil primero, reutilizando `Modal`, `Switch`, `FormControls` y las barras de `
 
 ## 10. Promos
 
-Con el mismo cálculo, informativo (R3):
+Con el mismo cálculo, informativo (R3 ✅):
 
 ```
 precio_normal  = Σ precio_carta × cantidad        (de promotion_items)
@@ -269,17 +271,18 @@ descuento_real = 1 − precio_promo / precio_normal
 | Fase | Contenido | Hecha cuando… |
 |---|---|---|
 | **R0** Decisiones | Este documento aprobado | ✅ R-D1, R-D5, R-D10 a R-D14 decididas (18/11) |
-| **R1** Ingredientes e importación | `insumos`, `insumo_precios`, `costes_importaciones`; importación de «Materias Primas»; pestaña Ingredientes | Los 67 ingredientes cargados con su coste; un camarero o un socio no ven nada |
-| **R2** Recetas y margen | `recetas` + importación de «Coste_Unitario» con emparejamiento, ajustes, `producto_precios`, `rentabilidad_productos()`; pestañas Productos y Ajustes; margen en directo en Carta | Cambiar un precio o un ingrediente cambia el margen al momento; los números de la página privada salen idénticos |
-| **R3** Panel y promos | `rentabilidad_resumen()`, Resumen, exportar a Excel, margen de promos | El resumen cuadra con un cálculo a mano |
+| **R1** ✅ Ingredientes e importación | `insumos`, `insumo_precios`, `costes_importaciones`; importación de «Materias Primas»; pestaña Ingredientes | Los 67 ingredientes cargados con su coste; un camarero o un socio no ven nada |
+| **R2** ✅ Recetas y margen | `recetas` + importación de «Coste_Unitario» con emparejamiento, ajustes, `producto_precios`, `rentabilidad_productos()`; pestañas Productos y Ajustes; margen en directo en Carta | Cambiar un precio o un ingrediente cambia el margen al momento; los números de la página privada salen idénticos |
+| **R3** Panel y promos | `rentabilidad_resumen()`, `rentabilidad_promos()`, Resumen, Promos, exportar a Excel, margen en el editor de promos | El resumen cuadra con un cálculo a mano |
 | **R4** Margen real de lo vendido | Coste copiado en cada venta (tabla aparte), margen real en Ventas e Informes | El margen real de una semana cuadra con un cálculo a mano |
 | **R5** Futuro | Escala por familia, compras y stock, subrecetas, mínimo con bloqueo si se pide, varios locales | — |
+| **R6** IVA (pendiente) | Volver a tener en cuenta el IVA si el equipo lo pide: quitarlo del precio para calcular el % (general, por categoría o por producto) y mostrarlo en pantallas y Excel. La columna `iva_defecto_pct` ya existe | Cuando el equipo lo decida (R-D4) |
 
 - **R4 es la de más riesgo:** toca las funciones de cobro del TPV, que funcionan en producción. Va en su propio PR y se prueba a fondo en PRUEBAS.
 - **R1 + R2 ya dan lo que se pide:** cada producto con su margen y su etiqueta, actualizados solos.
 - **Aviso de dirección:** este módulo no vende más. Las decisiones de precio urgentes (comida, vinos) se toman ya con el análisis de la página privada; el desarrollo no debe quitar horas al sprint comercial.
 
-### Estado de R1 (2026-11-18): ✅ probada en PRUEBAS por el usuario · a producción junto con R2
+### Estado de R1 (2026-11-18): ✅ en producción (junto con R2)
 
 - **Rama:** `rentabilidad-r1` (desde `staging`).
 - **Migración `20261118120000_costes_insumos.sql`:** tablas `insumos` (con `coste_unitario` calculado), `insumo_precios` (histórico automático e inmutable) y `costes_importaciones`; RLS solo admin; `admin_importar_insumos()`; permisos explícitos (solo las columnas editables; el coste y el código no se pueden fijar a mano; no se puede borrar).
@@ -287,13 +290,43 @@ descuento_real = 1 − precio_promo / precio_normal
 - **Comprobado en local (PGlite, fuera del repositorio):** 34 pruebas, entre ellas: el coste por unidad de los 67 ingredientes coincide con la columna «Costo por» del Excel; camarero, socio y sin sesión no ven nada; previsualizar no escribe; con un error no se aplica nada; el histórico se crea solo y no se puede tocar; reimportar con un precio cambiado añade una línea. El lector del Excel, probado con el archivo real, lee las 67 filas igual que la referencia.
 - **Prueba del usuario en la web de pruebas:** entrar como admin → Panel → Rentabilidad → Importar Excel → `Costes.xlsx` → revisar la previsualización (67 nuevos, 0 errores) → confirmar → revisar la lista, editar un precio y ver su histórico. Con `camarero@prueba.test` la pestaña no existe y las tablas no devuelven nada. **Hecho: todo bien** (PR #17 a `staging`).
 
-### Estado de R2 (2026-11-18): 🟡 programada, pendiente de prueba
+### Estado de R2 (2026-11-18): ✅ en producción
+
+- **Publicación:** rama `rentabilidad-r2` → PR #18 a `staging` (probado por el usuario en la web de pruebas) → PR #19 a `main` → despliegue aprobado: se aplicaron `20261118120000_costes_insumos` y `20261118180000_costes_recetas`. El usuario confirma que todo salió sin errores.
 
 - **Rama:** `rentabilidad-r2` (desde `staging`, que ya tiene R1).
 - **Migración `20261118180000_costes_recetas.sql`:** ajustes (IVA y escala), `recetas`, `costes_emparejamientos`, `producto_precios` (trigger en `products` + precio inicial), `_coste_producto`, `_margen_etiqueta`, `rentabilidad_productos`, `admin_guardar_receta`, `admin_importar_recetas`; RLS solo admin y permisos explícitos. **Nada en `products`** salvo el trigger del histórico.
 - **Panel:** `src/lib/rentabilidad.ts`, `src/lib/emparejar.ts`; `rentabilidad/` `ProductosView`, `RecetaModal`, `AjustesView`, `ImportarRecetas`, `Etiqueta`; `ImportarView` con «1. Ingredientes / 2. Recetas»; `RentabilidadSection` con Productos · Ingredientes · Importar Excel · Ajustes; `CartaSection` con el punto de color y el margen en directo; mensajes nuevos en `ticketErrors.ts`.
 - **Comprobado en local (PGlite + el Excel real, fuera del repositorio):** 38 pruebas. Entre ellas: con las dosis corregidas y los precios de la página privada, **los 35 márgenes y etiquetas comprobados salen idénticos**, y también los costes comprobados (los números, solo en la página privada); el cálculo en directo del panel da lo mismo que el servidor en todos los productos; la Jarra creada a mano sale con el margen y la etiqueta de la página privada; subir el barril o el precio cambia el margen al momento; reimportar igual no cambia nada y conserva la merma; errores de importación; camarero, socio y sin sesión no ven nada; `products` sigue sin columnas de coste.
 - **Prueba del usuario en la web de pruebas:** Importar Excel → **2. Recetas** → `Costes.xlsx` → revisar «Tercio» (dejar «No está en la carta») → pulsar «Copas: pasar el destilado de 60 a 75 ml» → «Actualizar previsualización» (0 errores) → confirmar. Después: **Productos** → crear la receta de la **Jarra** (450 ml de barril) → comparar márgenes y etiquetas con la página privada (con los precios que tenga PRUEBAS) → cambiar un precio en **Carta** y ver el margen en directo y el punto de color.
+
+### Estado de R3 (2026-11-19): en `staging`, no en `main` · continúa en R3b
+
+- **Pausa levantada (19/11):** el equipo revisó R3 y pidió los cambios de R3b (abajo). R3 ya está en `staging` (PR #21, probada en PRUEBAS); R3 y R3b se llevarán juntas a `main`.
+
+- **(Histórico) En pausa (decisión del usuario, 2026-11-19):** antes de seguir, el usuario lo consulta con el equipo y hace sus pruebas. El código está terminado en la rama `rentabilidad-r3` (sin mezclar en `main`). **No se sube a `main`** hasta que el usuario lo indique; **R4 no se empieza** hasta entonces. Al retomar: preguntar el resultado de la consulta y de las pruebas, aplicar los cambios que pida el equipo en la misma rama y seguir el flujo (PR a `staging` → prueba → PR a `main` → aprobar).
+
+- **Rama:** `rentabilidad-r3` (desde `staging`).
+- **Migración `20261119100000_costes_resumen.sql`:** solo funciones (`_etiqueta_de_margen`, `_coste_promo`, `rentabilidad_promos`, `rentabilidad_resumen`), solo admin y permisos explícitos. Sin tablas nuevas.
+- **Panel:** `ResumenView`, `PromosView`, `src/lib/xlsxEscribir.ts`, `src/lib/exportarRentabilidad.ts`; `rentabilidad.ts` (`calcularPromo`, `fetchResumen`…); `RentabilidadSection` con Resumen · Productos · Promos · Ingredientes · Importar Excel · Ajustes; botón Excel en Productos; margen en directo en el editor de `PromosSection`.
+- **Comprobado en local (PGlite + el Excel real, fuera del repositorio):** 30 pruebas. Ventas inventadas con el resultado calculado a mano (totales, margen ponderado y etiqueta, vendido sin coste, por categoría, promos como grupo, por producto); promo completa (precio normal, descuento real, coste, aviso), incompleta (dice qué falta) y obsequio (lo que cuesta); el editor de Promos calcula igual que el servidor en todas las promos; devoluciones aparte; ingrediente que sube (+10 %) y cambio de precio en la carta; la importación inicial no cuenta como subida; periodo al revés rechazado; permisos. El Excel generado es un ZIP válido (comprobado con otro lector) y nuestro lector lo vuelve a leer con sus 6 hojas y los números como números.
+- **Prueba del usuario en la web de pruebas:** Rentabilidad → **Resumen** (cambiar el periodo y revisar las cifras y las barras) → **Descargar Excel** y abrirlo → **Promos** → en Panel → Promos editar una promo, añadirle sus productos y ver el margen en directo → volver a Rentabilidad → Promos. En producción: comparar el Resumen del 3 al 15/11 con la tabla «Lo vendido» de la página privada (cambiará algo si los costes o precios han cambiado desde entonces: el resumen usa el coste de hoy).
+
+### Estado de R3b (2026-11-19): 🟡 programada, pendiente de prueba
+
+Lo que pidió el equipo: sin IVA; al crear un producto, que tenga su receta con ingredientes y muestre el coste, el precio de venta y el % de ganancia (solo admin); lo mismo en las promos; importar las 3 hojas del Excel (Materias Primas, Coste_Unitario y Precio_venta), pudiendo crear productos nuevos desde el Excel; y exportar con el mismo formato para ir y volver.
+
+- **Rama:** `rentabilidad-r3b` (desde `staging`, que tiene R3).
+- **Migración `20261119180000_costes_sin_iva_productos.sql`:** `_margen()` (sin IVA) sustituye a `_margen_etiqueta()`; se rehacen `rentabilidad_productos()` (sin `precio_sin_iva`), `rentabilidad_promos()` y `rentabilidad_resumen()` (`ventas` en vez de `ventas_sin_iva`, sin `iva_pct`); **`admin_importar_productos(archivo, recetas, precios, emparejamientos, confirmar)`** sustituye a `admin_importar_recetas()` (eliminada): lee recetas y precios juntos, empareja o **crea productos nuevos** (sin salir en la carta, con su categoría, nombre y precio del Excel), **corrige los precios** de la carta con los del Excel (salvo los desmarcados; quedan en el histórico), avisa si el coste del Excel no cuadra con el calculado y recuerda los emparejamientos (los nuevos, con su código). Tipo `productos` en `costes_importaciones`.
+- **Panel:**
+  - **Carta → crear o editar producto:** sección **«Receta y ganancia»** (`RecetaEditor` + `useReceta`, compartidos con Rentabilidad → Productos): ingredientes, cantidades y merma, con **coste · precio de venta · ganancia · % de ganancia · etiqueta** en directo. Se guarda junto con el producto (si la receta falla, se avisa y el producto queda guardado).
+  - **Margen visible en la Carta (petición del usuario, 19/11):** en la lista, junto al precio de cada producto, su margen con la etiqueta (por ejemplo «64,5 % · Bueno», que se recalcula mientras se escribe un precio nuevo en la fila, antes de guardarlo); en la ventana de editar, bajo el campo Precio, «Coste · Margen · Ganancia · Etiqueta» en directo. Sustituye al punto de color de R2.
+  - **Importar Excel → «2. Productos (recetas y precios)»** (`ImportarProductos`, sustituye a `ImportarRecetas`): emparejar, **«➕ Crear producto nuevo»** (nombre y categoría propuesta según la familia del Excel), «No está en la carta»; los que no tienen pareja se proponen como nuevos. Previsualización con precio carta → Excel (casilla «Corregir precio», marcada), coste, aviso de coste del Excel y % de ganancia.
+  - **Descargar Excel** (en Importar y en Productos): **las 3 hojas con las mismas columnas** que el Excel del bar, más una columna **Código**; al volver a importarlo, el código manda sobre el nombre (emparejado «Por código»). Quitado del Resumen.
+  - Ajustes: solo la escala. Fuera todas las menciones a «sin IVA»; se habla de «% de ganancia».
+- **Comprobado en local (PGlite + el `Costes.xlsx` actual, fuera del repositorio):** 33 pruebas. **El % de ganancia de los 63 productos completos coincide con la columna «% ganancia» del Excel.** Productos nuevos creados ocultos, con categoría, precio y receta; precios corregidos con histórico; «no corregir» respeta el precio de la carta; reimportar el mismo Excel no cambia nada; errores (crear uno que ya existe, sin emparejar, precio no válido, categoría no válida); permisos; resumen sin IVA; **descargar → volver a importar = todo igual** (ingredientes y productos, emparejados por código).
+- **Excel actual del equipo (19/11):** trae comida nueva (Patatas bravas, Huevos rotos, Empanadas, Tosta de jamón, Sandwich) y **filas incompletas**: «Piña, naranja, melocotón» sin tamaño ni precio en Materias Primas, y la Jeta con `#N/A` en Coste_Unitario. Como siempre, con un error no se importa nada: hay que completarlas en el Excel (o quitarlas) antes de importar.
+- **Prueba del usuario en la web de pruebas:** Importar Excel → 1. Ingredientes → 2. Productos (revisar los nuevos y los precios que se corrigen) → confirmar → Carta: crear un producto con su receta y ver el % → Descargar Excel, cambiar algo y volver a importarlo.
 
 ---
 
@@ -310,15 +343,25 @@ descuento_real = 1 − precio_promo / precio_normal
 | R-D12 | **El coste no se guarda en `products`** (la lee cualquiera) y **el margen se calcula al leer**, sin caché ni triggers de recálculo. Solo se guarda el histórico | 2026-11-18 |
 | R-D13 | **Los datos reales no van al repositorio** (es público): página privada de Claude Docs; el Excel nunca se sube (`.gitignore`); las pruebas con números reales, en local | 2026-11-18 |
 | R-D14 | Los precios de compra del Excel son **sin IVA** (confirmado por el usuario) | 2026-11-18 |
-| R-D15 | En R2, **IVA solo general** (10 %, en Ajustes). El IVA por categoría o producto se añade cuando la gestoría confirme si hay otro tipo (R-D4) | 2026-11-18 |
+| ~~R-D15~~ | ~~En R2, **IVA solo general** (10 %, en Ajustes). El IVA por categoría o producto se añade cuando la gestoría confirme si hay otro tipo (R-D4)~~ — **sustituida por R-D21** | 2026-11-18 |
 | R-D16 | **R1 y R2 van juntas a producción**: en producción se importan ingredientes y recetas en una sola sesión | 2026-11-18 |
+| R-D17 | El resumen calcula lo vendido **con el coste de hoy**; el coste del día de cada venta llega con R4. Se indica en la pantalla | 2026-11-19 |
+| R-D18 | Las **devoluciones** se muestran aparte (son por importe de la venta, no por producto) y no se restan del margen | 2026-11-19 |
+| R-D19 | Las ventas de **promos** cuentan como grupo «Promos» si tienen coste; si no, van a «sin coste» | 2026-11-19 |
+| R-D20 | **Excel propio sin librerías** (`xlsxEscribir.ts`) en vez de CSV sueltos | 2026-11-19 |
+| R-D21 | **Sin IVA** (decisión del equipo): el % de ganancia va con los precios tal como vienen en el Excel. Sustituye a la parte «sin IVA» de R-D11, a R-D15 y al cálculo de R2/R3. El IVA, en **R6** | 2026-11-19 |
+| R-D22 | **Los precios del Excel («Precio_venta») corrigen los de la carta** al importar; la previsualización los enseña uno a uno y se puede desmarcar alguno | 2026-11-19 |
+| R-D23 | Los **productos nuevos** creados desde el Excel **no salen en la carta** hasta que el admin los enciende | 2026-11-19 |
+| R-D24 | Se mantienen el **Resumen** y la pestaña **Promos** de R3, sin IVA | 2026-11-19 |
+| R-D25 | **Exportar con el mismo formato** que el Excel del bar (3 hojas), más la columna Código para volver a importarlo sin ambigüedades. Sustituye al formato de exportación de R3 | 2026-11-19 |
+| R-D26 | Al crear o editar un producto en la **Carta**, su **receta** se edita ahí mismo con coste, precio, ganancia y % en directo (solo admin) | 2026-11-19 |
 | ~~R-D2~~ | ~~Margen mínimo 55 % con bloqueo~~ — **sustituida por R-D11** | 2026-11-15 |
 
 ### Pendientes
 
 | Id | Decisión | Recomendación |
 |---|---|---|
-| R-D4 | IVA: 10 % general; ¿alguna categoría o noche distinta? | 10 % por defecto, configurable; confirmar con la gestoría |
+| R-D4 | IVA (fase R6): si se vuelve a usar, ¿10 % general o alguna categoría o noche distinta? | Por ahora no se usa (R-D21); confirmar con la gestoría cuando se retome |
 | R-D6 | Varios locales: `local_id` | Más adelante, en todo el esquema a la vez |
 | R-D7 | Coste en ventas: tabla aparte o columna en `order_items` | Tabla aparte (los camareros leen `order_items`) |
 | R-D9 | Comida con margen bajo: bajar coste, aceptarla o retirarla | Pedir coste de tortilla hecha en el bar y precio a otro proveedor; mientras, se acepta y se revisa el 15/12 |
@@ -364,3 +407,7 @@ descuento_real = 1 − precio_promo / precio_normal
 - **2026-11-18 (v4.1)** — R-D1 cambiada: **solo el admin** edita precios, ingredientes y recetas. Se quita el permiso de encargado (pospuesto como R-P6).
 - **2026-11-18 (v4.2)** — Revisión de Claude Code contra el código, aprobada por el usuario: R-D12 (coste fuera de `products`, margen calculado al leer), R-D13 (datos reales en una página privada de Claude Docs; la sección 15 sale del repositorio), R-D14 (precios de compra sin IVA), R-D5 (lector propio). Ajustes e importación de recetas pasan a R2. **R0 cerrada; R1 programada** en `rentabilidad-r1`.
 - **2026-11-18 (v4.3)** — R1 probada en PRUEBAS por el usuario (PR #17). Plan de R2 aprobado con R-D15 (IVA solo general) y R-D16 (R1 y R2 juntas a producción). **R2 programada** en `rentabilidad-r2`.
+- **2026-11-18 (v4.4)** — R2 probada en PRUEBAS. **R1 y R2 publicadas en producción** (PR #18 y #19, con aprobación). Siguiente: R3.
+- **2026-11-19 (v4.5)** — Plan de R3 aprobado con R-D17 a R-D20. **R3 programada** en `rentabilidad-r3`.
+- **2026-11-19 (v4.6)** — **R3 en pausa** a petición del usuario: la consulta con el equipo y hace pruebas antes de seguir. No se sube a `main` y R4 no empieza hasta que lo diga.
+- **2026-11-19 (v4.7)** — Decisión del equipo: sin IVA (R-D21, el IVA pasa a R6), el Excel corrige los precios (R-D22), productos nuevos ocultos (R-D23), se mantiene el Resumen (R-D24), exportar con el mismo formato (R-D25), receta en la Carta (R-D26). **R3b programada** en `rentabilidad-r3b`.

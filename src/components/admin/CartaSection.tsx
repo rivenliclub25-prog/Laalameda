@@ -20,13 +20,16 @@ import {
   type ProductRow,
   type SectionRow,
 } from '@/lib/adminCatalog';
-import { EtiquetaBadge, EtiquetaPunto } from '@/components/admin/rentabilidad/Etiqueta';
+import { EtiquetaBadge } from '@/components/admin/rentabilidad/Etiqueta';
+import { RecetaEditor } from '@/components/admin/rentabilidad/RecetaEditor';
+import { useReceta } from '@/components/admin/rentabilidad/useReceta';
 import {
   AJUSTES_POR_DEFECTO,
   ETIQUETAS,
   calcularMargen,
   fetchAjustes,
   fetchRentabilidad,
+  guardarReceta,
   formatEur,
   formatPct,
   type Ajustes,
@@ -303,19 +306,27 @@ export function CartaSection() {
         </div>
       )}
 
+      {productEditor && (
       <ProductEditor
+        key={productEditor.mode === 'edit' ? `e-${productEditor.row.id}` : 'nuevo'}
         state={productEditor}
         categories={sortedCategories}
         sections={sections}
         products={products}
         info={info}
         onClose={() => setProductEditor(null)}
-        onSaved={(row, created) => {
+        onSaved={(row, created, coste, aviso) => {
           setProducts((prev) => (created ? [...prev, row] : prev.map((p) => (p.id === row.id ? row : p))));
+          if (coste !== undefined) setInfo((prev) => ({ ...prev, costes: new Map(prev.costes).set(row.id, coste) }));
           setProductEditor(null);
-          setResult({ kind: 'success', text: created ? `Producto creado con el código ${row.id}.` : `${row.nombre}: guardado.` });
+          setResult(
+            aviso
+              ? { kind: 'error', text: aviso }
+              : { kind: 'success', text: created ? `Producto creado con el código ${row.id}.` : `${row.nombre}: guardado.` }
+          );
         }}
       />
+      )}
       <SectionEditor
         state={sectionEditor}
         sections={sections}
@@ -370,12 +381,17 @@ function ProductList({
               <span className={`font-semibold ${row.activo ? 'text-carbon' : 'text-carbon/50 line-through'}`}>{row.nombre}</span>
               {!row.activo && <span className="pend-badge">NO SALE</span>}
               {!row.disponible && <span className="pend-badge">AGOTADO</span>}
-              {info.costes.has(row.id) && <PuntoMargen precio={row.precio_centimos} coste={info.costes.get(row.id) ?? null} ajustes={info.ajustes} />}
             </div>
             {row.descripcion && <p className="mt-0.5 text-xs text-carbon/60">{row.descripcion}</p>}
           </div>
 
-          <PriceInput row={row} disabled={busyKey === `p-${row.id}`} onSave={(cents) => onPatch(row, { precio_centimos: cents }, 'precio guardado')} />
+          <PriceInput
+            row={row}
+            disabled={busyKey === `p-${row.id}`}
+            onSave={(cents) => onPatch(row, { precio_centimos: cents }, 'precio guardado')}
+            coste={info.costes.has(row.id) ? (info.costes.get(row.id) ?? null) : undefined}
+            ajustes={info.ajustes}
+          />
 
           <div className="flex flex-wrap items-center gap-3 text-xs font-semibold text-carbon/70">
             <label className="flex items-center gap-1.5">
@@ -411,27 +427,36 @@ function ProductList({
   );
 }
 
-/** Punto de color con la etiqueta de margen (Rentabilidad). Se recalcula al cambiar el precio. */
-function PuntoMargen({ precio, coste, ajustes }: { precio: number | null; coste: number | null; ajustes: Ajustes }) {
+/** Margen del producto (% de ganancia y etiqueta) con un precio en céntimos. Se recalcula al escribir. */
+function MargenPrecio({ precio, coste, ajustes }: { precio: number | null; coste: number | null; ajustes: Ajustes }) {
   const c = calcularMargen(precio, coste, ajustes);
-  const titulo = c.margen !== null ? `Margen ${formatPct(c.margen)} · ${ETIQUETAS[c.etiqueta].texto}` : ETIQUETAS[c.etiqueta].texto;
-  return <EtiquetaPunto etiqueta={c.etiqueta} titulo={titulo} />;
+  const titulo =
+    coste === null
+      ? 'Sin receta: añádela al editar el producto para ver su margen'
+      : c.margen !== null
+        ? `Margen ${formatPct(c.margen)} · coste ${formatEur(coste)} · ganancia ${formatEur(c.ganancia ?? 0)} · ${ETIQUETAS[c.etiqueta].texto}`
+        : ETIQUETAS[c.etiqueta].texto;
+  return (
+    <span title={titulo} className="inline-flex">
+      <EtiquetaBadge etiqueta={c.etiqueta} margen={c.margen} />
+      <span className="sr-only">{titulo}</span>
+    </span>
+  );
 }
 
-/** Línea «Coste · Margen · Ganancia · Etiqueta» bajo el precio, en directo mientras se escribe. */
-function MargenEnDirecto({ precio, coste, ajustes }: { precio: string; coste: number | null; ajustes: Ajustes }) {
-  if (coste === null) {
-    return <p className="-mt-2 text-xs text-carbon/55">Sin receta: añádela en Rentabilidad → Productos para ver su margen.</p>;
-  }
-  const cents = parseEurosToCents(precio);
-  const c = calcularMargen(cents === undefined ? null : cents, coste, ajustes);
+/** «Coste · Margen · Ganancia · Etiqueta» bajo el precio, en directo mientras se escribe. */
+function MargenBajoPrecio({ precio, coste, ajustes }: { precio: number | null; coste: number | null; ajustes: Ajustes }) {
+  if (coste === null) return <p className="-mt-2 text-xs text-carbon/55">Margen: añade la receta (abajo) para verlo.</p>;
+  const c = calcularMargen(precio, coste, ajustes);
   return (
     <p className="-mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-carbon/70" aria-live="polite">
       <span>Coste {formatEur(coste)}</span>
       {c.margen !== null && c.ganancia !== null && (
         <>
           <span aria-hidden="true">·</span>
-          <span>Margen {formatPct(c.margen)}</span>
+          <span>
+            Margen <strong>{formatPct(c.margen)}</strong>
+          </span>
           <span aria-hidden="true">·</span>
           <span>Ganancia {formatEur(c.ganancia)}</span>
         </>
@@ -441,8 +466,22 @@ function MargenEnDirecto({ precio, coste, ajustes }: { precio: string; coste: nu
   );
 }
 
+
 /** Precio editable en la propia fila: se guarda al salir del campo o con Intro. */
-function PriceInput({ row, disabled, onSave }: { row: ProductRow; disabled: boolean; onSave: (cents: number | null) => void }) {
+function PriceInput({
+  row,
+  disabled,
+  onSave,
+  coste,
+  ajustes,
+}: {
+  row: ProductRow;
+  disabled: boolean;
+  onSave: (cents: number | null) => void;
+  /** Coste del producto (Rentabilidad); undefined = no se sabe y no se muestra el margen. */
+  coste?: number | null;
+  ajustes: Ajustes;
+}) {
   const [value, setValue] = useState(centsToInput(row.precio_centimos));
   const [invalid, setInvalid] = useState(false);
 
@@ -492,6 +531,12 @@ function PriceInput({ row, disabled, onSave }: { row: ProductRow; disabled: bool
       <span className="text-sm text-carbon/60" aria-hidden="true">
         €
       </span>
+      {coste !== undefined && (
+        <span className="ml-1.5">
+          {/* Mientras se escribe, el margen va con el precio nuevo; si no es válido, con el guardado. */}
+          <MargenPrecio precio={parseEurosToCents(value) ?? row.precio_centimos} coste={coste} ajustes={ajustes} />
+        </span>
+      )}
     </div>
   );
 }
@@ -518,8 +563,10 @@ function ProductEditor({
   products: ProductRow[];
   info: InfoCostes;
   onClose: () => void;
-  onSaved: (row: ProductRow, created: boolean) => void;
+  /** coste: el de su receta (undefined = no se ha tocado) · aviso: si el producto se guardó pero la receta no. */
+  onSaved: (row: ProductRow, created: boolean, coste?: number | null, aviso?: string) => void;
 }) {
+  const receta = useReceta(state && state.mode === 'edit' ? state.row.id : null);
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [precio, setPrecio] = useState('');
@@ -554,6 +601,10 @@ function ProductEditor({
     if (!nombre.trim()) return setError('Escribe el nombre del producto.');
     if (cents === undefined) return setError('Escribe el precio como 2,50, o déjalo vacío si no tiene precio.');
     const seccionId = catSections.some((s) => s.id === seccion) ? seccion : null;
+    // La receta se valida antes de guardar nada.
+    const guardarRecetaAhora = receta.cambiada;
+    const r = receta.paraGuardar();
+    if (guardarRecetaAhora && 'error' in r) return setError(r.error);
     const data = {
       nombre: nombre.trim(),
       descripcion: descripcion.trim() || null,
@@ -570,14 +621,30 @@ function ProductEditor({
       const group = products.filter((p) => p.categoria_id === categoria && (p.seccion_id ?? null) === seccionId);
       const orden = Math.max(0, ...group.map((p) => p.orden)) + 10;
       const res = await createProduct({ ...data, orden });
-      setSaving(false);
-      if (res.row) onSaved(res.row, true);
-      else setError(res.error);
+      if (!res.row) {
+        setSaving(false);
+        return setError(res.error);
+      }
+      await terminar(res.row, true);
     } else {
       const res = await updateProduct(state.row.id, data);
+      if (!res.row) {
+        setSaving(false);
+        return setError(res.error);
+      }
+      await terminar(res.row, false);
+    }
+
+    /** Guarda la receta (si se ha tocado) del producto ya guardado. */
+    async function terminar(row: ProductRow, creado: boolean) {
+      if (guardarRecetaAhora && 'lineas' in r) {
+        const g = await guardarReceta(row.id, r.lineas);
+        setSaving(false);
+        if (g.error) return onSaved(row, creado, undefined, `${row.nombre}: producto guardado, pero la receta no (${g.error}). Ábrelo y vuelve a guardarla.`);
+        return onSaved(row, creado, receta.coste);
+      }
       setSaving(false);
-      if (res.row) onSaved(res.row, false);
-      else setError(res.error);
+      onSaved(row, creado, receta.insumos ? receta.coste : undefined);
     }
   };
 
@@ -587,14 +654,13 @@ function ProductEditor({
       title={state.mode === 'create' ? 'Nuevo producto' : `Editar #${state.row.id} · ${state.row.nombre}`}
       onClose={onClose}
       busy={saving}
+      maxWidth="680px"
     >
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
         <TextField label="Nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} required />
         <TextField label="Descripción (opcional)" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} hint="Por ejemplo: «Estrella, 25cl»." />
         <TextField label="Precio (€)" value={precio} onChange={(e) => setPrecio(e.target.value)} inputMode="decimal" placeholder="2,50" hint="Vacío = sin precio en la carta." />
-        {state.mode === 'edit' && info.costes.has(state.row.id) && (
-          <MargenEnDirecto precio={precio} coste={info.costes.get(state.row.id) ?? null} ajustes={info.ajustes} />
-        )}
+        {receta.insumos !== null && <MargenBajoPrecio precio={parseEurosToCents(precio) ?? null} coste={receta.coste} ajustes={info.ajustes} />}
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="prod-categoria" className="mb-1 block text-xs font-semibold text-carbon/80">Categoría</label>
@@ -622,6 +688,11 @@ function ProductEditor({
         {state.mode === 'create' && (
           <p className="text-xs text-carbon/60">El código del producto se asigna solo: el siguiente número libre.</p>
         )}
+        <fieldset className="rounded-r-md border border-piedra/50 bg-piedra-suave/30 p-3 sm:p-4">
+          <legend className="px-1 font-display text-lg font-semibold text-vino">Receta y ganancia</legend>
+          <p className="mb-3 text-xs text-carbon/60">Ingredientes y cantidades de una unidad. El % de ganancia es sobre el precio de venta.</p>
+          <RecetaEditor receta={receta} precioCentimos={parseEurosToCents(precio) ?? null} ajustes={info.ajustes} disabled={saving} />
+        </fieldset>
         {error && <Notice kind="error">{error}</Notice>}
         <div className="flex flex-col-reverse gap-3 sm:flex-row">
           <button type="button" onClick={onClose} disabled={saving} className={`btn-outline-vino flex-1 py-3 ${focusRing}`}>Cancelar</button>

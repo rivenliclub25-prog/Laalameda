@@ -20,6 +20,17 @@ import {
   type PromoItem,
   type SegmentRow,
 } from '@/lib/adminCatalog';
+import { EtiquetaBadge } from '@/components/admin/rentabilidad/Etiqueta';
+import {
+  AJUSTES_POR_DEFECTO,
+  calcularPromo,
+  fetchAjustes,
+  fetchRentabilidad,
+  formatEur,
+  formatPct,
+  type Ajustes,
+  type ProductoRentabilidad,
+} from '@/lib/rentabilidad';
 import {
   DIAS,
   crossesMidnight,
@@ -664,6 +675,14 @@ function PromoEditor({
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [newItem, setNewItem] = useState('');
+  // Rentabilidad: coste de cada producto, para el margen en directo (si falla, no se muestra).
+  const [costes, setCostes] = useState<{ productos: Map<number, ProductoRentabilidad>; ajustes: Ajustes } | null>(null);
+
+  useEffect(() => {
+    Promise.all([fetchRentabilidad(), fetchAjustes()]).then(([r, a]) => {
+      if (!r.error) setCostes({ productos: new Map(r.productos.map((p) => [p.product_id, p])), ajustes: a.ajustes ?? AJUSTES_POR_DEFECTO });
+    });
+  }, []);
 
   useEffect(() => {
     setError(null);
@@ -894,6 +913,7 @@ function PromoEditor({
                 </>
               )}
             </fieldset>
+            {costes && !linksLoading && <MargenPromo form={form} costes={costes} />}
           </div>
         </div>
 
@@ -1061,3 +1081,49 @@ function PromoEditor({
     </Modal>
   );
 }
+
+/** «Precio normal · Descuento real · Coste · Margen · Etiqueta» de la promo, en directo (RENTABILIDAD.md, R3). */
+function MargenPromo({
+  form,
+  costes,
+}: {
+  form: EditorState;
+  costes: { productos: Map<number, ProductoRentabilidad>; ajustes: Ajustes };
+}) {
+  const precio = parseEurosToCents(form.precio);
+  const anunciado = form.descuento.trim() === '' ? null : Number(form.descuento);
+  const items = form.items.map((i) => {
+    const p = costes.productos.get(i.product_id);
+    return { cantidad: i.cantidad, precio_centimos: p?.precio_centimos ?? null, coste: p?.coste ?? null, nombre: p?.nombre ?? `#${i.product_id}` };
+  });
+  const c = calcularPromo(precio === undefined ? null : precio, Number.isFinite(anunciado) ? anunciado : null, items, costes.ajustes);
+  return (
+    <div className="rounded-r-sm border border-piedra/60 bg-white px-3 py-2.5 text-xs text-carbon/75" aria-live="polite">
+      <p className="mb-1 font-semibold uppercase tracking-wider text-carbon/60">Rentabilidad</p>
+      {items.length === 0 ? (
+        <p>Añade los productos que lleva para ver su coste y su margen.</p>
+      ) : (
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          {c.precioNormal !== null && <span>Precio normal {formatEur(c.precioNormal / 100)}</span>}
+          {c.descuentoReal !== null && <span>· Descuento real {formatPct(c.descuentoReal)}</span>}
+          {c.coste !== null && <span>· Coste {formatEur(c.coste)}</span>}
+          {c.etiqueta === 'sin_precio' && c.coste !== null ? (
+            <span>· Es lo que cuesta regalarla</span>
+          ) : (
+            <>
+              {c.ganancia !== null && <span>· Ganancia {formatEur(c.ganancia)}</span>}
+              <EtiquetaBadge etiqueta={c.etiqueta} margen={c.margen} />
+            </>
+          )}
+        </div>
+      )}
+      {c.sinReceta.length > 0 && <p className="mt-1 text-[#7a4e00]">Sin receta (Rentabilidad → Productos): {c.sinReceta.join(', ')}</p>}
+      {c.aviso && (
+        <p className="mt-1 font-semibold text-[#7a4e00]">
+          El descuento anunciado ({anunciado} %) no coincide con el real ({formatPct(c.descuentoReal!)}).
+        </p>
+      )}
+    </div>
+  );
+}
+

@@ -2,7 +2,8 @@
  * Propuesta de emparejamiento: qué producto de la carta es cada producto del Excel de costes
  * (RENTABILIDAD.md, sección 8). Solo propone: el admin lo revisa y confirma en la importación.
  *
- * Orden: 1) lo que ya se confirmó en una importación anterior; 2) equivalencias conocidas del
+ * Orden: 0) el código del producto, si el Excel lo trae (el que se descarga del panel lo lleva);
+ * 1) lo que ya se confirmó en una importación anterior; 2) equivalencias conocidas del
  * Excel de La Alameda; 3) mismo nombre (sin mayúsculas, acentos ni signos); 4) el más parecido,
  * marcado como dudoso.
  */
@@ -13,7 +14,7 @@ export interface ProductoCarta {
   activo: boolean;
 }
 
-export type Confianza = 'guardado' | 'seguro' | 'dudoso' | 'sin_pareja';
+export type Confianza = 'codigo' | 'guardado' | 'seguro' | 'dudoso' | 'sin_pareja';
 
 export interface Propuesta {
   /** Nombre del producto en el Excel, tal cual. */
@@ -98,7 +99,9 @@ function parecido(a: string, b: string): number {
 export function proponerEmparejamientos(
   productosExcel: string[],
   carta: ProductoCarta[],
-  guardados: Map<string, number[]>
+  guardados: Map<string, number[]>,
+  /** Código del producto que trae el Excel para ese nombre (columna «Código»). */
+  codigos: Map<string, number> = new Map()
 ): Propuesta[] {
   const existentes = new Set(carta.map((p) => p.id));
   const porNombre = new Map<string, ProductoCarta[]>();
@@ -110,6 +113,8 @@ export function proponerEmparejamientos(
   const buscar = (nombre: string) => (porNombre.get(normalizarNombre(nombre)) ?? []).sort((a, b) => Number(b.activo) - Number(a.activo))[0];
 
   return productosExcel.map((excel) => {
+    const codigo = codigos.get(excel);
+    if (codigo !== undefined && existentes.has(codigo)) return { excel, productIds: [codigo], confianza: 'codigo' };
     const guardado = guardados.get(claveExcel(excel));
     if (guardado && guardado.every((id) => existentes.has(id))) return { excel, productIds: guardado, confianza: 'guardado' };
 
