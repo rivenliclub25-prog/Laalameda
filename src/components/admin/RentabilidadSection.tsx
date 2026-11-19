@@ -37,7 +37,7 @@ export function RentabilidadSection() {
       <div>
         <h2 className="font-display text-2xl font-semibold text-vino">Rentabilidad</h2>
         <p className="mt-1 text-sm text-carbon/70">
-          Coste, margen y etiqueta de cada producto, calculados con los precios de compra <strong>sin IVA</strong>. Solo lo ven los administradores.
+          Coste, precio de venta y <strong>% de ganancia</strong> de cada producto, con los precios tal como vienen en el Excel. Solo lo ven los administradores.
         </p>
       </div>
 

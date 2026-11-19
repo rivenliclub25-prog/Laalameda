@@ -1,5 +1,5 @@
 import { useId, useRef, useState, type ReactNode } from 'react';
-import { ArrowRight, CheckCircle2, FileUp, Loader2 } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Download, FileUp, Loader2 } from 'lucide-react';
 import { Notice, focusRing } from '@/components/club/FormControls';
 import {
   formatCantidad,
@@ -11,20 +11,23 @@ import {
   type InformeImportacion,
 } from '@/lib/costes';
 import { ErrorExcel, leerExcel } from '@/lib/xlsx';
-import { ImportarRecetas } from '@/components/admin/rentabilidad/ImportarRecetas';
+import { ImportarProductos } from '@/components/admin/rentabilidad/ImportarProductos';
+import { descargarRentabilidad } from '@/lib/exportarRentabilidad';
 
-type Que = 'ingredientes' | 'recetas';
+type Que = 'ingredientes' | 'productos';
 
-/** Importar del Excel de costes: primero los ingredientes y después las recetas. */
+/** Importar del Excel de costes (primero los ingredientes, después los productos) y descargarlo con el mismo formato. */
 export function ImportarView({ onIngredientes, onRecetas }: { onIngredientes: () => void; onRecetas: () => void }) {
   const [que, setQue] = useState<Que>('ingredientes');
+  const [descargando, setDescargando] = useState(false);
+  const [errorDescarga, setErrorDescarga] = useState<string | null>(null);
   return (
     <>
       <div className="mb-4 flex flex-wrap gap-2" role="group" aria-label="Qué importar">
         {(
           [
             ['ingredientes', '1. Ingredientes («Materias Primas»)'],
-            ['recetas', '2. Recetas («Coste_Unitario»)'],
+            ['productos', '2. Productos (recetas y precios)'],
           ] as const
         ).map(([id, texto]) => (
           <button
@@ -39,8 +42,26 @@ export function ImportarView({ onIngredientes, onRecetas }: { onIngredientes: ()
             {texto}
           </button>
         ))}
+        <button
+          type="button"
+          onClick={async () => {
+            setDescargando(true);
+            setErrorDescarga(await descargarRentabilidad());
+            setDescargando(false);
+          }}
+          disabled={descargando}
+          className={`btn-outline-vino ml-auto min-h-10 disabled:opacity-60 ${focusRing}`}
+        >
+          {descargando ? <Loader2 size={16} className="animate-spin" aria-hidden="true" /> : <Download size={16} aria-hidden="true" />} Descargar Excel
+        </button>
       </div>
-      {que === 'ingredientes' ? <ImportarIngredientes onTerminado={onIngredientes} /> : <ImportarRecetas onTerminado={onRecetas} />}
+      <p className="-mt-2 mb-4 text-xs text-carbon/60">«Descargar Excel» genera las mismas 3 hojas (Materias Primas, Coste_Unitario y Precio_venta) con lo que hay ahora: puedes tocarlo y volver a importarlo.</p>
+      {errorDescarga && (
+        <div className="mb-4">
+          <Notice kind="error">{errorDescarga}</Notice>
+        </div>
+      )}
+      {que === 'ingredientes' ? <ImportarIngredientes onTerminado={onIngredientes} /> : <ImportarProductos onTerminado={onRecetas} />}
     </>
   );
 }
@@ -134,8 +155,8 @@ function ImportarIngredientes({ onTerminado }: { onTerminado: () => void }) {
       <div className="rounded-r-lg border border-piedra/50 bg-white p-4 shadow-sm sm:p-5">
         <p className="text-sm text-carbon/75">
           Elige tu Excel de costes (<strong>.xlsx</strong>). Se lee la hoja <strong>«Materias Primas»</strong>: nombre, tamaño, unidad y precio de
-          compra <strong>sin IVA</strong>. El archivo se lee en este navegador y no se sube: solo se envían esos datos. Después, importa las
-          recetas en «2. Recetas».
+          compra (tal como viene en el Excel). El archivo se lee en este navegador y no se sube: solo se envían esos datos. Después, importa los
+          productos en «2. Productos».
         </p>
         <p className="mt-2 text-sm text-carbon/75">
           Puedes volver a importarlo cuando cambien los precios: los ingredientes se reconocen por el nombre y los cambios quedan en su histórico.

@@ -70,7 +70,7 @@ export function IngredienteModal({
     if (!nombre.trim()) return setError('Escribe el nombre del ingrediente.');
     if (cantidadBase === null || cantidadBase <= 0) return setError('La cantidad del formato tiene que ser mayor que 0.');
     if (rend === null || rend <= 0 || rend > 100) return setError('El rendimiento va de 1 a 100 %.');
-    if (prec === null || prec < 0) return setError('Escribe el precio de compra sin IVA (puede ser 0).');
+    if (prec === null || prec < 0) return setError('Escribe el precio de compra (puede ser 0).');
     const datos: InsumoCambios = {
       nombre: nombre.replace(/\s+/g, ' ').trim(),
       categoria: categoria.trim() || null,
@@ -131,7 +131,7 @@ export function IngredienteModal({
         )}
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <TextField label="Precio de compra sin IVA (€)" value={precio} onChange={(e) => setPrecio(e.target.value)} inputMode="decimal" placeholder="79,20" required />
+          <TextField label="Precio de compra (€)" value={precio} onChange={(e) => setPrecio(e.target.value)} inputMode="decimal" placeholder="79,20" required />
           <TextField
             label="Rendimiento (%)"
             value={rendimiento}
