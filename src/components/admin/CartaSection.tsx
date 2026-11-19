@@ -20,7 +20,7 @@ import {
   type ProductRow,
   type SectionRow,
 } from '@/lib/adminCatalog';
-import { EtiquetaPunto } from '@/components/admin/rentabilidad/Etiqueta';
+import { EtiquetaBadge } from '@/components/admin/rentabilidad/Etiqueta';
 import { RecetaEditor } from '@/components/admin/rentabilidad/RecetaEditor';
 import { useReceta } from '@/components/admin/rentabilidad/useReceta';
 import {
@@ -30,6 +30,7 @@ import {
   fetchAjustes,
   fetchRentabilidad,
   guardarReceta,
+  formatEur,
   formatPct,
   type Ajustes,
 } from '@/lib/rentabilidad';
@@ -380,12 +381,17 @@ function ProductList({
               <span className={`font-semibold ${row.activo ? 'text-carbon' : 'text-carbon/50 line-through'}`}>{row.nombre}</span>
               {!row.activo && <span className="pend-badge">NO SALE</span>}
               {!row.disponible && <span className="pend-badge">AGOTADO</span>}
-              {info.costes.has(row.id) && <PuntoMargen precio={row.precio_centimos} coste={info.costes.get(row.id) ?? null} ajustes={info.ajustes} />}
             </div>
             {row.descripcion && <p className="mt-0.5 text-xs text-carbon/60">{row.descripcion}</p>}
           </div>
 
-          <PriceInput row={row} disabled={busyKey === `p-${row.id}`} onSave={(cents) => onPatch(row, { precio_centimos: cents }, 'precio guardado')} />
+          <PriceInput
+            row={row}
+            disabled={busyKey === `p-${row.id}`}
+            onSave={(cents) => onPatch(row, { precio_centimos: cents }, 'precio guardado')}
+            coste={info.costes.has(row.id) ? (info.costes.get(row.id) ?? null) : undefined}
+            ajustes={info.ajustes}
+          />
 
           <div className="flex flex-wrap items-center gap-3 text-xs font-semibold text-carbon/70">
             <label className="flex items-center gap-1.5">
@@ -421,16 +427,61 @@ function ProductList({
   );
 }
 
-/** Punto de color con la etiqueta de margen (Rentabilidad). Se recalcula al cambiar el precio. */
-function PuntoMargen({ precio, coste, ajustes }: { precio: number | null; coste: number | null; ajustes: Ajustes }) {
+/** Margen del producto (% de ganancia y etiqueta) con un precio en céntimos. Se recalcula al escribir. */
+function MargenPrecio({ precio, coste, ajustes }: { precio: number | null; coste: number | null; ajustes: Ajustes }) {
   const c = calcularMargen(precio, coste, ajustes);
-  const titulo = c.margen !== null ? `Ganancia ${formatPct(c.margen)} · ${ETIQUETAS[c.etiqueta].texto}` : ETIQUETAS[c.etiqueta].texto;
-  return <EtiquetaPunto etiqueta={c.etiqueta} titulo={titulo} />;
+  const titulo =
+    coste === null
+      ? 'Sin receta: añádela al editar el producto para ver su margen'
+      : c.margen !== null
+        ? `Margen ${formatPct(c.margen)} · coste ${formatEur(coste)} · ganancia ${formatEur(c.ganancia ?? 0)} · ${ETIQUETAS[c.etiqueta].texto}`
+        : ETIQUETAS[c.etiqueta].texto;
+  return (
+    <span title={titulo} className="inline-flex">
+      <EtiquetaBadge etiqueta={c.etiqueta} margen={c.margen} />
+      <span className="sr-only">{titulo}</span>
+    </span>
+  );
+}
+
+/** «Coste · Margen · Ganancia · Etiqueta» bajo el precio, en directo mientras se escribe. */
+function MargenBajoPrecio({ precio, coste, ajustes }: { precio: number | null; coste: number | null; ajustes: Ajustes }) {
+  if (coste === null) return <p className="-mt-2 text-xs text-carbon/55">Margen: añade la receta (abajo) para verlo.</p>;
+  const c = calcularMargen(precio, coste, ajustes);
+  return (
+    <p className="-mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-carbon/70" aria-live="polite">
+      <span>Coste {formatEur(coste)}</span>
+      {c.margen !== null && c.ganancia !== null && (
+        <>
+          <span aria-hidden="true">·</span>
+          <span>
+            Margen <strong>{formatPct(c.margen)}</strong>
+          </span>
+          <span aria-hidden="true">·</span>
+          <span>Ganancia {formatEur(c.ganancia)}</span>
+        </>
+      )}
+      <EtiquetaBadge etiqueta={c.etiqueta} />
+    </p>
+  );
 }
 
 
 /** Precio editable en la propia fila: se guarda al salir del campo o con Intro. */
-function PriceInput({ row, disabled, onSave }: { row: ProductRow; disabled: boolean; onSave: (cents: number | null) => void }) {
+function PriceInput({
+  row,
+  disabled,
+  onSave,
+  coste,
+  ajustes,
+}: {
+  row: ProductRow;
+  disabled: boolean;
+  onSave: (cents: number | null) => void;
+  /** Coste del producto (Rentabilidad); undefined = no se sabe y no se muestra el margen. */
+  coste?: number | null;
+  ajustes: Ajustes;
+}) {
   const [value, setValue] = useState(centsToInput(row.precio_centimos));
   const [invalid, setInvalid] = useState(false);
 
@@ -480,6 +531,12 @@ function PriceInput({ row, disabled, onSave }: { row: ProductRow; disabled: bool
       <span className="text-sm text-carbon/60" aria-hidden="true">
         €
       </span>
+      {coste !== undefined && (
+        <span className="ml-1.5">
+          {/* Mientras se escribe, el margen va con el precio nuevo; si no es válido, con el guardado. */}
+          <MargenPrecio precio={parseEurosToCents(value) ?? row.precio_centimos} coste={coste} ajustes={ajustes} />
+        </span>
+      )}
     </div>
   );
 }
@@ -603,6 +660,7 @@ function ProductEditor({
         <TextField label="Nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} required />
         <TextField label="Descripción (opcional)" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} hint="Por ejemplo: «Estrella, 25cl»." />
         <TextField label="Precio (€)" value={precio} onChange={(e) => setPrecio(e.target.value)} inputMode="decimal" placeholder="2,50" hint="Vacío = sin precio en la carta." />
+        {receta.insumos !== null && <MargenBajoPrecio precio={parseEurosToCents(precio) ?? null} coste={receta.coste} ajustes={info.ajustes} />}
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="prod-categoria" className="mb-1 block text-xs font-semibold text-carbon/80">Categoría</label>

@@ -141,7 +141,7 @@ export function RecetaEditor({
         <Dato titulo="Precio de venta" valor={calc.precio !== null ? formatEur(calc.precio) : '—'} />
         <Dato titulo="Ganancia" valor={calc.ganancia !== null ? formatEur(calc.ganancia) : '—'} />
         <div>
-          <span className="block text-xs font-semibold uppercase tracking-wider text-carbon/60">% de ganancia</span>
+          <span className="block text-xs font-semibold uppercase tracking-wider text-carbon/60">Margen (% de ganancia)</span>
           <span className="mt-1 inline-block">
             <EtiquetaBadge etiqueta={calc.etiqueta} margen={calc.margen} />
           </span>
