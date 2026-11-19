@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useId, useState, type ReactNode } from 'react';
-import { Download, Loader2, RefreshCw, TrendingDown, TrendingUp } from 'lucide-react';
+import { Loader2, RefreshCw, TrendingDown, TrendingUp } from 'lucide-react';
 import { Notice, focusRing } from '@/components/club/FormControls';
 import { EtiquetaBadge } from '@/components/admin/rentabilidad/Etiqueta';
 import { formatCosteUnitario } from '@/lib/costes';
-import { descargarRentabilidad } from '@/lib/exportarRentabilidad';
 import { fetchResumen, formatEur, formatPct, type ResumenRentabilidad } from '@/lib/rentabilidad';
 
 type Periodo = '7' | '30' | 'mes' | 'fechas';
@@ -37,7 +36,6 @@ export function ResumenView() {
   const [resumen, setResumen] = useState<ResumenRentabilidad | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [descargando, setDescargando] = useState(false);
   const idDesde = useId();
   const idHasta = useId();
 
@@ -59,12 +57,6 @@ export function ResumenView() {
     load();
   }, [load]);
 
-  const descargar = async () => {
-    setDescargando(true);
-    const e = await descargarRentabilidad(resumen);
-    setDescargando(false);
-    if (e) setError(e);
-  };
 
   const t = resumen?.totales;
   const conGanancia = (resumen?.productos ?? []).filter((p) => p.ganancia !== null);
@@ -103,16 +95,13 @@ export function ResumenView() {
           </div>
         )}
         <div className="ml-auto flex gap-2">
-          <button type="button" onClick={descargar} disabled={descargando || loading} className={`btn-outline-vino disabled:opacity-60 ${focusRing}`}>
-            {descargando ? <Loader2 size={16} className="animate-spin" aria-hidden="true" /> : <Download size={16} aria-hidden="true" />} Descargar Excel
-          </button>
           <button type="button" onClick={load} disabled={loading} aria-label="Actualizar" className={`btn-outline-vino disabled:opacity-60 ${focusRing}`}>
             <RefreshCw size={16} className={loading ? 'animate-spin' : ''} aria-hidden="true" />
           </button>
         </div>
       </div>
       <p className="mt-2 text-xs text-carbon/60">
-        Jornadas del periodo · precios <strong>sin IVA</strong> · calculado con el <strong>coste de hoy</strong> de cada producto · las devoluciones van aparte.
+        Jornadas del periodo · precios tal cual (como en el Excel) · calculado con el <strong>coste de hoy</strong> de cada producto · las devoluciones van aparte.
       </p>
 
       {error && (
@@ -130,7 +119,7 @@ export function ResumenView() {
         <div className={`mt-4 space-y-6 ${loading ? 'opacity-60' : ''}`} aria-busy={loading}>
           {/* Cifras */}
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <Cifra titulo="Ventas sin IVA" valor={formatEur(Number(t.ventas_sin_iva))} detalle={`${t.unidades} unidades`} />
+            <Cifra titulo="Ventas" valor={formatEur(Number(t.ventas))} detalle={`${t.unidades} unidades`} />
             <Cifra titulo="Ganancia" valor={formatEur(Number(t.ganancia))} detalle={`de lo que tiene coste (${formatEur(Number(t.ventas_con_coste))})`} />
             <Cifra
               titulo="Margen medio"
@@ -145,7 +134,7 @@ export function ResumenView() {
           </div>
           {Number(t.devuelto) > 0 && <p className="text-sm text-carbon/70">Devoluciones del periodo: {formatEur(Number(t.devuelto))} (con IVA, no se restan del margen).</p>}
 
-          {Number(t.ventas_sin_iva) === 0 ? (
+          {Number(t.ventas) === 0 ? (
             <Notice kind="info">No hay ventas en este periodo.</Notice>
           ) : (
             <>
@@ -159,7 +148,7 @@ export function ResumenView() {
                       <span className="truncate text-sm font-semibold text-carbon" title={c.nombre}>
                         {c.nombre}
                       </span>
-                      <span className="flex items-center gap-2" title={`${c.nombre}: ${formatPct(Number(c.pct_venta ?? 0))} de la venta · ${formatEur(Number(c.ventas_sin_iva))} sin IVA`}>
+                      <span className="flex items-center gap-2" title={`${c.nombre}: ${formatPct(Number(c.pct_venta ?? 0))} de la venta · ${formatEur(Number(c.ventas))}`}>
                         <span className="h-5 flex-1">
                           <span
                             className="block h-full rounded-r-[4px]"

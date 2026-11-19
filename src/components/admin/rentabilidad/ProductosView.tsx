@@ -79,8 +79,8 @@ export function ProductosView() {
   return (
     <section aria-label="Productos">
       <p className="text-sm text-carbon/70">
-        Margen sobre el precio <strong>sin IVA</strong> ({ajustes.iva_defecto_pct.toLocaleString('es-ES')} %). Toca un producto para ver o cambiar su receta.
-        Los precios se cambian en <strong>Carta</strong>.
+        <strong>% de ganancia</strong> = (precio − coste) ÷ precio, con el precio tal cual (como en el Excel). Toca un producto para ver o cambiar su
+        receta. Los precios se cambian en <strong>Carta</strong> o importando el Excel.
       </p>
 
       <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Filtrar por etiqueta">
@@ -144,7 +144,7 @@ export function ProductosView() {
           type="button"
           onClick={async () => {
             setDescargando(true);
-            const e = await descargarRentabilidad(null);
+            const e = await descargarRentabilidad();
             setDescargando(false);
             if (e) setError(e);
           }}

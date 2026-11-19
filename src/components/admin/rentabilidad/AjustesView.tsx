@@ -7,10 +7,12 @@ import { parseNumero } from '@/lib/costes';
 
 const aTexto = (n: number) => n.toLocaleString('es-ES', { maximumFractionDigits: 2, useGrouping: false });
 
-/** IVA general y cortes de la escala de etiquetas. Cambiarlos solo cambia las etiquetas, no los precios. */
+/**
+ * Cortes de la escala de etiquetas (la misma del Excel). Cambiarlos solo cambia las etiquetas, no los
+ * precios. El IVA no se usa: el % de ganancia va con el precio tal cual (queda para la fase R6).
+ */
 export function AjustesView() {
   const [cargado, setCargado] = useState(false);
-  const [iva, setIva] = useState('');
   const [bueno, setBueno] = useState('');
   const [muyBueno, setMuyBueno] = useState('');
   const [excelente, setExcelente] = useState('');
@@ -19,7 +21,6 @@ export function AjustesView() {
 
   useEffect(() => {
     fetchAjustes().then(({ ajustes, error }) => {
-      setIva(aTexto(ajustes.iva_defecto_pct));
       setBueno(aTexto(ajustes.escala_bueno_pct));
       setMuyBueno(aTexto(ajustes.escala_muy_bueno_pct));
       setExcelente(aTexto(ajustes.escala_excelente_pct));
@@ -28,17 +29,16 @@ export function AjustesView() {
     });
   }, []);
 
-  const valores = { iva: parseNumero(iva), b: parseNumero(bueno), mb: parseNumero(muyBueno), e: parseNumero(excelente) };
-
   const handleSubmit = async (ev: FormEvent) => {
     ev.preventDefault();
     setResult(null);
-    const { iva: i, b, mb, e } = valores;
-    if (i === null || i < 0 || i > 30) return setResult({ kind: 'error', text: 'El IVA va de 0 a 30 %.' });
+    const b = parseNumero(bueno);
+    const mb = parseNumero(muyBueno);
+    const e = parseNumero(excelente);
     if (b === null || mb === null || e === null || !(0 < b && b < mb && mb < e && e < 100)) {
       return setResult({ kind: 'error', text: 'Los cortes tienen que ir de menor a mayor y por debajo de 100 (por ejemplo 60, 70 y 80).' });
     }
-    const a: Ajustes = { iva_defecto_pct: i, escala_bueno_pct: b, escala_muy_bueno_pct: mb, escala_excelente_pct: e };
+    const a: Ajustes = { escala_bueno_pct: b, escala_muy_bueno_pct: mb, escala_excelente_pct: e };
     setSaving(true);
     const r = await updateAjustes(a);
     setSaving(false);
@@ -55,15 +55,8 @@ export function AjustesView() {
 
   return (
     <form onSubmit={handleSubmit} noValidate className="max-w-xl space-y-5 rounded-r-lg border border-piedra/50 bg-white p-4 shadow-sm sm:p-5">
-      <TextField
-        label="IVA de la carta (%)"
-        value={iva}
-        onChange={(e) => setIva(e.target.value)}
-        inputMode="decimal"
-        hint="Se quita del precio de la carta para calcular el margen (el IVA no es del bar). En hostelería, 10 %."
-      />
       <fieldset>
-        <legend className="mb-2 text-xs font-semibold text-carbon/80">Escala de etiquetas (margen sobre el precio sin IVA)</legend>
+        <legend className="mb-2 text-xs font-semibold text-carbon/80">Escala de etiquetas (% de ganancia sobre el precio de venta)</legend>
         <div className="grid gap-3 sm:grid-cols-3">
           <TextField label="«Bueno» desde (%)" value={bueno} onChange={(e) => setBueno(e.target.value)} inputMode="decimal" />
           <TextField label="«Muy bueno» desde (%)" value={muyBueno} onChange={(e) => setMuyBueno(e.target.value)} inputMode="decimal" />
@@ -75,7 +68,9 @@ export function AjustesView() {
           <span>· {muyBueno || '—'}–{excelente || '—'} %:</span> <EtiquetaBadge etiqueta="muy_bueno" />
           <span>· desde {excelente || '—'} %:</span> <EtiquetaBadge etiqueta="excelente" />
         </p>
-        <p className="mt-2 text-xs text-carbon/55">Cambiar la escala solo cambia las etiquetas: no toca ningún precio.</p>
+        <p className="mt-2 text-xs text-carbon/55">
+          Cambiar la escala solo cambia las etiquetas: no toca ningún precio. Los precios se usan tal cual, como en el Excel (el IVA no se tiene en cuenta por ahora).
+        </p>
       </fieldset>
       {result && <Notice kind={result.kind}>{result.text}</Notice>}
       <SubmitButton loading={saving} loadingText="Guardando…">
