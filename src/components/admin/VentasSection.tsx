@@ -35,6 +35,7 @@ const PRESETS: { id: Preset; label: string }[] = [
 ];
 
 const EVENTOS: Record<string, string> = {
+  cuenta_impresa: 'Cuenta impresa',
   abierta: 'Cuenta abierta',
   linea_anadida: 'Añadido',
   linea_aceptada: 'Aceptado',

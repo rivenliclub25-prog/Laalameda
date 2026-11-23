@@ -8,7 +8,7 @@ Este documento es la especificación viva de la **fase POS** de la web de La Ala
 - Al decidir algo se anota la decisión y la fecha. Si cambia la propuesta, se actualizan las secciones afectadas y se apunta en el **Historial** (al final).
 - No se programa ninguna fase hasta que estén 🟢 las decisiones de las que depende (ver «Fases»).
 
-Última actualización: 2026-11-12 · Estado: **POS en producción** (publicado el 2026-11-02). **Mejoras del TPV publicadas el 2026-11-10** (justificante de pago, puestos de barra, venta rápida y pagar por separado) y comprobadas por el usuario en producción. P7 (puesta en marcha) sigue abierta por sus pendientes. Los cambios se hacen con el flujo de `ENTORNOS.md` (rama → `staging` → `main` con aprobación).
+Última actualización: 2026-11-23 · Estado: **POS en producción** (publicado el 2026-11-02). Mejoras del TPV A y B en producción desde el 2026-11-10. **Entrega C (imprimir la cuenta antes de cobrar) programada en la rama `tpv-precuenta`, pendiente de prueba.** P7 (puesta en marcha) sigue abierta por sus pendientes. Los cambios se hacen con el flujo de `ENTORNOS.md` (rama → `staging` → `main` con aprobación).
 
 ---
 
@@ -573,6 +573,20 @@ P6 se divide en dos partes, con pausa para probar entre ellas:
 - **Publicación (las dos entregas juntas, 2026-11-10):** rama `tpv-entrega-b` (incluye la A) → PR #12 a `staging` (migraciones aplicadas solas en PRUEBAS y probado por el usuario en la web de pruebas) → PR #13 a `main` → despliegue aprobado en el entorno `production`: se aplicaron `20261110102117_mesas_tipo_barra` y `20261110150000_pago_por_separado` y se publicó la web. El usuario lo comprobó en producción.
 - **Tras publicar:** los puestos de barra se crean en producción desde **Panel → Mesas → + Puesto de barra**. En el TPV, recargar con Ctrl + F5 la primera vez. Al imprimir el justificante: la ticketera de 80 mm y márgenes «Ninguno».
 
+### Mejoras del TPV (2026-11-23): entrega C — imprimir la cuenta · 🟡 pendiente de prueba
+
+- **Qué es:** una **cuenta provisional** (pre-cuenta) para llevársela al cliente **antes de que pague**, en mesas y puestos de barra. No es el justificante de pago (`Justificante.tsx`, que sale después de cobrar con nº de venta y forma de pago, no se toca).
+- **Dónde:** botón **«Imprimir cuenta»** en el recuadro de cobro de la cuenta abierta (TPV → Mesas y TPV → Barra), junto a «Cobrar» y «Cobrar por separado». No está en Venta rápida. Se puede imprimir las veces que haga falta; no cambia la cuenta. Sale desactivado si no queda nada por cobrar.
+- **El papel (80 mm, `Precuenta.tsx`, mismo estilo que el justificante):** cabecera del bar; **CUENTA** y «**Pendiente de pago · No es justificante de pago**»; mesa o puesto, fecha y hora de impresión y hora de apertura; las líneas que quedan por cobrar (cantidad, nombre, importe, notas; las promos con su tipo, ticket y ahorro), sin anuladas, rechazadas ni pendientes; **Subtotal** y **Ahorro en promos** (solo si hay ahorro); **TOTAL**. Si ya se pagó una parte por separado, las líneas pagadas no salen: una línea «Ya pagado (N pagos): X €» y el total pasa a ser **«QUEDA POR COBRAR»**. Pie «Gracias por su visita». Sin nº de venta ni forma de pago. Vista previa en un `Modal` con «Imprimir» (`printArea()`, `.print-area.ticket-80`) y «Cerrar».
+- **El total es el de «Cobrar»:** `precuentaDeCuenta()` (`src/lib/precuenta.ts`) usa `lineaPorCobrar`/`totalCuenta`, las mismas líneas y el mismo cálculo que la base de datos al cobrar (aceptadas o servidas sin pagar, precio copiado × cantidad). No se recalcula nada más.
+- **Decisiones (aprobadas):**
+  - **Rondas pendientes de aceptar → se bloquea**, como el cobro: el botón sale desactivado y el aviso dice «Hay rondas sin aceptar: acéptalas o recházalas antes de imprimir la cuenta o cobrar». Así la cuenta entregada nunca deja fuera algo que luego se cobre.
+  - **Evento `cuenta_impresa` → sí:** al pulsar «Imprimir» se apunta en `pos_events` (con el total y las líneas de ese momento). La cuadrícula de mesas y de barra muestra «**Cuenta entregada 23:10**», la cabecera de la cuenta también, y en Panel → Ventas sale «Cuenta impresa» en el historial. La impresión no depende de esto: si falla, se imprime igual.
+- **Migración `20261123120000_pos_cuenta_impresa.sql`:** `cuenta_impresa` en los tipos de `pos_events` y RPC `pos_cuenta_impresa(cuenta)`, solo camareros y solo con la cuenta abierta; permisos explícitos.
+- **Archivos:** `src/lib/precuenta.ts`, `src/components/pos/Precuenta.tsx` (nuevos); `MesasPanel.tsx` (botón, bloqueo, vista previa, «Cuenta entregada»), `pos.ts` (`registrarCuentaImpresa`, `cuenta_impresa_at` de cada cuenta abierta), `VentasSection.tsx` (texto del evento).
+- **Comprobado en local (PGlite, fuera del repositorio):** 15 pruebas: el papel no lleva anuladas ni pendientes; notas y promos con tipo y ahorro; subtotal = total + ahorro; con una ronda pendiente «Cobrar» también está bloqueado; el evento se apunta (quién, hora, total) cada vez que se imprime y no cambia la cuenta; socio y sin sesión no pueden; tras un pago por separado, «Queda por cobrar» del papel = lo que cobra «Cobrar»; en un puesto de barra, TOTAL = «Cobrar»; con la cuenta cerrada ya no se apunta.
+- **Prueba del usuario en la web de pruebas:** una mesa con varias líneas, una promo con ahorro y una línea anulada (el papel = «Cobrar»); una cuenta con un pago por separado («Queda por cobrar»); un puesto de barra; una ronda pendiente (botón bloqueado); la impresión en 80 mm y solo con el papel; en el TPV a pantalla completa y en el móvil.
+
 ### Respuestas al plan (2026-10-28)
 
 1. P1 se divide en **P1a y P1b**, con pausa para probar entre ellas.
@@ -620,3 +634,4 @@ P6 se divide en dos partes, con pausa para probar entre ellas:
 - **2026-11-10** — Mejoras del TPV: entrega A (justificante 80 mm, Mesas · Barra · Venta rápida, puestos de barra) y entrega B (pagar por separado), a la espera de prueba en la web de pruebas.
 - **2026-11-10** — Entregas A y B publicadas en producción (PR #12 a `staging`, PR #13 a `main`, despliegue aprobado). Segundo cambio llevado por el flujo completo de `ENTORNOS.md`.
 - **2026-11-12** — El usuario confirma que las mejoras del TPV funcionan en producción. Documentos y guía del camarero actualizados.
+- **2026-11-23** — Entrega C del TPV (imprimir la cuenta antes de cobrar) aprobada con bloqueo por rondas pendientes y evento `cuenta_impresa`. Programada en `tpv-precuenta`, pendiente de prueba.
