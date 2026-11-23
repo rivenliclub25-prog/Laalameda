@@ -230,6 +230,8 @@ export interface CuentaMesa {
   estado: 'abierta' | 'pagada' | 'cancelada';
   created_at: string;
   order_items: LineaCuenta[];
+  /** Última vez que se imprimió la cuenta (entrega C), o null. */
+  cuenta_impresa_at: string | null;
 }
 
 /** Línea que todavía hay que cobrar: aceptada o servida y sin pagar. */
@@ -265,7 +267,22 @@ export async function fetchCuentasAbiertas(): Promise<{ cuentas: CuentaMesa[]; e
   const cuentas = (data as unknown as CuentaMesa[]).map((c) => ({
     ...c,
     order_items: [...c.order_items].sort((a, b) => a.created_at.localeCompare(b.created_at)),
+    cuenta_impresa_at: null as string | null,
   }));
+  // Cuándo se imprimió la cuenta por última vez («Cuenta entregada 23:10»). Es un extra: si falla, no se muestra.
+  if (cuentas.length > 0) {
+    const ev = await supabase
+      .from('pos_events')
+      .select('order_id, at')
+      .eq('tipo', 'cuenta_impresa')
+      .in('order_id', cuentas.map((c) => c.id))
+      .order('at', { ascending: false });
+    if (!ev.error) {
+      const ultima = new Map<string, string>();
+      for (const e of ev.data as { order_id: string; at: string }[]) if (!ultima.has(e.order_id)) ultima.set(e.order_id, e.at);
+      for (const c of cuentas) c.cuenta_impresa_at = ultima.get(c.id) ?? null;
+    }
+  }
   return { cuentas, error: null };
 }
 
@@ -288,6 +305,9 @@ export const cobrarCuenta = (orderId: string, metodo: Metodo) =>
 /** Lo que paga una persona: líneas enteras o unidades sueltas de una línea (la cuenta sigue abierta). */
 export const cobrarParte = (orderId: string, items: { item_id: string; cantidad: number }[], metodo: Metodo, requestId: string) =>
   rpc<VentaResultado>('pos_cobrar_parte', { p_order_id: orderId, p_items: items, p_metodo: metodo, p_client_request_id: requestId });
+
+/** Apunta que se ha impreso la cuenta (pre-cuenta). No cambia la cuenta; devuelve la hora. */
+export const registrarCuentaImpresa = (orderId: string) => rpc<string>('pos_cuenta_impresa', { p_order_id: orderId });
 
 export const cancelarCuenta = (orderId: string, motivo: string) =>
   rpc<null>('pos_cancelar_cuenta', { p_order_id: orderId, p_motivo: motivo });

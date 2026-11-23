@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
-import { ArrowLeft, ArrowRightLeft, Ban, Check, CheckCheck, Loader2, Minus, Plus, RefreshCw, Split, Ticket, Trash2, XCircle } from 'lucide-react';
+import { ArrowLeft, ArrowRightLeft, Ban, Check, CheckCheck, Loader2, Minus, Plus, Printer, RefreshCw, Split, Ticket, Trash2, XCircle } from 'lucide-react';
 import { Notice, SubmitButton, focusRing } from '@/components/club/FormControls';
 import { Modal } from '@/components/club/Modal';
 import { ProductPicker } from '@/components/pos/ProductPicker';
 import { VentaHecha } from '@/components/pos/VentaHecha';
+import { PrecuentaModal } from '@/components/pos/Precuenta';
+import { precuentaDeCuenta, type DatosPrecuenta } from '@/lib/precuenta';
 import { TicketPromoModal, type TicketElegido } from '@/components/pos/TicketPromoModal';
 import { playFeedback } from '@/lib/feedback';
 import { subscribeChanges } from '@/lib/realtime';
@@ -18,6 +20,7 @@ import {
   cancelarCuenta,
   cobrarCuenta,
   cobrarParte,
+  registrarCuentaImpresa,
   fetchCuentasAbiertas,
   fetchMesas,
   formatEuros,
@@ -39,6 +42,9 @@ import {
 } from '@/lib/pos';
 
 const POLL_MS = 10_000;
+
+/** «23:10» */
+const horaCorta = (iso: string) => new Date(iso).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
 
 function minutosDesde(iso: string, now: number) {
   const min = Math.max(0, Math.floor((now - new Date(iso).getTime()) / 60_000));
@@ -220,6 +226,7 @@ export function MesasPanel({
                         {minutosDesde(c.created_at, now)}
                         {porServir > 0 ? ` · ${porServir} por servir` : ''}
                       </span>
+                      {c.cuenta_impresa_at && <span className="block font-semibold">Cuenta entregada {horaCorta(c.cuenta_impresa_at)}</span>}
                     </span>
                   ) : (
                     <span className="mt-2 text-sm text-carbon/55">{m.activa ? 'Libre' : 'Desactivada'}</span>
@@ -286,6 +293,20 @@ function CuentaView({
   const pagos = new Set(pagadas.map((l) => l.sale_id)).size;
   const haySevidas = porCobrar.some((l) => l.estado === 'servida');
   const [separando, setSeparando] = useState(false);
+  // Cuenta provisional (entrega C): vista previa y hora de la última impresión desde esta pantalla.
+  const [precuenta, setPrecuenta] = useState<DatosPrecuenta | null>(null);
+  const [impresaAt, setImpresaAt] = useState<string | null>(null);
+  const puedeImprimir = !!cuenta && porCobrar.length > 0 && rondas.length === 0;
+  const botonImprimir = (
+    <button
+      type="button"
+      onClick={() => cuenta && setPrecuenta(precuentaDeCuenta(cuenta, mesa.nombre))}
+      disabled={busy || !puedeImprimir}
+      className={`btn-outline-vino mt-2 min-h-12 w-full disabled:cursor-not-allowed disabled:opacity-50 ${focusRing}`}
+    >
+      <Printer size={18} aria-hidden="true" /> {porCobrar.length === 0 ? 'Imprimir cuenta · no hay nada pendiente' : 'Imprimir cuenta'}
+    </button>
+  );
 
   /** Ejecuta una acción, muestra su error y refresca la mesa. */
   const run = async (action: () => Promise<{ error: string | null }>) => {
@@ -338,7 +359,14 @@ function CuentaView({
         <button type="button" onClick={onBack} className={`inline-flex items-center gap-2 rounded-r-sm text-sm font-semibold text-carbon/70 hover:text-vino ${focusRing}`}>
           <ArrowLeft size={18} aria-hidden="true" /> Mesas
         </button>
-        {cuenta && <span className="text-xs text-carbon/55">Abierta hace {minutosDesde(cuenta.created_at, now)}</span>}
+        {cuenta && (
+          <span className="text-xs text-carbon/55">
+            Abierta hace {minutosDesde(cuenta.created_at, now)}
+            {(impresaAt ?? cuenta.cuenta_impresa_at) && (
+              <strong className="ml-1 text-carbon/75">· Cuenta entregada {horaCorta((impresaAt ?? cuenta.cuenta_impresa_at)!)}</strong>
+            )}
+          </span>
+        )}
       </div>
 
       <div className="mt-3 rounded-r-lg border border-piedra/50 bg-white shadow-md">
@@ -466,7 +494,7 @@ function CuentaView({
           <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-carbon/60">Cobrar · cómo paga</h3>
           {rondas.length > 0 && (
             <div className="mb-3">
-              <Notice kind="info">Hay rondas sin aceptar: acéptalas o recházalas antes de cobrar.</Notice>
+              <Notice kind="info">Hay rondas sin aceptar: acéptalas o recházalas antes de imprimir la cuenta o cobrar.</Notice>
             </div>
           )}
           <div className="grid grid-cols-3 gap-2">
@@ -483,8 +511,10 @@ function CuentaView({
           <button type="button" onClick={() => setSeparando(true)} disabled={busy} className={`btn-outline-vino mt-2 min-h-12 w-full ${focusRing}`}>
             <Split size={18} aria-hidden="true" /> Cobrar por separado
           </button>
+          {botonImprimir}
         </div>
       )}
+      {cuenta && porCobrar.length === 0 && <div className="mt-4">{botonImprimir}</div>}
 
       {cuenta && (
         <div className="mt-4 flex flex-wrap gap-2">
@@ -616,6 +646,18 @@ function CuentaView({
             return onChanged();
           }}
           cobrar={(items, metodoParte, requestId) => cobrarParte(cuenta.id, items, metodoParte, requestId)}
+        />
+      )}
+
+      {precuenta && cuenta && (
+        <PrecuentaModal
+          datos={precuenta}
+          onImprimir={() => {
+            // Se apunta «cuenta entregada»; la impresión no espera ni depende de esto.
+            setImpresaAt(new Date().toISOString());
+            registrarCuentaImpresa(cuenta.id).then(() => onChanged());
+          }}
+          onClose={() => setPrecuenta(null)}
         />
       )}
 
