@@ -26,7 +26,7 @@ export function Precuenta({ datos }: { datos: DatosPrecuenta }) {
 
       <div className="my-2 border-t border-dashed border-black" />
       <p className="text-center text-[17px] font-bold uppercase tracking-widest">Cuenta</p>
-      <p className="mt-0.5 border border-black py-0.5 text-center text-[11px] font-bold uppercase">Pendiente de pago · No es justificante de pago</p>
+      <p className="mt-0.5 border border-black py-0.5 text-center text-[11px] font-bold uppercase">Pendiente de pago</p>
       <div className="mt-1.5 flex justify-between font-bold">
         <span>{datos.lugar}</span>
         <span>
