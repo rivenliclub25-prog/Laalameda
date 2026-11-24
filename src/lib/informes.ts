@@ -185,7 +185,7 @@ export function downloadVentasCsv(ventas: Venta[], nombre: (id: string | null) =
       fecha.toLocaleDateString('es-ES'),
       fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
       v.jornada.split('-').reverse().join('/'),
-      v.orders?.origen === 'mesa' ? 'Cuenta' : 'Venta rápida',
+      v.orders?.origen === 'mesa' ? 'Cuenta' : v.orders?.origen === 'evento' ? 'Evento' : 'Venta rápida',
       v.orders?.mesas?.nombre ?? '',
       METODOS[v.metodo],
       nombre(v.cobrado_por),
