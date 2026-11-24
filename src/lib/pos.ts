@@ -12,13 +12,15 @@ export const METODOS = {
 } as const;
 export type Metodo = keyof typeof METODOS;
 
-export type TipoLinea = 'producto' | 'pack' | 'obsequio' | 'sorteo';
+/** «evento»: un plazo del precio cerrado de un evento (EVENTOS.md); no es una promo, pero se etiqueta igual. */
+export type TipoLinea = 'producto' | 'pack' | 'obsequio' | 'sorteo' | 'evento';
 
 /** Tipos de promo (POS.md, D9). */
 export const TIPOS_PROMO: Record<Exclude<TipoLinea, 'producto'>, string> = {
   pack: 'Pack',
   obsequio: 'Obsequio',
   sorteo: 'Sorteo',
+  evento: 'Evento',
 };
 
 /**
@@ -116,7 +118,7 @@ export interface Venta {
   cobrado_por: string | null;
   cobrado_at: string;
   jornada: string;
-  orders: { origen: 'barra' | 'mesa'; mesas: { nombre: string } | null } | null;
+  orders: { origen: 'barra' | 'mesa' | 'evento'; mesas: { nombre: string } | null } | null;
   /** Las líneas cobradas en ESTA venta (una cuenta puede pagarse en varias ventas). */
   order_items: VentaLinea[];
   sale_refunds: { id: string; importe_centimos: number; motivo: string; por: string | null; at: string }[];

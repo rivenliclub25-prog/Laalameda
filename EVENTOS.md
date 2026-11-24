@@ -9,7 +9,7 @@ Este documento es la especificación viva de la **fase Eventos** de la web de La
 - No se programa ninguna fase hasta que estén 🟢 las decisiones de las que depende (ver «Fases»).
 - Antes de escribir código, se propone el plan de archivos de la fase y se espera aprobación.
 
-Última actualización: 2026-11-24 · Estado: **EV0 cerrada** (revisión del repositorio hecha; EV-D1 a EV-D16 decididas). **Siguiente: plan de archivos de EV1**, pendiente de aprobación. Rama `eventos`.
+Última actualización: 2026-11-24 · Estado: **EV0 cerrada. EV1 (base de datos) programada** en la rama `eventos`, pendiente de aplicar en PRUEBAS. No cambia nada visible: EV1 se publicará junto con EV2 y EV3. **Siguiente: plan de EV2** (Panel → Eventos).
 
 ---
 
@@ -222,7 +222,7 @@ Cada fila del contenido es **o** un producto de la carta (con cantidad) **o** un
 | Fase | Contenido | Depende de | Hecha cuando… |
 |---|---|---|---|
 | **EV0** Decisiones | Este documento + revisión del repositorio | — | ✅ 2026-11-24 |
-| **EV1** Base de datos | Migración(es) con `eventos`, `evento_items`, `evento_plazos`, ampliación de `orders`, `order_items` y `pos_events`, RPC y permisos; adaptación de cobros (jornada, EV-D13), cierre (EV-D14), anulaciones (EV-D15), Resumen de Rentabilidad y los textos de la web que dan por hecho «producto o promo» | EV-D1, D2, D3, D4, D8, D9, D13, D14, D15 | En PRUEBAS: un evento confirmado se cobra en dos plazos (dos ventas, cada una en la jornada de su cobro), los plazos suman el precio, un precio manipulado en el navegador se ignora, un socio no ve eventos, cancelar conserva lo cobrado, el cierre no se bloquea por el evento, el informe sigue cuadrando |
+| **EV1** 🟡 Base de datos | Migración(es) con `eventos`, `evento_items`, `evento_plazos`, ampliación de `orders`, `order_items` y `pos_events`, RPC y permisos; adaptación de cobros (jornada, EV-D13), cierre (EV-D14), anulaciones (EV-D15), Resumen de Rentabilidad y los textos de la web que dan por hecho «producto o promo» | EV-D1, D2, D3, D4, D8, D9, D13, D14, D15 | En PRUEBAS: un evento confirmado se cobra en dos plazos (dos ventas, cada una en la jornada de su cobro), los plazos suman el precio, un precio manipulado en el navegador se ignora, un socio no ve eventos, cancelar conserva lo cobrado, el cierre no se bloquea por el evento, el informe sigue cuadrando |
 | **EV2** Panel → Eventos | Lista (próximos, pasados, cancelados), crear/editar con contenido y plazos, confirmar, cancelar, detalle con pagos y registro, hoja para el cliente | EV1, EV-D5, D10, D12 | El admin crea y confirma un evento desde el móvil y el portátil |
 | **EV3** TPV → Eventos | Pestaña Eventos, cobrar señal/resto con justificante, añadir extras, ver contenido acordado | EV1, EV-D6 | Un camarero cobra la señal un día y el resto otro, con justificantes correctos |
 | **EV4** Informes y cierres | Fila «Eventos» en el cierre, tabla por evento, origen «Evento» en ventas y CSV | EV1, EV-D11 | Cierres e informes cuadran con eventos, extras y devoluciones |
@@ -239,6 +239,19 @@ Cada fase recorre el flujo de `ENTORNOS.md`: rama → PR a `staging` → **prueb
 
 ---
 
+## 6b. Estado de EV1 (2026-11-24): 🟡 programada, pendiente de aplicar en PRUEBAS
+
+- **Migración `20261124120000_eventos.sql`:**
+  - **Tablas** `eventos`, `evento_items` (producto o concepto, con cantidad) y `evento_plazos` (con `anulado` para los plazos quitados tras confirmar). RLS: solo leen camareros y admins; nadie escribe directamente.
+  - **Ampliaciones:** `orders.origen` admite `evento` y `orders.evento_id` (regla «es de evento ⇔ tiene evento»); `order_items.tipo_linea` admite `evento` y `order_items.evento_plazo_id`; la regla «o producto o promo» pasa a «exactamente uno de producto, promo o plazo» (`order_items_una_fuente`, añadida antes de quitar la vieja); `pos_events` admite `evento_creado`, `evento_editado`, `evento_confirmado`, `evento_cancelado` y `evento_realizado`.
+  - **Funciones nuevas:** `admin_guardar_evento(id, datos)` (crea o edita; los plazos suman el precio; EV-D8 en confirmados: los plazos cobrados no se tocan, los pendientes se cambian, se quitan —su línea se anula— o se añaden; el precio no baja de lo cobrado), `admin_confirmar_evento(id)` (abre la cuenta con una línea «Evento · nombre — plazo» por plazo, con el importe copiado; idempotente), `admin_cancelar_evento(id, motivo)` (anula lo pendiente, conserva lo cobrado) y `pos_eventos(desde, hasta)` (para el TPV: contenido, plazos cobrados o pendientes, cobrado, pendiente y extras).
+  - **Disparador:** cuando la cuenta de un evento queda pagada (por cualquier camino), el evento pasa a **realizado** y se apunta.
+  - **Adaptadas** (mismos parámetros): `_pos_crear_venta_lineas` (EV-D13: jornada del cobro en cuentas de evento), `pos_cerrar_jornada` y `pos_estado_jornada` (EV-D14), `pos_anular_linea` y `pos_cancelar_cuenta` (EV-D15: `EVENTO_DESDE_PANEL`), `rentabilidad_resumen` (grupo «Eventos», sin coste).
+  - Las líneas de plazo nacen **servidas** (no hay nada que servir: no salen como «por servir»).
+- **Web (sin pantallas nuevas):** `TipoLinea` admite `evento` («Evento»); el lugar de la venta y el CSV dicen «Evento» en vez de «Venta rápida»; mensajes `EVENTO_…` en `ticketErrors.ts`.
+- **Comprobado en local (PGlite, fuera del repositorio):** 48 pruebas, con los criterios de EV1: dos plazos cobrados = dos ventas, **cada una en la jornada de su cobro** (la de una mesa sigue en la de su cuenta); los plazos suman el precio; cobrar no acepta importes; confirmar dos veces no duplica; socio no ve eventos, camarero no los crea; el cierre no se bloquea por el evento (una mesa abierta sí); camarero no anula plazos ni cancela la cuenta del evento; extras a precio de carta; editar con señal cobrada (EV-D8); cobrarlo todo → realizado; **el informe sigue cuadrando**; Rentabilidad agrupa «Eventos»; cancelar con señal cobrada la conserva. Además, las pruebas de R3b (33) y de la cuenta impresa (15) siguen pasando con esta migración encima.
+- **Prueba en PRUEBAS:** al mezclar en `staging` la migración se aplica sola. Como no hay pantallas, basta comprobar que el TPV (mesas, barra, venta rápida, cobrar por separado, imprimir cuenta, cierre) y el panel (ventas, informes, rentabilidad) siguen igual. El final de la migración trae un bloque comentado con pruebas manuales para el SQL Editor de PRUEBAS.
+
 ## 7. Forma de trabajar
 
 - Rama **`eventos`** creada desde `staging` actualizado (`git pull`). Si una fase se alarga, se puede dividir en ramas `eventos-ev1`, `eventos-ev2`…
@@ -252,3 +265,4 @@ Cada fase recorre el flujo de `ENTORNOS.md`: rama → PR a `staging` → **prueb
 
 - **2026-11-23** — Creado el documento: problema, propuesta (evento con cuenta propia, contenido acordado, plazos y extras), modelo de datos en borrador, decisiones EV-D1 a EV-D12 abiertas con recomendación y fases EV0–EV5.
 - **2026-11-24** — Revisión del repositorio (sección 4b): encajan las cuentas, los cobros y el informe; no encajan la jornada de la venta, el bloqueo del cierre, la regla «producto o promo» y la anulación de líneas. Añadidas EV-D13 a EV-D16. **Todas las decisiones aprobadas con las recomendaciones de Claude (EV-D7 y EV-D16 pospuestas). EV0 cerrada.** Rama `eventos` creada desde `staging` (con `main` traído para no perder los documentos de la entrega C).
+- **2026-11-24** — Plan de EV1 aprobado. **EV1 programada** en `eventos`: migración `20261124120000_eventos.sql` (tablas, ampliaciones, funciones, disparador y adaptaciones EV-D13/14/15) y retoques de seguridad en la web. 48 pruebas en local. Pendiente de aplicar en PRUEBAS; se publicará con EV2 y EV3.
