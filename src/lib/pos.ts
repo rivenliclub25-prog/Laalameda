@@ -150,6 +150,13 @@ export async function fetchVentas(desde: Date, hasta: Date): Promise<{ ventas: V
   return { ventas: ordenarLineas(data as unknown as Venta[]), error: null };
 }
 
+/** Ventas de una cuenta (p. ej. los cobros de un evento), de la más antigua a la más reciente. */
+export async function fetchVentasDeCuenta(orderId: string): Promise<{ ventas: Venta[]; error: string | null }> {
+  const { data, error } = await supabase.from('sales').select(VENTA_COLS).eq('order_id', orderId).order('cobrado_at');
+  if (error) return { ventas: [], error: translateTicketError(error) };
+  return { ventas: ordenarLineas(data as unknown as Venta[]), error: null };
+}
+
 function ordenarLineas(ventas: Venta[]): Venta[] {
   for (const v of ventas) v.order_items = [...(v.order_items ?? [])].sort((a, b) => a.created_at.localeCompare(b.created_at));
   return ventas;
