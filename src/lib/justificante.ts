@@ -61,9 +61,9 @@ export function justificanteDeVenta(v: Venta): DatosJustificante {
   };
 }
 
-/** Dónde se hizo la venta: el nombre de la mesa o del puesto de barra, o «Venta rápida». */
+/** Dónde se hizo la venta: el nombre de la mesa o del puesto de barra, «Evento · nombre» o «Venta rápida». */
 export function lugarDeVenta(v: Venta): string {
   if (v.orders?.origen === 'mesa') return v.orders.mesas?.nombre ?? 'Mesa';
-  if (v.orders?.origen === 'evento') return 'Evento';
+  if (v.orders?.origen === 'evento') return v.orders.eventos?.nombre ? `Evento · ${v.orders.eventos.nombre}` : 'Evento';
   return 'Venta rápida';
 }
