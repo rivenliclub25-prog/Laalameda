@@ -9,7 +9,7 @@ Este documento es la especificación viva de la **fase Eventos** de la web de La
 - No se programa ninguna fase hasta que estén 🟢 las decisiones de las que depende (ver «Fases»).
 - Antes de escribir código, se propone el plan de archivos de la fase y se espera aprobación.
 
-Última actualización: 2026-11-24 · Estado: **EV0 cerrada. EV1 (base de datos) y EV2 (Panel → Eventos) programadas** en la rama `eventos`, pendientes de probar en PRUEBAS. EV1 + EV2 + EV3 se publican juntas en producción. **Siguiente: probar EV2 en PRUEBAS y plan de EV3** (TPV → Eventos).
+Última actualización: 2026-11-24 · Estado: **EV0 cerrada. EV1 (base de datos), EV2 (Panel → Eventos) y EV3 (TPV → Eventos) programadas** en la rama `eventos`, pendientes de probar en PRUEBAS. EV1 + EV2 + EV3 se publican juntas en producción (con la guía del camarero actualizada). **Siguiente: probar en PRUEBAS; después, EV4** (informes y cierres).
 
 ---
 
@@ -261,6 +261,18 @@ Cada fase recorre el flujo de `ENTORNOS.md`: rama → PR a `staging` → **prueb
 - **Web:** `src/lib/eventos.ts` (lecturas y llamadas a `admin_guardar_evento`, `admin_confirmar_evento`, `admin_cancelar_evento`) y `fetchVentasDeCuenta` en `pos.ts`. Sin migraciones nuevas.
 - **Prueba en PRUEBAS:** crear «Cumple Laura», 300 € con señal 100 + resto 200; comprobar que no guarda si los plazos no suman; confirmar; abrir la hoja, imprimir y copiar para WhatsApp; editar (cambiar el resto); cancelar otro evento con motivo. Cobrar los plazos llega en EV3 (desde el TPV); mientras tanto la cuenta del evento existe pero el TPV aún no tiene la pestaña.
 
+## 6d. Estado de EV3 (2026-11-24): 🟡 programada, pendiente de probar en PRUEBAS
+
+- **TPV → cuarta pestaña «Eventos»** (`#/pos?modo=eventos`, `EventosPanel.tsx`), solo eventos confirmados o realizados, en tres apartados: **Hoy** (destacados), **Próximos (60 días)** y **Con cobros pendientes de días anteriores** (últimos 30 días, solo si queda algo). Cada tarjeta: nombre, hora o fecha, personas, chips de plazos (✓ cobrado), pendiente y extras sin cobrar. Tiempo real como Mesas (más respaldo cada 10 s).
+- **Cuenta del evento = la pantalla de cuenta de las mesas** (`CuentaView`, ahora exportada, con la prop `evento`):
+  - Arriba, los datos del evento (`DatosEventoTPV`): fecha, hora, personas, contacto, socio, **lo que incluye el precio cerrado** y notas.
+  - **Un botón por plazo pendiente** («Cobrar Señal · 100 €»): abre el cobro por separado con ese plazo ya marcado; solo falta elegir el método. Es una venta con su número y justificante.
+  - Lo de siempre: «Añadir extra» (a precio de carta), servir, anular extras, «Cobrar por separado», «Cobrar todo lo pendiente» e «Imprimir cuenta».
+  - No salen «Cambiar de mesa», «Cancelar cuenta» ni «Anular» en los plazos (EV-D15); las líneas de plazo llevan la etiqueta «Plazo».
+  - Al cobrar lo último, la cuenta se cierra sola y el evento pasa a **realizado**; la pantalla se queda hasta cerrar el justificante.
+- **Web:** `fetchCuentaAbierta(orderId)` en `pos.ts` (misma forma que las cuentas de mesa; `CuentaMesa.mesa_id` admite null), `fetchEventosTPV` y `fechaISO` en `eventos.ts` (usa `pos_eventos` de EV1). `PagoSeparadoModal` admite título propio y empezar con todo marcado. **Sin migraciones nuevas.**
+- **Prueba en PRUEBAS:** con «Cumple Laura» confirmado, un camarero cobra la señal en efectivo (venta y justificante; en el panel sale cobrada). Se añaden 2 cañas como extra; se cobra el resto con tarjeta y luego los extras → evento realizado. El cierre de jornada no se bloquea por el evento. **Repasar una mesa normal completa** (abrir, añadir, cobrar por separado, imprimir cuenta, cobrar), porque la pantalla de cuenta es compartida.
+
 ## 7. Forma de trabajar
 
 - Rama **`eventos`** creada desde `staging` actualizado (`git pull`). Si una fase se alarga, se puede dividir en ramas `eventos-ev1`, `eventos-ev2`…
@@ -276,3 +288,4 @@ Cada fase recorre el flujo de `ENTORNOS.md`: rama → PR a `staging` → **prueb
 - **2026-11-24** — Revisión del repositorio (sección 4b): encajan las cuentas, los cobros y el informe; no encajan la jornada de la venta, el bloqueo del cierre, la regla «producto o promo» y la anulación de líneas. Añadidas EV-D13 a EV-D16. **Todas las decisiones aprobadas con las recomendaciones de Claude (EV-D7 y EV-D16 pospuestas). EV0 cerrada.** Rama `eventos` creada desde `staging` (con `main` traído para no perder los documentos de la entrega C).
 - **2026-11-24** — Plan de EV1 aprobado. **EV1 programada** en `eventos`: migración `20261124120000_eventos.sql` (tablas, ampliaciones, funciones, disparador y adaptaciones EV-D13/14/15) y retoques de seguridad en la web. 48 pruebas en local. Pendiente de aplicar en PRUEBAS; se publicará con EV2 y EV3.
 - **2026-11-24** — Plan de EV2 aprobado (con «Copiar para WhatsApp»). **EV2 programada** en `eventos`: pestaña «Eventos» del panel con lista, editor de contenido y plazos, detalle con cobros y registro, confirmar, cancelar y hoja para el cliente. Pendiente de probar en PRUEBAS.
+- **2026-11-24** — Plan de EV3 aprobado con las recomendaciones (reutilizar la pantalla de cuenta, 60 días adelante y pendientes de 30 atrás, botón por plazo). **EV3 programada** en `eventos`: pestaña «Eventos» del TPV y cuenta del evento con cobro por plazo y extras. Sin migraciones. Pendiente de probar en PRUEBAS.

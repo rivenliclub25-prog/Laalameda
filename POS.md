@@ -172,6 +172,7 @@ No se borra nada ahora. Cuando la carta y las promos lean de Supabase y estén p
   - Marca la cuenta como **pagada** cuando el cliente ha pagado (D5).
 - **Barra:** venta rápida. Añade productos y marca pagada en una sola acción. Es una cuenta sin mesa.
 - **Promos:** las añade como líneas; si la promo es de club, escanea o teclea el ticket del socio (sección 5).
+- **Eventos** (pestaña nueva, `EVENTOS.md` EV3): cuentas de eventos con precio cerrado; cobra cada plazo (señal, resto) con un botón y añade extras a precio de carta. No anula plazos ni cancela la cuenta (eso va por Panel → Eventos).
 
 ### Admin (`#/admin`)
 - **Carta y promos:** edita productos, precios, disponibilidad y promos (P1).

@@ -243,3 +243,43 @@ export function textoWhatsApp(e: Evento, bar: string): string {
   lineas.push('', 'Este documento no es una factura.');
   return lineas.join('\n');
 }
+
+// ---------------------------------------------------------------------
+// TPV → Eventos (EV3): lo que ve el camarero (pos_eventos, solo confirmados y realizados)
+// ---------------------------------------------------------------------
+
+export interface EventoTPV {
+  id: string;
+  nombre: string;
+  fecha: string;
+  hora_inicio: string | null;
+  personas: number | null;
+  contacto_nombre: string | null;
+  contacto_telefono: string | null;
+  socio_id: string | null;
+  socio_nombre: string | null;
+  precio_centimos: number;
+  estado: 'confirmado' | 'realizado';
+  notas: string | null;
+  order_id: string | null;
+  cuenta_abierta: boolean | null;
+  contenido: { product_id: number | null; nombre: string; cantidad: number }[];
+  plazos: { id: string; nombre: string; importe_centimos: number; order_item_id: string | null; cobrado: boolean; venta_numero: number | null }[];
+  cobrado_centimos: number;
+  /** Lo que queda por cobrar en su cuenta (plazos y extras). */
+  pendiente_centimos: number;
+  extras_pendientes: number;
+}
+
+/** «AAAA-MM-DD» de hoy más `dias` (hora local). */
+export function fechaISO(dias = 0): string {
+  const d = new Date();
+  d.setDate(d.getDate() + dias);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+export async function fetchEventosTPV(desde: string, hasta: string): Promise<{ eventos: EventoTPV[]; error: string | null }> {
+  const { data, error } = await supabase.rpc('pos_eventos', { p_desde: desde, p_hasta: hasta });
+  if (error) return { eventos: [], error: mensaje(error) };
+  return { eventos: (data ?? []) as EventoTPV[], error: null };
+}

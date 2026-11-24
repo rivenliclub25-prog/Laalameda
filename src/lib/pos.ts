@@ -235,7 +235,8 @@ export interface LineaCuenta {
 
 export interface CuentaMesa {
   id: string;
-  mesa_id: string;
+  /** null en la cuenta de un evento (EVENTOS.md). */
+  mesa_id: string | null;
   estado: 'abierta' | 'pagada' | 'cancelada';
   created_at: string;
   order_items: LineaCuenta[];
@@ -273,7 +274,21 @@ const CUENTA_COLS =
 export async function fetchCuentasAbiertas(): Promise<{ cuentas: CuentaMesa[]; error: string | null }> {
   const { data, error } = await supabase.from('orders').select(CUENTA_COLS).eq('origen', 'mesa').eq('estado', 'abierta');
   if (error) return { cuentas: [], error: translateTicketError(error) };
-  const cuentas = (data as unknown as CuentaMesa[]).map((c) => ({
+  return { cuentas: await prepararCuentas(data as unknown as CuentaMesa[]), error: null };
+}
+
+/** Una cuenta abierta concreta (la de un evento, EV3). null si ya no está abierta. */
+export async function fetchCuentaAbierta(orderId: string): Promise<{ cuenta: CuentaMesa | null; error: string | null }> {
+  const { data, error } = await supabase.from('orders').select(CUENTA_COLS).eq('id', orderId).eq('estado', 'abierta').maybeSingle();
+  if (error) return { cuenta: null, error: translateTicketError(error) };
+  if (!data) return { cuenta: null, error: null };
+  const [cuenta] = await prepararCuentas([data as unknown as CuentaMesa]);
+  return { cuenta, error: null };
+}
+
+/** Ordena las líneas y añade cuándo se imprimió la cuenta por última vez. */
+async function prepararCuentas(filas: CuentaMesa[]): Promise<CuentaMesa[]> {
+  const cuentas = filas.map((c) => ({
     ...c,
     order_items: [...c.order_items].sort((a, b) => a.created_at.localeCompare(b.created_at)),
     cuenta_impresa_at: null as string | null,
@@ -292,7 +307,7 @@ export async function fetchCuentasAbiertas(): Promise<{ cuentas: CuentaMesa[]; e
       for (const c of cuentas) c.cuenta_impresa_at = ultima.get(c.id) ?? null;
     }
   }
-  return { cuentas, error: null };
+  return cuentas;
 }
 
 export const abrirMesa = (mesaId: string) => rpc<string>('pos_abrir_mesa', { p_mesa_id: mesaId });
