@@ -20,6 +20,7 @@ import { PageShell } from '@/components/club/PageShell';
 import { Notice, focusRing } from '@/components/club/FormControls';
 import { ProductPicker } from '@/components/pos/ProductPicker';
 import { MesasPanel } from '@/components/pos/MesasPanel';
+import { EventosPanel } from '@/components/pos/EventosPanel';
 import { VentaHecha } from '@/components/pos/VentaHecha';
 import { JustificanteModal } from '@/components/pos/Justificante';
 import { justificanteDeVenta, lugarDeVenta } from '@/lib/justificante';
@@ -46,12 +47,13 @@ import {
 } from '@/lib/pos';
 
 /** Mesas y Barra: cuentas abiertas que se cobran al final. Venta rápida: se anota y se cobra al momento. */
-type Modo = 'mesas' | 'barra' | 'rapida';
+type Modo = 'mesas' | 'barra' | 'rapida' | 'eventos';
 
 const MODOS: { id: Modo; label: string }[] = [
   { id: 'mesas', label: 'Mesas' },
   { id: 'barra', label: 'Barra' },
   { id: 'rapida', label: 'Venta rápida' },
+  { id: 'eventos', label: 'Eventos' },
 ];
 
 interface CartLine {
@@ -81,7 +83,7 @@ export function PosPage() {
   const promos = useMemo(() => promosParaVender(catalog?.promotions ?? [], states), [catalog, states]);
   const [modo, setModo] = useState<Modo>(() => {
     const m = getHashParams().get('modo');
-    return m === 'barra' || m === 'rapida' ? m : 'mesas';
+    return m === 'barra' || m === 'rapida' || m === 'eventos' ? m : 'mesas';
   });
   const [soundOn, setSoundOn] = useState(loadSoundEnabled);
   const [cerrando, setCerrando] = useState(false);
@@ -156,7 +158,7 @@ export function PosPage() {
   );
 
   const pestanas = (
-    <div role="tablist" aria-label="Modo del TPV" className={`grid grid-cols-3 rounded-r-sm bg-piedra-suave p-1 ${completa ? 'w-[420px] max-w-full' : 'mt-4 max-w-[480px]'}`}>
+    <div role="tablist" aria-label="Modo del TPV" className={`grid grid-cols-4 rounded-r-sm bg-piedra-suave p-1 ${completa ? 'w-[560px] max-w-full' : 'mt-4 max-w-[600px]'}`}>
       {MODOS.map(({ id: m, label }) => (
         <button
           key={m}
@@ -194,6 +196,11 @@ export function PosPage() {
       ) : modo === 'barra' ? (
         <>
           <MesasPanel key="barra" tipo="barra" tabs={tabs} promos={promos} catalogLoading={!catalog} soundOn={soundOn} />
+          <UltimasVentas />
+        </>
+      ) : modo === 'eventos' ? (
+        <>
+          <EventosPanel tabs={tabs} promos={promos} catalogLoading={!catalog} soundOn={soundOn} />
           <UltimasVentas />
         </>
       ) : (
