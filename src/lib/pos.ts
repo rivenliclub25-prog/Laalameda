@@ -118,7 +118,7 @@ export interface Venta {
   cobrado_por: string | null;
   cobrado_at: string;
   jornada: string;
-  orders: { origen: 'barra' | 'mesa' | 'evento'; mesas: { nombre: string } | null } | null;
+  orders: { origen: 'barra' | 'mesa' | 'evento'; mesas: { nombre: string } | null; eventos?: { nombre: string } | null } | null;
   /** Las líneas cobradas en ESTA venta (una cuenta puede pagarse en varias ventas). */
   order_items: VentaLinea[];
   sale_refunds: { id: string; importe_centimos: number; motivo: string; por: string | null; at: string }[];
@@ -126,7 +126,7 @@ export interface Venta {
 
 const VENTA_COLS =
   'id, numero, order_id, bruto_centimos, descuentos_centimos, total_centimos, metodo, cobrado_por, cobrado_at, jornada, ' +
-  'orders!sales_order_id_fkey(origen, mesas(nombre)), ' +
+  'orders!sales_order_id_fkey(origen, mesas(nombre), eventos!orders_evento_id_fkey(nombre)), ' +
   'order_items!order_items_sale_id_fkey(nombre, cantidad, precio_unitario_centimos, estado, notas, tipo_linea, ticket_codigo, descuento_centimos, created_at), ' +
   'sale_refunds(id, importe_centimos, motivo, por, at)';
 

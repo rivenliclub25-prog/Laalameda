@@ -5,6 +5,7 @@ import { fetchAppSettings, jornadaInicio } from '@/lib/adminTickets';
 import { csvEuros } from '@/lib/csv';
 import { METODOS, TIPOS_PROMO, formatEuros, type Metodo } from '@/lib/pos';
 import { addDays, downloadTablaCsv, fetchInforme, formatJornada, isoDate, type Informe } from '@/lib/informes';
+import { ESTADOS_EVENTO } from '@/lib/eventos';
 
 type Preset = 'hoy' | 'ayer' | '7' | 'mes' | 'custom';
 
@@ -186,11 +187,18 @@ export function InformesView() {
         </div>
       ) : informe && caja ? (
         <div className={`mt-6 space-y-6 ${loading ? 'opacity-60' : ''}`}>
-          <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <section aria-label="Resumen" className={`grid grid-cols-2 gap-3 ${caja.eventos?.ventas ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}>
             <Tile label="Neto" value={formatEuros(caja.neto_centimos)} hint="Cobrado − devuelto" strong />
             <Tile label="Cobrado" value={formatEuros(caja.cobrado_centimos)} hint={`${caja.ventas} ventas · media ${formatEuros(caja.ventas ? Math.round(caja.cobrado_centimos / caja.ventas) : 0)}`} />
             <Tile label="Devuelto" value={formatEuros(caja.devuelto_centimos)} hint={`${caja.devoluciones} devoluciones hechas en el periodo`} />
             <Tile label="Ahorro en promos" value={formatEuros(caja.descuentos_centimos)} hint={`${caja.anuladas} líneas anuladas (${formatEuros(caja.anuladas_centimos)})`} />
+            {caja.eventos && caja.eventos.ventas > 0 && (
+              <Tile
+                label="De ello, eventos"
+                value={formatEuros(caja.eventos.neto_centimos)}
+                hint={`${caja.eventos.ventas} ventas · plazos ${formatEuros(caja.eventos.plazos_centimos)} · extras ${formatEuros(caja.eventos.extras_centimos)}`}
+              />
+            )}
           </section>
 
           <p className={`flex items-center gap-2 text-sm font-semibold ${informe.comprobacion.cuadra ? 'text-[#1f4a2b]' : 'text-vino'}`}>
@@ -248,6 +256,27 @@ export function InformesView() {
               )}
             </section>
           </div>
+
+          {informe.por_evento && informe.por_evento.length > 0 && (
+            <Tabla
+              titulo="Por evento"
+              archivo={`informe-eventos-${sufijo}`}
+              filas={informe.por_evento}
+              vacio="Sin cobros de eventos."
+              columnas={[
+                { label: 'Evento', show: (r) => r.nombre, csv: (r) => r.nombre },
+                { label: 'Fecha', show: (r) => formatJornada(r.fecha), csv: (r) => r.fecha.split('-').reverse().join('/') },
+                { label: 'Estado', show: (r) => ESTADOS_EVENTO[r.estado].texto, csv: (r) => ESTADOS_EVENTO[r.estado].texto },
+                { label: 'Precio', show: (r) => formatEuros(r.precio_centimos), csv: (r) => csvEuros(r.precio_centimos), right: true },
+                { label: 'Cobrado en el periodo', show: (r) => <strong>{formatEuros(r.cobrado_periodo_centimos)}</strong>, csv: (r) => csvEuros(r.cobrado_periodo_centimos), right: true },
+                { label: 'Plazos', show: (r) => formatEuros(r.plazos_periodo_centimos), csv: (r) => csvEuros(r.plazos_periodo_centimos), right: true },
+                { label: 'Extras', show: (r) => formatEuros(r.extras_periodo_centimos), csv: (r) => csvEuros(r.extras_periodo_centimos), right: true },
+                { label: 'Cobrado en total', show: (r) => formatEuros(r.cobrado_total_centimos), csv: (r) => csvEuros(r.cobrado_total_centimos), right: true },
+                { label: 'Devuelto', show: (r) => (r.devuelto_total_centimos ? formatEuros(r.devuelto_total_centimos) : '—'), csv: (r) => csvEuros(r.devuelto_total_centimos), right: true },
+                { label: 'Pendiente', show: (r) => (r.pendiente_centimos ? formatEuros(r.pendiente_centimos) : '—'), csv: (r) => csvEuros(r.pendiente_centimos), right: true },
+              ]}
+            />
+          )}
 
           <Tabla
             titulo="Por producto"
