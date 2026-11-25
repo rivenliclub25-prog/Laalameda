@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
-import { BarChart3, BookOpen, Calculator, LayoutGrid, Megaphone, Receipt, Ticket as TicketIcon, Users } from 'lucide-react';
+import { BarChart3, BookOpen, Calculator, CalendarDays, LayoutGrid, Megaphone, Receipt, Ticket as TicketIcon, Users } from 'lucide-react';
 import { PageShell } from '@/components/club/PageShell';
 import { focusRing } from '@/components/club/FormControls';
 import { SociosSection } from '@/components/admin/SociosSection';
@@ -10,10 +10,11 @@ import { MesasSection } from '@/components/admin/MesasSection';
 import { TicketsSection } from '@/components/admin/TicketsSection';
 import { StatsSection } from '@/components/admin/StatsSection';
 import { RentabilidadSection } from '@/components/admin/RentabilidadSection';
+import { EventosSection } from '@/components/admin/EventosSection';
 import { fetchAdminUsers, type AdminUser } from '@/lib/admin';
 import { getHashParams } from '@/lib/router';
 
-type Seccion = 'socios' | 'carta' | 'promos' | 'mesas' | 'tickets' | 'ventas' | 'estadisticas' | 'rentabilidad';
+type Seccion = 'socios' | 'carta' | 'promos' | 'mesas' | 'tickets' | 'ventas' | 'eventos' | 'estadisticas' | 'rentabilidad';
 
 const TABS: { id: Seccion; label: string; icon: typeof Users }[] = [
   { id: 'socios', label: 'Socios', icon: Users },
@@ -22,6 +23,7 @@ const TABS: { id: Seccion; label: string; icon: typeof Users }[] = [
   { id: 'mesas', label: 'Mesas', icon: LayoutGrid },
   { id: 'tickets', label: 'Tickets', icon: TicketIcon },
   { id: 'ventas', label: 'Ventas', icon: Receipt },
+  { id: 'eventos', label: 'Eventos', icon: CalendarDays },
   { id: 'estadisticas', label: 'Estadísticas', icon: BarChart3 },
   { id: 'rentabilidad', label: 'Rentabilidad', icon: Calculator },
 ];
@@ -41,6 +43,7 @@ export function AdminPage() {
     mesas: null,
     tickets: null,
     ventas: null,
+    eventos: null,
     estadisticas: null,
     rentabilidad: null,
   });
@@ -143,6 +146,7 @@ export function AdminPage() {
           {seccion === 'mesas' && <MesasSection />}
           {seccion === 'tickets' && <TicketsSection users={users} />}
           {seccion === 'ventas' && <VentasSection users={users} />}
+          {seccion === 'eventos' && <EventosSection users={users} />}
           {seccion === 'estadisticas' && <StatsSection />}
           {seccion === 'rentabilidad' && <RentabilidadSection />}
         </div>

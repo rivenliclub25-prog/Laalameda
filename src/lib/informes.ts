@@ -30,6 +30,37 @@ export interface ResumenCaja {
   anuladas_centimos: number;
   ultima_venta_numero: number | null;
   ultima_venta_at: string | null;
+  /** EV4: la parte de lo cobrado que es de eventos (ya incluida arriba). Falta en los cierres anteriores a EV4. */
+  eventos?: EventosCaja;
+}
+
+/** Lo cobrado en cuentas de evento en el periodo (EVENTOS.md, EV4). */
+export interface EventosCaja {
+  ventas: number;
+  cobrado_centimos: number;
+  devuelto_centimos: number;
+  neto_centimos: number;
+  /** Señales y restos. */
+  plazos_centimos: number;
+  /** Lo pedido fuera del acuerdo, a precio de carta. */
+  extras_centimos: number;
+  por_metodo: Record<Metodo, MetodoCaja>;
+}
+
+/** Una fila de «Por evento» del informe (EV4). */
+export interface EventoInforme {
+  id: string;
+  nombre: string;
+  fecha: string;
+  estado: 'borrador' | 'confirmado' | 'realizado' | 'cancelado';
+  precio_centimos: number;
+  ventas: number;
+  cobrado_periodo_centimos: number;
+  plazos_periodo_centimos: number;
+  extras_periodo_centimos: number;
+  cobrado_total_centimos: number;
+  devuelto_total_centimos: number;
+  pendiente_centimos: number;
 }
 
 export interface Cierre {
@@ -160,6 +191,8 @@ export interface Informe {
   socios: { id: string; nombre: string; cuentas: number; importe_centimos: number; promos_con_ticket: number; ahorro_centimos: number }[];
   por_hora: { hora: number; ventas: number; cobrado_centimos: number }[];
   anulaciones: { motivo: string; veces: number; importe_centimos: number }[];
+  /** EV4: eventos con cobros en el periodo. */
+  por_evento?: EventoInforme[];
   comprobacion: { suma_lineas_centimos: number; cobrado_centimos: number; cuadra: boolean };
 }
 
@@ -174,7 +207,7 @@ const ESTADOS: Record<string, string> = { pendiente: 'Pendiente', aceptada: 'Por
 /** Ventas con una fila por línea (los datos de la venta se repiten en cada línea). */
 export function downloadVentasCsv(ventas: Venta[], nombre: (id: string | null) => string, sufijo: string) {
   const header = [
-    'Venta nº', 'Fecha', 'Hora', 'Jornada', 'Origen', 'Mesa o puesto', 'Método', 'Cobrada por',
+    'Venta nº', 'Fecha', 'Hora', 'Jornada', 'Origen', 'Mesa o puesto', 'Evento', 'Método', 'Cobrada por',
     'Total venta (€)', 'Devuelto venta (€)', 'Producto o promo', 'Tipo', 'Cantidad', 'Precio unidad (€)',
     'Importe línea (€)', 'Ahorro (€)', 'Ticket', 'Estado línea', 'Notas',
   ];
@@ -185,8 +218,9 @@ export function downloadVentasCsv(ventas: Venta[], nombre: (id: string | null) =
       fecha.toLocaleDateString('es-ES'),
       fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
       v.jornada.split('-').reverse().join('/'),
-      v.orders?.origen === 'mesa' ? 'Cuenta' : 'Venta rápida',
+      v.orders?.origen === 'mesa' ? 'Cuenta' : v.orders?.origen === 'evento' ? 'Evento' : 'Venta rápida',
       v.orders?.mesas?.nombre ?? '',
+      v.orders?.eventos?.nombre ?? '',
       METODOS[v.metodo],
       nombre(v.cobrado_por),
       csvEuros(v.total_centimos),
@@ -213,7 +247,7 @@ export function downloadVentasCsv(ventas: Venta[], nombre: (id: string | null) =
 export function downloadCierresCsv(cierres: Cierre[], nombre: (id: string | null) => string) {
   const header = [
     'Jornada', 'Versión', 'Cerrado', 'Por', 'Ventas', 'Cobrado (€)', 'Devuelto (€)', 'Neto (€)',
-    'Efectivo neto (€)', 'Tarjeta neto (€)', 'Otro neto (€)', 'Efectivo contado (€)', 'Descuadre (€)',
+    'Efectivo neto (€)', 'Tarjeta neto (€)', 'Otro neto (€)', 'De ello, eventos neto (€)', 'Efectivo contado (€)', 'Descuadre (€)',
     'Ahorro en promos (€)', 'Anulaciones', 'Anulado (€)', 'Notas',
   ];
   const rows = cierres.map((c) => [
@@ -228,6 +262,7 @@ export function downloadCierresCsv(cierres: Cierre[], nombre: (id: string | null
     csvEuros(c.resumen.por_metodo.efectivo.neto_centimos),
     csvEuros(c.resumen.por_metodo.tarjeta.neto_centimos),
     csvEuros(c.resumen.por_metodo.otro.neto_centimos),
+    c.resumen.eventos ? csvEuros(c.resumen.eventos.neto_centimos) : '',
     csvEuros(c.efectivo_contado_centimos),
     csvEuros(c.descuadre_centimos),
     csvEuros(c.descuentos_centimos),

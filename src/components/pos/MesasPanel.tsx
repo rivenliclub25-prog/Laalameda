@@ -9,6 +9,7 @@ import { precuentaDeCuenta, type DatosPrecuenta } from '@/lib/precuenta';
 import { TicketPromoModal, type TicketElegido } from '@/components/pos/TicketPromoModal';
 import { playFeedback } from '@/lib/feedback';
 import { subscribeChanges } from '@/lib/realtime';
+import { fechaLarga, horaCorta as horaEvento, type EventoTPV } from '@/lib/eventos';
 import type { MenuItem, MenuTab } from '@/lib/catalog';
 import {
   METODOS,
@@ -76,6 +77,41 @@ const ESTADO_LINEA: Record<LineaCuenta['estado'], { label: string; className: st
 };
 
 /** Mesas del TPV: cuadrícula de mesas y la cuenta de la mesa elegida. */
+/** Cabecera de la cuenta de un evento (EV3): datos, contacto y lo que incluye el precio cerrado. */
+export function DatosEventoTPV({ evento }: { evento: EventoTPV }) {
+  return (
+    <div className="mt-3 rounded-r-lg border border-vino/25 bg-white p-4 shadow-sm">
+      <p className="text-sm text-carbon/75">
+        {fechaLarga(evento.fecha)}
+        {evento.hora_inicio ? `, ${horaEvento(evento.hora_inicio)}` : ''}
+        {evento.personas ? ` · unas ${evento.personas} personas` : ''}
+      </p>
+      {(evento.contacto_nombre || evento.contacto_telefono || evento.socio_nombre) && (
+        <p className="mt-1 text-sm text-carbon/75">
+          Contacto: {[evento.contacto_nombre, evento.contacto_telefono].filter(Boolean).join(' · ') || '—'}
+          {evento.socio_nombre ? ` · socio: ${evento.socio_nombre}` : ''}
+        </p>
+      )}
+      <div className="mt-3 flex flex-wrap items-baseline justify-between gap-2">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-carbon/60">Incluye (precio cerrado {formatEuros(evento.precio_centimos)})</h3>
+      </div>
+      {evento.contenido.length === 0 ? (
+        <p className="text-sm text-carbon/55">Sin contenido apuntado.</p>
+      ) : (
+        <ul className="mt-1 grid gap-x-4 text-sm sm:grid-cols-2">
+          {evento.contenido.map((c, i) => (
+            <li key={i}>
+              {c.cantidad} × {c.nombre}
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="mt-2 text-xs text-carbon/60">Lo que pidan fuera de esto es un extra: «Añadir extra», a precio de carta.</p>
+      {evento.notas && <p className="mt-2 whitespace-pre-line rounded-r-sm bg-piedra-suave/50 px-3 py-2 text-sm italic text-carbon/75">{evento.notas}</p>}
+    </div>
+  );
+}
+
 export function MesasPanel({
   tipo,
   tabs,
@@ -242,10 +278,11 @@ export function MesasPanel({
 }
 
 // ---------------------------------------------------------------------
-// Cuenta de una mesa
+// Cuenta de una mesa (y de un evento, EV3: `evento` añade sus datos y los botones por plazo, y quita
+// lo que no vale para un evento: cambiar de mesa, cancelar la cuenta y anular plazos, EV-D15)
 // ---------------------------------------------------------------------
 
-function CuentaView({
+export function CuentaView({
   mesa,
   cuenta,
   mesasLibres,
@@ -257,6 +294,7 @@ function CuentaView({
   onBack,
   onChanged,
   onMoved,
+  evento,
 }: {
   mesa: Mesa;
   cuenta: CuentaMesa | null;
@@ -269,7 +307,9 @@ function CuentaView({
   onBack: () => void;
   onChanged: () => Promise<void> | void;
   onMoved: (mesaId: string) => void;
+  evento?: EventoTPV;
 }) {
+  const [cobrandoPlazo, setCobrandoPlazo] = useState<LineaCuenta | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [metodo, setMetodo] = useState<Metodo | null>(null);
@@ -293,6 +333,9 @@ function CuentaView({
   const pagos = new Set(pagadas.map((l) => l.sale_id)).size;
   const haySevidas = porCobrar.some((l) => l.estado === 'servida');
   const [separando, setSeparando] = useState(false);
+  // Evento (EV3): plazos pendientes, cada uno con su botón «Cobrar Señal · 100 €».
+  const plazosPorCobrar = evento ? porCobrar.filter((l) => l.tipo_linea === 'evento') : [];
+  const nombrePlazo = (l: LineaCuenta) => evento?.plazos.find((p) => p.order_item_id === l.id)?.nombre ?? l.nombre;
   // Cuenta provisional (entrega C): vista previa y hora de la última impresión desde esta pantalla.
   const [precuenta, setPrecuenta] = useState<DatosPrecuenta | null>(null);
   const [impresaAt, setImpresaAt] = useState<string | null>(null);
@@ -357,17 +400,19 @@ function CuentaView({
     <section aria-labelledby="cuenta-title">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <button type="button" onClick={onBack} className={`inline-flex items-center gap-2 rounded-r-sm text-sm font-semibold text-carbon/70 hover:text-vino ${focusRing}`}>
-          <ArrowLeft size={18} aria-hidden="true" /> Mesas
+          <ArrowLeft size={18} aria-hidden="true" /> {evento ? 'Eventos' : 'Mesas'}
         </button>
         {cuenta && (
           <span className="text-xs text-carbon/55">
-            Abierta hace {minutosDesde(cuenta.created_at, now)}
+            {!evento && <>Abierta hace {minutosDesde(cuenta.created_at, now)}</>}
             {(impresaAt ?? cuenta.cuenta_impresa_at) && (
-              <strong className="ml-1 text-carbon/75">· Cuenta entregada {horaCorta((impresaAt ?? cuenta.cuenta_impresa_at)!)}</strong>
+              <strong className="ml-1 text-carbon/75">{evento ? '' : '· '}Cuenta entregada {horaCorta((impresaAt ?? cuenta.cuenta_impresa_at)!)}</strong>
             )}
           </span>
         )}
       </div>
+
+      {evento && <DatosEventoTPV evento={evento} />}
 
       <div className="mt-3 rounded-r-lg border border-piedra/50 bg-white shadow-md">
         <header className="flex flex-wrap items-center justify-between gap-3 border-b border-carbon/10 px-4 py-3">
@@ -431,7 +476,7 @@ function CuentaView({
 
         {lineas.length === 0 ? (
           <p className="px-4 py-8 text-center text-sm text-carbon/55">
-            {cuenta ? (rondas.length > 0 ? 'Acepta la ronda para pasarla a la cuenta.' : 'La cuenta está vacía.') : 'Mesa libre. Añade consumiciones para abrir su cuenta.'}
+            {cuenta ? (rondas.length > 0 ? 'Acepta la ronda para pasarla a la cuenta.' : 'La cuenta está vacía.') : evento ? 'Todo cobrado: la cuenta del evento está cerrada.' : 'Mesa libre. Añade consumiciones para abrir su cuenta.'}
           </p>
         ) : (
           <ul className="divide-y divide-carbon/10">
@@ -445,9 +490,13 @@ function CuentaView({
                   <DetallePromo l={l} />
                   {l.pedido_por_nombre && <p className="text-xs text-carbon/50">Pedido por {l.pedido_por_nombre} desde la mesa</p>}
                 </div>
-                <span className={`inline-flex rounded-full border px-2 py-0.5 text-[0.68rem] font-semibold ${ESTADO_LINEA[l.estado].className}`}>
-                  {ESTADO_LINEA[l.estado].label}
-                </span>
+                {l.tipo_linea === 'evento' && l.estado !== 'anulada' ? (
+                  <span className="inline-flex rounded-full border border-vino/40 bg-vino/10 px-2 py-0.5 text-[0.68rem] font-semibold text-vino">Plazo</span>
+                ) : (
+                  <span className={`inline-flex rounded-full border px-2 py-0.5 text-[0.68rem] font-semibold ${ESTADO_LINEA[l.estado].className}`}>
+                    {ESTADO_LINEA[l.estado].label}
+                  </span>
+                )}
                 {l.sale_id && (
                   <span className="inline-flex rounded-full border border-[#2f6b3f] bg-[#2f6b3f] px-2 py-0.5 text-[0.68rem] font-semibold text-white">Pagada</span>
                 )}
@@ -459,7 +508,7 @@ function CuentaView({
                         <Check size={18} />
                       </button>
                     )}
-                    {!l.sale_id && (
+                    {!l.sale_id && l.tipo_linea !== 'evento' && (
                       <button type="button" disabled={busy} onClick={() => setAnulando(l)} aria-label={`Anular ${l.nombre}`} className={`flex h-10 w-10 items-center justify-center rounded-full border border-carbon/20 text-carbon/60 hover:border-vino hover:text-vino ${focusRing}`}>
                         <Ban size={17} />
                       </button>
@@ -472,8 +521,8 @@ function CuentaView({
         )}
 
         <div className="flex flex-wrap gap-2 border-t border-carbon/10 px-4 py-3">
-          <button type="button" onClick={() => setAdding(true)} disabled={busy || !mesa.activa && !cuenta} className={`btn-vino min-h-12 flex-1 ${focusRing}`}>
-            <Plus size={18} aria-hidden="true" /> Añadir
+          <button type="button" onClick={() => setAdding(true)} disabled={busy || (!cuenta && (!!evento || !mesa.activa))} className={`btn-vino min-h-12 flex-1 ${focusRing}`}>
+            <Plus size={18} aria-hidden="true" /> {evento ? 'Añadir extra' : 'Añadir'}
           </button>
           {porServir.length > 0 && (
             <button type="button" disabled={busy} onClick={() => run(() => servirLineas(porServir.map((l) => l.id)))} className={`btn-outline-vino min-h-12 flex-1 ${focusRing}`}>
@@ -489,9 +538,22 @@ function CuentaView({
         </div>
       )}
 
+      {evento && cuenta && plazosPorCobrar.length > 0 && (
+        <div className="mt-4 rounded-r-lg border border-vino/30 bg-vino/5 p-4 shadow-sm">
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-carbon/60">Cobrar un plazo</h3>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {plazosPorCobrar.map((l) => (
+              <button key={l.id} type="button" onClick={() => setCobrandoPlazo(l)} disabled={busy || rondas.length > 0} className={`btn-vino min-h-14 text-base ${focusRing}`}>
+                Cobrar {nombrePlazo(l)} · {formatEuros(l.precio_unitario_centimos * l.cantidad)}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {cuenta && porCobrar.length > 0 && (
         <div className="mt-4 rounded-r-lg border border-piedra/50 bg-white p-4 shadow-sm">
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-carbon/60">Cobrar · cómo paga</h3>
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-carbon/60">{evento ? 'Cobrar todo lo pendiente · cómo paga' : 'Cobrar · cómo paga'}</h3>
           {rondas.length > 0 && (
             <div className="mb-3">
               <Notice kind="info">Hay rondas sin aceptar: acéptalas o recházalas antes de imprimir la cuenta o cobrar.</Notice>
@@ -516,7 +578,11 @@ function CuentaView({
       )}
       {cuenta && porCobrar.length === 0 && <div className="mt-4">{botonImprimir}</div>}
 
-      {cuenta && (
+      {cuenta && evento && (
+        <p className="mt-4 text-xs text-carbon/60">Los plazos solo se cambian o se anulan desde Panel → Eventos (un admin).</p>
+      )}
+
+      {cuenta && !evento && (
         <div className="mt-4 flex flex-wrap gap-2">
           <button type="button" onClick={() => setMoviendo(true)} disabled={busy || mesasLibres.length === 0} className={`btn-outline-vino flex-1 disabled:opacity-50 ${focusRing}`}>
             <ArrowRightLeft size={16} aria-hidden="true" /> Cambiar de mesa
@@ -649,6 +715,26 @@ function CuentaView({
         />
       )}
 
+      {cobrandoPlazo && cuenta && (
+        <PagoSeparadoModal
+          lineas={[cobrandoPlazo]}
+          mesaNombre={mesa.nombre}
+          titulo={`Cobrar ${nombrePlazo(cobrandoPlazo)} · ${mesa.nombre}`}
+          preseleccionar
+          onClose={() => setCobrandoPlazo(null)}
+          onPaid={(venta, clientTotal) => {
+            setCobrandoPlazo(null);
+            playFeedback('ok', soundOn);
+            setDone({ venta, clientTotal });
+          }}
+          onError={() => {
+            playFeedback('error', soundOn);
+            return onChanged();
+          }}
+          cobrar={(items, metodoParte, requestId) => cobrarParte(cuenta.id, items, metodoParte, requestId)}
+        />
+      )}
+
       {precuenta && cuenta && (
         <PrecuentaModal
           datos={precuenta}
@@ -673,6 +759,8 @@ function CuentaView({
 function PagoSeparadoModal({
   lineas,
   mesaNombre,
+  titulo,
+  preseleccionar = false,
   onClose,
   onPaid,
   onError,
@@ -680,13 +768,19 @@ function PagoSeparadoModal({
 }: {
   lineas: LineaCuenta[];
   mesaNombre: string;
+  /** Título propio (cobrar un plazo de evento). */
+  titulo?: string;
+  /** Empieza con todo marcado (cobrar un plazo: solo falta elegir cómo paga). */
+  preseleccionar?: boolean;
   onClose: () => void;
   onPaid: (venta: VentaResultado, clientTotal: number) => void;
   onError: () => Promise<void> | void;
   cobrar: (items: { item_id: string; cantidad: number }[], metodo: Metodo, requestId: string) => Promise<{ data: VentaResultado | null; error: string | null }>;
 }) {
   /** Unidades elegidas de cada línea (0 = no la paga esta persona). */
-  const [elegidas, setElegidas] = useState<Record<string, number>>({});
+  const [elegidas, setElegidas] = useState<Record<string, number>>(() =>
+    preseleccionar ? Object.fromEntries(lineas.map((l) => [l.id, l.cantidad])) : {}
+  );
   const [metodo, setMetodo] = useState<Metodo | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -717,8 +811,10 @@ function PagoSeparadoModal({
   };
 
   return (
-    <Modal open title={`Cobrar por separado · ${mesaNombre}`} onClose={onClose} busy={busy} maxWidth="560px">
-      <p className="text-sm text-carbon/70">Marca lo que paga esta persona. El resto se queda en la cuenta.</p>
+    <Modal open title={titulo ?? `Cobrar por separado · ${mesaNombre}`} onClose={onClose} busy={busy} maxWidth="560px">
+      <p className="text-sm text-carbon/70">
+        {preseleccionar ? 'Elige cómo paga. Lo demás se queda en la cuenta.' : 'Marca lo que paga esta persona. El resto se queda en la cuenta.'}
+      </p>
       <div className="mt-3 flex justify-end">
         <button
           type="button"

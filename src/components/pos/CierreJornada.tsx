@@ -72,6 +72,21 @@ export function HojaCierre({
             </div>
           );
         })}
+        {resumen.eventos && (resumen.eventos.ventas > 0 || resumen.eventos.devuelto_centimos > 0) && (
+          <div className="py-1">
+            <div className="flex justify-between gap-3">
+              <dt>De ello, eventos (incluido arriba)</dt>
+              <dd className="tabular-nums">{formatEuros(resumen.eventos.neto_centimos)}</dd>
+            </div>
+            <p className="text-xs text-carbon/55">
+              {(Object.keys(METODOS) as Metodo[])
+                .filter((m) => resumen.eventos!.por_metodo[m].ventas || resumen.eventos!.por_metodo[m].devuelto_centimos)
+                .map((m) => `${METODOS[m]} ${formatEuros(resumen.eventos!.por_metodo[m].neto_centimos)}`)
+                .join(' · ')}
+              {' · '}plazos {formatEuros(resumen.eventos.plazos_centimos)}, extras {formatEuros(resumen.eventos.extras_centimos)}
+            </p>
+          </div>
+        )}
         {fila('Cobrado', formatEuros(resumen.cobrado_centimos))}
         {resumen.devuelto_centimos > 0 && fila(`Devoluciones hechas hoy (${resumen.devoluciones})`, `− ${formatEuros(resumen.devuelto_centimos)}`)}
         {fila('Neto', formatEuros(resumen.neto_centimos), true)}

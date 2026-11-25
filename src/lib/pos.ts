@@ -12,13 +12,15 @@ export const METODOS = {
 } as const;
 export type Metodo = keyof typeof METODOS;
 
-export type TipoLinea = 'producto' | 'pack' | 'obsequio' | 'sorteo';
+/** «evento»: un plazo del precio cerrado de un evento (EVENTOS.md); no es una promo, pero se etiqueta igual. */
+export type TipoLinea = 'producto' | 'pack' | 'obsequio' | 'sorteo' | 'evento';
 
 /** Tipos de promo (POS.md, D9). */
 export const TIPOS_PROMO: Record<Exclude<TipoLinea, 'producto'>, string> = {
   pack: 'Pack',
   obsequio: 'Obsequio',
   sorteo: 'Sorteo',
+  evento: 'Evento',
 };
 
 /**
@@ -116,7 +118,7 @@ export interface Venta {
   cobrado_por: string | null;
   cobrado_at: string;
   jornada: string;
-  orders: { origen: 'barra' | 'mesa'; mesas: { nombre: string } | null } | null;
+  orders: { origen: 'barra' | 'mesa' | 'evento'; mesas: { nombre: string } | null; eventos?: { nombre: string } | null } | null;
   /** Las líneas cobradas en ESTA venta (una cuenta puede pagarse en varias ventas). */
   order_items: VentaLinea[];
   sale_refunds: { id: string; importe_centimos: number; motivo: string; por: string | null; at: string }[];
@@ -124,7 +126,7 @@ export interface Venta {
 
 const VENTA_COLS =
   'id, numero, order_id, bruto_centimos, descuentos_centimos, total_centimos, metodo, cobrado_por, cobrado_at, jornada, ' +
-  'orders!sales_order_id_fkey(origen, mesas(nombre)), ' +
+  'orders!sales_order_id_fkey(origen, mesas(nombre), eventos!orders_evento_id_fkey(nombre)), ' +
   'order_items!order_items_sale_id_fkey(nombre, cantidad, precio_unitario_centimos, estado, notas, tipo_linea, ticket_codigo, descuento_centimos, created_at), ' +
   'sale_refunds(id, importe_centimos, motivo, por, at)';
 
@@ -144,6 +146,13 @@ export async function fetchVentas(desde: Date, hasta: Date): Promise<{ ventas: V
     .lt('cobrado_at', hasta.toISOString())
     .order('cobrado_at', { ascending: false })
     .limit(2000);
+  if (error) return { ventas: [], error: translateTicketError(error) };
+  return { ventas: ordenarLineas(data as unknown as Venta[]), error: null };
+}
+
+/** Ventas de una cuenta (p. ej. los cobros de un evento), de la más antigua a la más reciente. */
+export async function fetchVentasDeCuenta(orderId: string): Promise<{ ventas: Venta[]; error: string | null }> {
+  const { data, error } = await supabase.from('sales').select(VENTA_COLS).eq('order_id', orderId).order('cobrado_at');
   if (error) return { ventas: [], error: translateTicketError(error) };
   return { ventas: ordenarLineas(data as unknown as Venta[]), error: null };
 }
@@ -226,7 +235,8 @@ export interface LineaCuenta {
 
 export interface CuentaMesa {
   id: string;
-  mesa_id: string;
+  /** null en la cuenta de un evento (EVENTOS.md). */
+  mesa_id: string | null;
   estado: 'abierta' | 'pagada' | 'cancelada';
   created_at: string;
   order_items: LineaCuenta[];
@@ -264,7 +274,21 @@ const CUENTA_COLS =
 export async function fetchCuentasAbiertas(): Promise<{ cuentas: CuentaMesa[]; error: string | null }> {
   const { data, error } = await supabase.from('orders').select(CUENTA_COLS).eq('origen', 'mesa').eq('estado', 'abierta');
   if (error) return { cuentas: [], error: translateTicketError(error) };
-  const cuentas = (data as unknown as CuentaMesa[]).map((c) => ({
+  return { cuentas: await prepararCuentas(data as unknown as CuentaMesa[]), error: null };
+}
+
+/** Una cuenta abierta concreta (la de un evento, EV3). null si ya no está abierta. */
+export async function fetchCuentaAbierta(orderId: string): Promise<{ cuenta: CuentaMesa | null; error: string | null }> {
+  const { data, error } = await supabase.from('orders').select(CUENTA_COLS).eq('id', orderId).eq('estado', 'abierta').maybeSingle();
+  if (error) return { cuenta: null, error: translateTicketError(error) };
+  if (!data) return { cuenta: null, error: null };
+  const [cuenta] = await prepararCuentas([data as unknown as CuentaMesa]);
+  return { cuenta, error: null };
+}
+
+/** Ordena las líneas y añade cuándo se imprimió la cuenta por última vez. */
+async function prepararCuentas(filas: CuentaMesa[]): Promise<CuentaMesa[]> {
+  const cuentas = filas.map((c) => ({
     ...c,
     order_items: [...c.order_items].sort((a, b) => a.created_at.localeCompare(b.created_at)),
     cuenta_impresa_at: null as string | null,
@@ -283,7 +307,7 @@ export async function fetchCuentasAbiertas(): Promise<{ cuentas: CuentaMesa[]; e
       for (const c of cuentas) c.cuenta_impresa_at = ultima.get(c.id) ?? null;
     }
   }
-  return { cuentas, error: null };
+  return cuentas;
 }
 
 export const abrirMesa = (mesaId: string) => rpc<string>('pos_abrir_mesa', { p_mesa_id: mesaId });
