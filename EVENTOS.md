@@ -188,7 +188,7 @@ Cada fila del contenido es **o** un producto de la carta (con cantidad) **o** un
 | EV-D4 | **Extras en la misma cuenta del evento**, a precio de carta (productos y promos), con los mismos botones de cobro. |
 | EV-D5 | **Solo los admins** crean, editan, confirman y cancelan eventos. Los camareros los ven y los cobran. |
 | EV-D6 | **Pestaña nueva «Eventos» en el TPV** (Mesas · Barra · Venta rápida · Eventos): los de hoy primero y un apartado «Próximos» (para cobrar señales). |
-| EV-D7 | ⚪ **Pospuesta:** contador de lo consumido del pack (EV5, opcional). |
+| EV-D7 | ❌ **Descartada (2026-11-25, decisión del usuario):** contador de lo consumido del pack (EV5). No se hace. |
 | EV-D8 | **Cambiar un confirmado:** sin nada cobrado, todo (los plazos se rehacen); con algo cobrado, el contenido y lo pendiente, no lo cobrado (si el precio baja de lo cobrado, devolución). Cada cambio queda en `pos_events`. |
 | EV-D9 | **Cancelar con señal cobrada:** se anula lo pendiente y la señal se queda; si se devuelve, desde Panel → Ventas (con motivo). |
 | EV-D10 | **Datos del cliente:** nombre y teléfono de contacto opcionales y, si es socio, enlace (`socio_id`). No se crean usuarios. Solo los ven camareros y admins; si se borra la cuenta del socio, el enlace queda vacío. |
@@ -212,7 +212,7 @@ Cada fila del contenido es **o** un producto de la carta (con cantidad) **o** un
 | EV-P3 | Que el cliente pida o pague el evento desde la web | No pedido |
 | EV-P4 | Factura para empresas | Fuera del sistema (D1 de `POS.md`) |
 | EV-P5 | Plantillas de eventos («Pack cumpleaños 25 pax») | Útil si se repiten; se puede añadir «Duplicar evento» más adelante |
-| EV-D7 | Contador del pack | Ver arriba |
+| EV-D7 | Contador del pack | Descartada (2026-11-25) |
 | EV-D16 | Margen del evento | Ver arriba |
 
 ---
@@ -226,7 +226,7 @@ Cada fila del contenido es **o** un producto de la carta (con cantidad) **o** un
 | **EV2** Panel → Eventos | Lista (próximos, pasados, cancelados), crear/editar con contenido y plazos, confirmar, cancelar, detalle con pagos y registro, hoja para el cliente | EV1, EV-D5, D10, D12 | El admin crea y confirma un evento desde el móvil y el portátil |
 | **EV3** TPV → Eventos | Pestaña Eventos, cobrar señal/resto con justificante, añadir extras, ver contenido acordado | EV1, EV-D6 | Un camarero cobra la señal un día y el resto otro, con justificantes correctos |
 | **EV4** 🟡 Informes y cierres | Fila «Eventos» en el cierre, tabla por evento, origen «Evento» en ventas y CSV | EV1, EV-D11 | Cierres e informes cuadran con eventos, extras y devoluciones |
-| **EV5** (opcional) | Contador de consumo del pack | EV-D7 | — |
+| ~~**EV5**~~ ❌ Descartada | Contador de consumo del pack (el usuario lo deja fuera el 2026-11-25) | EV-D7 | — |
 
 Cada fase recorre el flujo de `ENTORNOS.md`: rama → PR a `staging` → **prueba del usuario en la web de pruebas** → PR a `main` → aprobación. EV1 puede ir sola a producción (no cambia nada visible) o junto con EV2 y EV3: se decide al cerrar EV1.
 
@@ -305,3 +305,4 @@ Cada fase recorre el flujo de `ENTORNOS.md`: rama → PR a `staging` → **prueb
 - **2026-11-24** — Plan de EV2 aprobado (con «Copiar para WhatsApp»). **EV2 programada** en `eventos`: pestaña «Eventos» del panel con lista, editor de contenido y plazos, detalle con cobros y registro, confirmar, cancelar y hoja para el cliente. Pendiente de probar en PRUEBAS.
 - **2026-11-24** — Plan de EV3 aprobado con las recomendaciones (reutilizar la pantalla de cuenta, 60 días adelante y pendientes de 30 atrás, botón por plazo). **EV3 programada** en `eventos`: pestaña «Eventos» del TPV y cuenta del evento con cobro por plazo y extras. Sin migraciones. Pendiente de probar en PRUEBAS.
 - **2026-11-25** — El usuario decide terminar todo Eventos y probarlo en PRUEBAS antes de mezclar a `main`. Plan de EV4 aprobado con las recomendaciones. **EV4 programada** en `eventos`: migración `20261125120000_eventos_informes.sql`, fila de eventos en el cierre, casilla y tabla «Por evento» en Informes, «Evento · nombre» en Ventas y CSV. 22 pruebas en local. Pendiente de probar en PRUEBAS.
+- **2026-11-25** — **EV5 descartada** por el usuario (EV-D7, contador del pack, queda fuera). Eventos queda completo con EV1–EV4; falta probar y ajustar en PRUEBAS y publicar todo junto en `main`.
