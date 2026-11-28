@@ -7,6 +7,7 @@ import { googleEnabled, signIn, signInWithGoogle, signUp } from '@/lib/auth';
 import { getHashParams, navigate, routeHref } from '@/lib/router';
 import { findPromotion, useCatalog } from '@/lib/catalog';
 import { parseScannedCode } from '@/lib/tickets';
+import { CAFE_GRATIS_VOLVER } from '@/lib/cafeGratis';
 import { MIN_PASSWORD_LENGTH, validateEmail, validateNewPassword, validatePasswordConfirm } from '@/lib/validation';
 
 type Mode = 'registro' | 'login';
@@ -24,7 +25,8 @@ export function ClubPage() {
   // "#/club?modo=login&volver=canjear&c=<código>": un camarero que escaneó un QR sin haber iniciado sesión.
   // "#/club?modo=login&volver=mesa&m=<token>": un cliente que quiere pedir desde el QR de su mesa.
   // "#/club?modo=login&volver=pedir": un cliente que quiere pedir desde la carta (elige la mesa después).
-  const [{ initialMode, promoId, volverCanjear, codigo, mesaToken, volverPedir }] = useState(() => {
+  // "#/club?volver=cafe-gratis": viene del cartel del café gratis (se abre en «Crear cuenta»).
+  const [{ initialMode, promoId, volverCanjear, codigo, mesaToken, volverPedir, volverCafe }] = useState(() => {
     const params = getHashParams();
     return {
       initialMode: (params.get('modo') === 'login' ? 'login' : 'registro') as Mode,
@@ -33,6 +35,7 @@ export function ClubPage() {
       volverCanjear: params.get('volver') === 'canjear',
       codigo: parseScannedCode(params.get('c') ?? ''),
       volverPedir: params.get('volver') === 'pedir',
+      volverCafe: params.get('volver') === 'cafe-gratis',
       mesaToken:
         params.get('volver') === 'mesa' && /^[A-Za-z0-9_-]{8,64}$/.test(params.get('m') ?? '') ? params.get('m') : null,
     };
@@ -47,9 +50,10 @@ export function ClubPage() {
     if (volverCanjear) navigate('/canjear', { replace: true, params: codigo ? { c: codigo } : undefined });
     else if (mesaToken) navigate('/mesa', { replace: true, params: { m: mesaToken } });
     else if (volverPedir) navigate('/pedir', { replace: true });
+    else if (volverCafe) window.location.replace(CAFE_GRATIS_VOLVER);
     else if (promoId) window.location.replace(`#promo-${promoId}`);
     else navigate('/perfil', { replace: true });
-  }, [session, promoId, volverCanjear, codigo, mesaToken, volverPedir]);
+  }, [session, promoId, volverCanjear, codigo, mesaToken, volverPedir, volverCafe]);
 
   const changeMode = (next: Mode) => {
     setMode(next);
@@ -113,6 +117,14 @@ export function ClubPage() {
             </div>
           )}
 
+          {volverCafe && !notice && (
+            <div className="mb-5">
+              <Notice kind="info">
+                Crea tu cuenta gratis (o entra con Google) y te damos tu ticket del café. ¿Ya eres socio? Inicia sesión.
+              </Notice>
+            </div>
+          )}
+
           {(mesaToken || volverPedir) && !notice && (
             <div className="mb-5">
               <Notice kind="info">
@@ -172,7 +184,15 @@ export function ClubPage() {
 
           <GoogleButton
             disabled={!configured}
-            volver={mesaToken ? routeHref('/mesa', { m: mesaToken }) : volverPedir ? routeHref('/pedir') : undefined}
+            volver={
+              mesaToken
+                ? routeHref('/mesa', { m: mesaToken })
+                : volverPedir
+                  ? routeHref('/pedir')
+                  : volverCafe
+                    ? CAFE_GRATIS_VOLVER
+                    : undefined
+            }
           />
         </ClubCard>
       </div>
@@ -380,7 +400,7 @@ function LoginForm({ disabled }: { disabled: boolean }) {
   );
 }
 
-function GoogleIcon() {
+export function GoogleIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
       <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z" />

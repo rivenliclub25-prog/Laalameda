@@ -52,8 +52,8 @@ export const googleEnabled = true;
  * y, si el socio estaba pidiendo desde una mesa, a qué página volver en lugar del perfil.
  */
 const GOOGLE_FLAG = storageKey('alameda-google-login');
-/** Solo se vuelve a páginas para pedir (#/mesa…, #/pedir): nunca a una dirección cualquiera. */
-const VOLVER_PERMITIDO = /^#\/(mesa\?[mn]=[A-Za-z0-9_-]{8,64}|pedir)$/;
+/** Solo se vuelve a páginas para pedir (#/mesa…, #/pedir) o al café del cartel: nunca a una dirección cualquiera. */
+const VOLVER_PERMITIDO = /^#\/(mesa\?[mn]=[A-Za-z0-9_-]{8,64}|pedir|cafe-gratis\?auto=1)$/;
 
 export function consumeGoogleFlag(): { fromGoogle: boolean; volver: string | null } {
   try {
