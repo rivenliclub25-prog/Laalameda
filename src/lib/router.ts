@@ -19,7 +19,8 @@ export type RoutePath =
   | '/canjear'
   | '/pos'
   | '/mesa'
-  | '/pedir';
+  | '/pedir'
+  | '/cafe-gratis';
 
 const routes: RoutePath[] = [
   '/qr',
@@ -34,6 +35,7 @@ const routes: RoutePath[] = [
   '/pos',
   '/mesa',
   '/pedir',
+  '/cafe-gratis',
 ];
 
 export interface Route {
