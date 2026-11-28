@@ -4,6 +4,7 @@ import { consumeAuthCallback, isSupabaseConfigured, supabase } from '@/lib/supab
 import { translateAuthErrorCode } from '@/lib/authErrors';
 import { navigate } from '@/lib/router';
 import { consumeGoogleFlag } from '@/lib/auth';
+import { CAFE_GRATIS_VOLVER, consumirVueltaCafeGratis } from '@/lib/cafeGratis';
 import { AuthContext, type AuthNotice } from '@/auth/AuthContext';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -50,6 +51,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         // Con Google, si estaba pidiendo desde una mesa, vuelve a ella (como al entrar con email).
         if (fromGoogle && volver) window.location.replace(volver);
+        // Alta con email empezada en el cartel del café: al confirmar, vuelve a por el ticket.
+        else if (callback.type === 'signup' && consumirVueltaCafeGratis()) window.location.replace(CAFE_GRATIS_VOLVER);
         else navigate('/perfil', { replace: true });
       }
     });
